@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+
+# 排除这些目录
+Disallow: /api/
+Disallow: /_next/
+Disallow: /admin/
+Disallow: /private/
+
+# 网站地图
+Sitemap: https://swarm-ai.chat/sitemap.xml
+
+# 爬取延迟（可选）
+Crawl-delay: 1 

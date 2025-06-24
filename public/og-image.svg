@@ -1,0 +1,90 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#8b5cf6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#a855f7;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="lightGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#a5b4fc;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#c4b5fd;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- 背景 -->
+  <rect width="1200" height="630" fill="url(#bgGradient)" />
+  
+  <!-- 装饰性网格 -->
+  <defs>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#ffffff" stroke-width="0.5" opacity="0.2"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="630" fill="url(#grid)" />
+  
+  <!-- 中心标志 -->
+  <g transform="translate(200, 200)">
+    <!-- 大圆形背景 -->
+    <circle cx="100" cy="100" r="80" fill="#ffffff" opacity="0.9" />
+    
+    <!-- 中心AI核心 -->
+    <circle cx="100" cy="100" r="25" fill="url(#bgGradient)" />
+    
+    <!-- 围绕的智能体 -->
+    <circle cx="160" cy="100" r="12" fill="url(#lightGradient)" />
+    <circle cx="40" cy="100" r="12" fill="url(#lightGradient)" />
+    <circle cx="100" cy="160" r="12" fill="url(#lightGradient)" />
+    <circle cx="100" cy="40" r="12" fill="url(#lightGradient)" />
+    <circle cx="142" cy="58" r="10" fill="url(#lightGradient)" />
+    <circle cx="58" cy="142" r="10" fill="url(#lightGradient)" />
+    <circle cx="142" cy="142" r="10" fill="url(#lightGradient)" />
+    <circle cx="58" cy="58" r="10" fill="url(#lightGradient)" />
+    
+    <!-- 连接线 -->
+    <line x1="100" y1="100" x2="160" y2="100" stroke="#ffffff" stroke-width="3" opacity="0.8" />
+    <line x1="100" y1="100" x2="40" y2="100" stroke="#ffffff" stroke-width="3" opacity="0.8" />
+    <line x1="100" y1="100" x2="100" y2="160" stroke="#ffffff" stroke-width="3" opacity="0.8" />
+    <line x1="100" y1="100" x2="100" y2="40" stroke="#ffffff" stroke-width="3" opacity="0.8" />
+    <line x1="100" y1="100" x2="142" y2="58" stroke="#ffffff" stroke-width="2" opacity="0.6" />
+    <line x1="100" y1="100" x2="58" y2="142" stroke="#ffffff" stroke-width="2" opacity="0.6" />
+    <line x1="100" y1="100" x2="142" y2="142" stroke="#ffffff" stroke-width="2" opacity="0.6" />
+    <line x1="100" y1="100" x2="58" y2="58" stroke="#ffffff" stroke-width="2" opacity="0.6" />
+  </g>
+  
+  <!-- 主标题 -->
+  <text x="500" y="280" font-family="Arial, sans-serif" font-size="72" font-weight="bold" fill="#ffffff">
+    SwarmAI.chat
+  </text>
+  
+  <!-- 副标题 -->
+  <text x="500" y="340" font-family="Arial, sans-serif" font-size="36" fill="#ffffff" opacity="0.9">
+    新一代AI协作平台
+  </text>
+  
+  <!-- 描述文字 -->
+  <text x="500" y="400" font-family="Arial, sans-serif" font-size="24" fill="#ffffff" opacity="0.8">
+    多智能体团队协作 · 专业服务 · 零学习成本
+  </text>
+  
+  <!-- 功能特色 -->
+  <g transform="translate(500, 450)">
+    <circle cx="0" cy="0" r="8" fill="#ffffff" opacity="0.8" />
+    <text x="20" y="5" font-family="Arial, sans-serif" font-size="18" fill="#ffffff" opacity="0.8">
+      需求分析师 · 用户研究员 · 技术评估师
+    </text>
+  </g>
+  
+  <g transform="translate(500, 490)">
+    <circle cx="0" cy="0" r="8" fill="#ffffff" opacity="0.8" />
+    <text x="20" y="5" font-family="Arial, sans-serif" font-size="18" fill="#ffffff" opacity="0.8">
+      数据分析师 · 创意大师 · 批判思维者
+    </text>
+  </g>
+  
+  <!-- 装饰性元素 -->
+  <circle cx="950" cy="150" r="30" fill="#ffffff" opacity="0.1" />
+  <circle cx="1050" cy="250" r="20" fill="#ffffff" opacity="0.1" />
+  <circle cx="900" cy="400" r="25" fill="#ffffff" opacity="0.1" />
+  <circle cx="1100" cy="500" r="15" fill="#ffffff" opacity="0.1" />
+  
+</svg> 

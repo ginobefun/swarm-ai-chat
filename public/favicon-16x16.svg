@@ -1,0 +1,31 @@
+
+<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="gradientLight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#a5b4fc;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#c4b5fd;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- 背景圆形 -->
+  <circle cx="8" cy="8" r="6" fill="url(#gradient)" />
+  
+  <!-- 中心AI核心 -->
+  <circle cx="8" cy="8" r="2.6666666666666665" fill="#ffffff" opacity="0.9" />
+  
+  <!-- 围绕的小圆点代表智能体 -->
+  <circle cx="12.571428571428571" cy="8" r="1.3333333333333333" fill="url(#gradientLight)" />
+  <circle cx="3.428571428571429" cy="8" r="1.3333333333333333" fill="url(#gradientLight)" />
+  <circle cx="8" cy="12.571428571428571" r="1.3333333333333333" fill="url(#gradientLight)" />
+  <circle cx="8" cy="3.428571428571429" r="1.3333333333333333" fill="url(#gradientLight)" />
+  
+  <!-- 连接线显示协作关系 -->
+  <line x1="8" y1="8" x2="12.571428571428571" y2="8" stroke="#ffffff" stroke-width="2" opacity="0.7" />
+  <line x1="8" y1="8" x2="3.428571428571429" y2="8" stroke="#ffffff" stroke-width="2" opacity="0.7" />
+  <line x1="8" y1="8" x2="8" y2="12.571428571428571" stroke="#ffffff" stroke-width="2" opacity="0.7" />
+  <line x1="8" y1="8" x2="8" y2="3.428571428571429" stroke="#ffffff" stroke-width="2" opacity="0.7" />
+</svg>

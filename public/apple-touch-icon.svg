@@ -1,0 +1,31 @@
+
+<svg width="180" height="180" viewBox="0 0 180 180" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="gradientLight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#a5b4fc;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#c4b5fd;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- 背景圆形 -->
+  <circle cx="90" cy="90" r="88" fill="url(#gradient)" />
+  
+  <!-- 中心AI核心 -->
+  <circle cx="90" cy="90" r="30" fill="#ffffff" opacity="0.9" />
+  
+  <!-- 围绕的小圆点代表智能体 -->
+  <circle cx="141.42857142857144" cy="90" r="15" fill="url(#gradientLight)" />
+  <circle cx="38.57142857142857" cy="90" r="15" fill="url(#gradientLight)" />
+  <circle cx="90" cy="141.42857142857144" r="15" fill="url(#gradientLight)" />
+  <circle cx="90" cy="38.57142857142857" r="15" fill="url(#gradientLight)" />
+  
+  <!-- 连接线显示协作关系 -->
+  <line x1="90" y1="90" x2="141.42857142857144" y2="90" stroke="#ffffff" stroke-width="2" opacity="0.7" />
+  <line x1="90" y1="90" x2="38.57142857142857" y2="90" stroke="#ffffff" stroke-width="2" opacity="0.7" />
+  <line x1="90" y1="90" x2="90" y2="141.42857142857144" stroke="#ffffff" stroke-width="2" opacity="0.7" />
+  <line x1="90" y1="90" x2="90" y2="38.57142857142857" stroke="#ffffff" stroke-width="2" opacity="0.7" />
+</svg>
