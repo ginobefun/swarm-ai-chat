@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
             success: true,
-            data: agents,
+            agents: agents,
             count: agents.length
         })
     } catch (error) {
