@@ -1,22 +1,24 @@
 'use client'
 
 import React, { useState } from 'react'
+import { useTranslation } from '../contexts/AppContext'
+import { ThemeToggle } from './ThemeToggle'
+import { LanguageToggle } from './LanguageToggle'
 
 interface NavbarProps {
     onMenuClick?: () => void
     onCreateNew?: () => void
     onNotificationClick?: () => void
     onUserClick?: () => void
-    onPublish?: () => void
 }
 
 const Navbar: React.FC<NavbarProps> = ({
     onMenuClick,
     onCreateNew,
     onNotificationClick,
-    onUserClick,
-    onPublish
+    onUserClick
 }) => {
+    const { t } = useTranslation()
     const [searchValue, setSearchValue] = useState('')
 
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -34,49 +36,45 @@ const Navbar: React.FC<NavbarProps> = ({
             <button
                 className="menu-btn"
                 onClick={onMenuClick}
-                title="菜单"
+                title={t('navbar.menu')}
             >
                 ☰
             </button>
 
-            <div className="logo">SwarmAI</div>
+            <div className="logo">{t('navbar.logo')}</div>
 
             <form onSubmit={handleSearchSubmit} style={{ flex: 1, maxWidth: '480px' }}>
                 <input
                     type="text"
                     className="search-bar"
-                    placeholder="搜索对话、角色、文件..."
+                    placeholder={t('navbar.searchPlaceholder')}
                     value={searchValue}
                     onChange={handleSearchChange}
                 />
             </form>
 
             <div className="nav-actions">
-                <button
-                    className="nav-btn publish-btn"
-                    onClick={onPublish}
-                    title="发布"
-                >
-                    📤 发布
-                </button>
+                <LanguageToggle className="nav-toggle" />
+                <ThemeToggle className="nav-toggle" />
+
                 <button
                     className="nav-btn"
                     onClick={onNotificationClick}
-                    title="通知"
+                    title={t('navbar.notifications')}
                 >
                     🔔
                 </button>
                 <button
                     className="nav-btn create-btn"
                     onClick={onCreateNew}
-                    title="新建对话"
+                    title={t('navbar.createNew')}
                 >
-                    + 新建
+                    + {t('navbar.createNew')}
                 </button>
                 <button
                     className="nav-btn"
                     onClick={onUserClick}
-                    title="用户菜单"
+                    title={t('navbar.userMenu')}
                 >
                     👤
                 </button>

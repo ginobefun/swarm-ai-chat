@@ -6,14 +6,12 @@ import Sidebar from '../components/Sidebar'
 import ChatArea from '../components/ChatArea'
 import Workspace from '../components/Workspace'
 import { Message } from '../types'
-import {
-    mockChatSections,
-    mockMessages,
-    mockMentionItems,
-    aiAgentResponses
-} from '../data/mockData'
+import { mockChatSections, mockMessages, mockMentionItems, aiAgentResponses } from '../data/mockData'
+import { useTranslation } from '../contexts/AppContext'
 
 export default function Home() {
+    const { t } = useTranslation()
+
     const [activeChatId, setActiveChatId] = useState('chat-1')
     const [messages, setMessages] = useState<Message[]>(mockMessages)
     const [isWorkspaceVisible, setIsWorkspaceVisible] = useState(true)
@@ -55,7 +53,7 @@ export default function Home() {
                 const agentResponse = aiAgentResponses[agent.name as keyof typeof aiAgentResponses]
                 const response = agentResponse?.responses[
                     Math.floor(Math.random() * agentResponse.responses.length)
-                ] || '我正在处理您的请求...'
+                ] || t('messages.processing')
 
                 const aiMessage: Message = {
                     id: `msg-${Date.now()}-ai`,
@@ -135,10 +133,6 @@ export default function Home() {
         console.log('打开用户菜单')
     }
 
-    const handlePublish = () => {
-        console.log('发布内容')
-    }
-
     const handleAddMember = () => {
         console.log('添加成员')
     }
@@ -154,7 +148,6 @@ export default function Home() {
                 onCreateNew={handleCreateNew}
                 onNotificationClick={handleNotificationClick}
                 onUserClick={handleUserClick}
-                onPublish={handlePublish}
             />
 
             <div className="main-container">
@@ -166,7 +159,7 @@ export default function Home() {
 
                 <ChatArea
                     chatTitle={currentChat?.name || '产品需求文档'}
-                    chatMembers="👥 你、@需求分析师、@用户研究员、@技术评估师"
+                    chatMembers={t('chat.members')}
                     messages={messages}
                     mentionItems={mockMentionItems}
                     isTyping={isTyping}

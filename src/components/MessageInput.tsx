@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react'
 import { MentionItem } from '../types'
+import { useTranslation } from '../contexts/AppContext'
 
 interface MessageInputProps {
     onSendMessage: (message: string) => void
@@ -13,9 +14,10 @@ interface MessageInputProps {
 const MessageInput: React.FC<MessageInputProps> = ({
     onSendMessage,
     mentionItems,
-    placeholder = "输入消息...",
+    placeholder,
     disabled = false
 }) => {
+    const { t } = useTranslation()
     const [inputValue, setInputValue] = useState('')
     const [showMentionPopup, setShowMentionPopup] = useState(false)
     const [filteredMentions, setFilteredMentions] = useState<MentionItem[]>([])
@@ -126,14 +128,14 @@ const MessageInput: React.FC<MessageInputProps> = ({
                     <button
                         className="input-btn"
                         onClick={handleMentionButtonClick}
-                        title="提及AI角色"
+                        title={t('chat.mention')}
                     >
                         @
                     </button>
-                    <button className="input-btn" title="附件">
+                    <button className="input-btn" title={t('chat.attachment')}>
                         📎
                     </button>
-                    <button className="input-btn" title="快捷命令">
+                    <button className="input-btn" title={t('chat.commands')}>
                         /
                     </button>
                 </div>
@@ -141,7 +143,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
                 <textarea
                     ref={textareaRef}
                     className="input-field"
-                    placeholder={placeholder}
+                    placeholder={placeholder || t('chat.inputPlaceholder')}
                     value={inputValue}
                     onChange={handleInputChange}
                     onKeyDown={handleKeyDown}
@@ -153,7 +155,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
                     className="send-btn"
                     onClick={handleSendMessage}
                     disabled={!inputValue.trim() || disabled}
-                    title="发送消息"
+                    title={t('chat.send')}
                 >
                     ➤
                 </button>
@@ -173,7 +175,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
                         ))}
                         {filteredMentions.length === 0 && (
                             <div className="mention-item" style={{ color: '#86868b', cursor: 'default' }}>
-                                无匹配结果
+                                {t('messages.noMatches')}
                             </div>
                         )}
                     </div>

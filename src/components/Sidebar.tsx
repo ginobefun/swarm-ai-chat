@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react'
 import { ChatSection, ChatItem } from '../types'
+import { useTranslation } from '../contexts/AppContext'
 
 interface SidebarProps {
     chatSections: ChatSection[]
@@ -52,6 +53,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     onChatSelect,
     activeChatId
 }) => {
+    const { t } = useTranslation()
     const [searchValue, setSearchValue] = useState('')
 
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -71,7 +73,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             <div className="sidebar-search">
                 <input
                     type="text"
-                    placeholder="搜索对话..."
+                    placeholder={t('sidebar.searchPlaceholder')}
                     value={searchValue}
                     onChange={handleSearchChange}
                 />
