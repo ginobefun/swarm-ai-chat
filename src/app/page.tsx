@@ -98,7 +98,7 @@ export default function Home() {
                 setTypingUser('')
             }, 2000)
         }
-    }, [])
+    }, [t])
 
     // 切换工作区显示
     const handleToggleWorkspace = useCallback(() => {

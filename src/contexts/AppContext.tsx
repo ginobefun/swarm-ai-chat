@@ -73,11 +73,11 @@ export const useTranslation = () => {
     // 安全的翻译函数，支持嵌套路径
     const t = (key: string): string => {
         const keys = key.split('.')
-        let value: any = messages
+        let value: unknown = messages
 
         for (const k of keys) {
             if (value && typeof value === 'object' && k in value) {
-                value = value[k]
+                value = (value as Record<string, unknown>)[k]
             } else {
                 console.warn(`Translation key not found: ${key}`)
                 return key // 返回 key 作为默认值

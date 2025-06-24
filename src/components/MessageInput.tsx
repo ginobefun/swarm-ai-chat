@@ -21,7 +21,6 @@ const MessageInput: React.FC<MessageInputProps> = ({
     const [inputValue, setInputValue] = useState('')
     const [showMentionPopup, setShowMentionPopup] = useState(false)
     const [filteredMentions, setFilteredMentions] = useState<MentionItem[]>([])
-    const [mentionQuery, setMentionQuery] = useState('')
     const textareaRef = useRef<HTMLTextAreaElement>(null)
     const mentionPopupRef = useRef<HTMLDivElement>(null)
 
@@ -43,7 +42,6 @@ const MessageInput: React.FC<MessageInputProps> = ({
         if (atIndex !== -1) {
             const query = value.substring(atIndex + 1)
             if (!query.includes(' ')) {
-                setMentionQuery(query)
                 setShowMentionPopup(true)
 
                 // 过滤提及项
