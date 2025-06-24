@@ -5,6 +5,7 @@ import Navbar from '../components/Navbar'
 import Sidebar from '../components/Sidebar'
 import ChatArea from '../components/ChatArea'
 import Workspace from '../components/Workspace'
+import AgentDiscovery from '../components/AgentDiscovery'
 import { Message } from '../types'
 import { mockChatSections, mockMessages, mockMentionItems, aiAgentResponses } from '../data/mockData'
 import { useTranslation } from '../contexts/AppContext'
@@ -17,6 +18,7 @@ export default function Home() {
     const [isWorkspaceVisible, setIsWorkspaceVisible] = useState(true)
     const [isTyping, setIsTyping] = useState(false)
     const [typingUser, setTypingUser] = useState('')
+    const [showAgentDiscovery, setShowAgentDiscovery] = useState(false)
 
     // 处理聊天选择
     const handleChatSelect = useCallback((chatId: string) => {
@@ -133,6 +135,17 @@ export default function Home() {
         console.log('打开用户菜单')
     }
 
+    const handleAgentDiscovery = () => {
+        setShowAgentDiscovery(true)
+    }
+
+    const handleStartChatWithAgent = (agentId: string) => {
+        // 创建新的聊天会话或切换到已存在的会话
+        console.log('开始与 AI 角色对话：', agentId)
+        setShowAgentDiscovery(false)
+        // 这里可以添加创建新聊天的逻辑
+    }
+
     const handleAddMember = () => {
         console.log('添加成员')
     }
@@ -148,6 +161,7 @@ export default function Home() {
                 onCreateNew={handleCreateNew}
                 onNotificationClick={handleNotificationClick}
                 onUserClick={handleUserClick}
+                onAgentDiscovery={handleAgentDiscovery}
             />
 
             <div className="main-container">
@@ -155,6 +169,7 @@ export default function Home() {
                     chatSections={mockChatSections}
                     onChatSelect={handleChatSelect}
                     activeChatId={activeChatId}
+                    onStartChat={handleStartChatWithAgent}
                 />
 
                 <ChatArea
@@ -175,6 +190,50 @@ export default function Home() {
                     onClose={() => setIsWorkspaceVisible(false)}
                 />
             </div>
+
+            {/* 角色发现页面 */}
+            {showAgentDiscovery && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'var(--background)',
+                    zIndex: 999,
+                    overflow: 'auto'
+                }}>
+                    <div style={{
+                        position: 'sticky',
+                        top: 0,
+                        zIndex: 1000,
+                        background: 'var(--background)',
+                        borderBottom: '1px solid var(--border-color)',
+                        padding: '16px 24px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                    }}>
+                        <h1 style={{ margin: 0, fontSize: '20px', fontWeight: 600 }}>
+                            AI 角色发现
+                        </h1>
+                        <button
+                            onClick={() => setShowAgentDiscovery(false)}
+                            style={{
+                                background: 'none',
+                                border: '1px solid var(--border-color)',
+                                borderRadius: 'var(--radius-md)',
+                                padding: '8px 16px',
+                                cursor: 'pointer',
+                                color: 'var(--text-secondary)'
+                            }}
+                        >
+                            关闭
+                        </button>
+                    </div>
+                    <AgentDiscovery onStartChat={handleStartChatWithAgent} />
+                </div>
+            )}
         </div>
     )
 } 

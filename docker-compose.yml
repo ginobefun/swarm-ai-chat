@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: swarm-ai-postgres
+    environment:
+      POSTGRES_DB: swarm_ai_chat
+      POSTGRES_USER: swarm_user
+      POSTGRES_PASSWORD: swarm_password
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./src/lib/database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./src/lib/database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+    restart: unless-stopped
+    command: >
+      postgres 
+      -c shared_preload_libraries=pg_stat_statements
+      -c pg_stat_statements.track=all
+      -c max_connections=200
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+      -c work_mem=16MB
+      -c maintenance_work_mem=128MB
+
+  # 可选：添加 pgAdmin 用于数据库管理
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: swarm-ai-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@swarm.ai
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    profiles:
+      - admin
+
+volumes:
+  postgres_data:
+    driver: local

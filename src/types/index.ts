@@ -39,13 +39,49 @@ export interface WorkspaceModule {
     isExpandable?: boolean
 }
 
-// AI 角色类型
+// 角色能力标签类型
+export interface SkillTag {
+    id: string
+    name: string
+    category: 'core' | 'tool' | 'domain'
+    color: string
+}
+
+// 使用示例类型
+export interface UsageExample {
+    id: string
+    title: string
+    prompt: string
+    description: string
+}
+
+// 工具绑定类型
+export interface Tool {
+    id: string
+    name: string
+    icon: string
+    description: string
+    category: string
+}
+
+// AI 角色类型 (扩展版)
 export interface AIAgent {
     id: string
     name: string
     avatar: string
+    avatarStyle?: string
     description: string
     specialty: string
+    personality: string
+    skillTags?: SkillTag[]
+    tools?: Tool[]
+    usageExamples?: UsageExample[]
+    conversationStarters?: UsageExample[]
+    modelPreference?: string
+    systemPrompt: string
+    isActive: boolean
+    createdAt: string
+    updatedAt: string
 }
 
 // @提及项类型
@@ -54,4 +90,12 @@ export interface MentionItem {
     name: string
     avatar: string
     type: 'agent' | 'user'
+}
+
+// 角色详情页 Props 类型
+export interface AgentDetailProps {
+    agent: AIAgent
+    isOpen: boolean
+    onClose: () => void
+    onStartChat?: (agentId: string) => void
 } 

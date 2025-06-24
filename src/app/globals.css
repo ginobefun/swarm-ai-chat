@@ -346,6 +346,28 @@ body {
     text-align: center;
 }
 
+.agent-detail-btn {
+    background: none;
+    border: 1px solid var(--border-color);
+    color: var(--text-tertiary);
+    width: 24px;
+    height: 24px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all var(--transition-fast);
+    padding: 0;
+}
+
+.agent-detail-btn:hover {
+    background: var(--background-hover);
+    color: var(--text-secondary);
+    border-color: var(--primary-color-light);
+}
+
 /* 中间对话区 */
 .chat-area {
     flex: 1;

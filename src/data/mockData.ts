@@ -1,4 +1,5 @@
 import { ChatSection, Message, MentionItem } from '../types'
+import { mentionItems, agentChatItems, aiAgentResponses } from './agentsData'
 
 // 模拟聊天分组数据
 export const mockChatSections: ChatSection[] = [
@@ -52,32 +53,7 @@ export const mockChatSections: ChatSection[] = [
     {
         title: '我的 AI 角色',
         icon: '🤖',
-        chats: [
-            {
-                id: 'agent-1',
-                name: '数据分析师',
-                preview: '擅长数据处理和可视化',
-                avatar: '📊',
-                avatarType: 'ai',
-                timestamp: ''
-            },
-            {
-                id: 'agent-2',
-                name: '创意大师',
-                preview: '激发创意灵感',
-                avatar: '🎨',
-                avatarType: 'ai',
-                timestamp: ''
-            },
-            {
-                id: 'agent-3',
-                name: '批判思维者',
-                preview: '逻辑分析和论证',
-                avatar: '🔍',
-                avatarType: 'ai',
-                timestamp: ''
-            }
-        ]
+        chats: agentChatItems.slice(0, 6) // 显示前 6 个角色
     }
 ]
 
@@ -127,82 +103,8 @@ export const mockMessages: Message[] = [
     }
 ]
 
-// 模拟@提及项数据
-export const mockMentionItems: MentionItem[] = [
-    {
-        id: 'mention-1',
-        name: '需求分析师',
-        avatar: '📋',
-        type: 'agent'
-    },
-    {
-        id: 'mention-2',
-        name: '用户研究员',
-        avatar: '👥',
-        type: 'agent'
-    },
-    {
-        id: 'mention-3',
-        name: '技术评估师',
-        avatar: '⚙️',
-        type: 'agent'
-    },
-    {
-        id: 'mention-4',
-        name: '数据分析师',
-        avatar: '📊',
-        type: 'agent'
-    },
-    {
-        id: 'mention-5',
-        name: '创意大师',
-        avatar: '🎨',
-        type: 'agent'
-    },
-    {
-        id: 'mention-6',
-        name: '批判思维者',
-        avatar: '🔍',
-        type: 'agent'
-    }
-]
+// 导出提及项数据（从 agentsData 获取）
+export const mockMentionItems: MentionItem[] = mentionItems
 
-// 模拟 AI 角色响应
-export const aiAgentResponses = {
-    '需求分析师': {
-        avatar: '📋',
-        avatarStyle: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        responses: [
-            '让我来分析这个需求的可行性和优先级...',
-            '根据市场调研，我建议...',
-            '这个功能需要考虑以下技术约束...'
-        ]
-    },
-    '用户研究员': {
-        avatar: '👥',
-        avatarStyle: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-        responses: [
-            '基于用户访谈，我发现...',
-            '让我分析用户行为模式...',
-            '这个设计可能影响用户体验...'
-        ]
-    },
-    '技术评估师': {
-        avatar: '⚙️',
-        avatarStyle: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-        responses: [
-            '从技术角度来看...',
-            '实现这个功能需要考虑...',
-            '我建议采用以下技术方案...'
-        ]
-    },
-    '数据分析师': {
-        avatar: '📊',
-        avatarStyle: 'linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%)',
-        responses: [
-            '数据显示...',
-            '让我生成相关分析报告...',
-            '基于数据趋势，我的建议是...'
-        ]
-    }
-} 
+// 导出 AI 角色响应数据（从 agentsData 获取）
+export { aiAgentResponses } 

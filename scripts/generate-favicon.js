@@ -1,12 +1,11 @@
 /**
  * SwarmAI.chat Favicon Generator
- * 生成不同尺寸的favicon图标
+ * 生成不同尺寸的 favicon 图标
  */
-
 const fs = require('fs');
 const path = require('path');
 
-// SVG图标定义
+// SVG 图标定义
 const createSwarmAISVG = (size) => `
 <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
   <defs>
@@ -23,7 +22,7 @@ const createSwarmAISVG = (size) => `
   <!-- 背景圆形 -->
   <circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="url(#gradient)" />
   
-  <!-- 中心AI核心 -->
+  <!-- 中心 AI 核心 -->
   <circle cx="${size/2}" cy="${size/2}" r="${size/6}" fill="#ffffff" opacity="0.9" />
   
   <!-- 围绕的小圆点代表智能体 -->
@@ -40,16 +39,16 @@ const createSwarmAISVG = (size) => `
 </svg>
 `;
 
-// 创建不同尺寸的SVG文件
+// 创建不同尺寸的 SVG 文件
 const sizes = [16, 32, 96, 180, 192, 512];
 const publicDir = path.join(process.cwd(), 'public');
 
-// 确保public目录存在
+// 确保 public 目录存在
 if (!fs.existsSync(publicDir)) {
   fs.mkdirSync(publicDir, { recursive: true });
 }
 
-// 生成SVG文件
+// 生成 SVG 文件
 sizes.forEach(size => {
   const svgContent = createSwarmAISVG(size);
   const filename = `favicon-${size}x${size}.svg`;
@@ -72,13 +71,13 @@ const androidChrome512 = createSwarmAISVG(512);
 fs.writeFileSync(path.join(publicDir, 'android-chrome-512x512.svg'), androidChrome512);
 console.log('✅ Generated: android-chrome-512x512.svg');
 
-// 创建基础favicon.ico使用的SVG
+// 创建基础 favicon.ico 使用的 SVG
 const faviconSVG = createSwarmAISVG(32);
 fs.writeFileSync(path.join(publicDir, 'favicon.svg'), faviconSVG);
 console.log('✅ Generated: favicon.svg');
 
 console.log(`
-🎉 SwarmAI.chat favicon图标生成完成！
+🎉 SwarmAI.chat favicon 图标生成完成！
 
 生成的文件：
 ${sizes.map(size => `- favicon-${size}x${size}.svg`).join('\n')}
@@ -87,10 +86,10 @@ ${sizes.map(size => `- favicon-${size}x${size}.svg`).join('\n')}
 - android-chrome-512x512.svg
 - favicon.svg
 
-💡 如需PNG格式，请使用在线转换工具或图像处理软件将SVG转换为PNG。
+💡 如需 PNG 格式，请使用在线转换工具或图像处理软件将 SVG 转换为 PNG。
 
 🔗 推荐工具：
 - https://convertio.co/svg-png/
 - https://cloudconvert.com/svg-to-png
-- 或使用Figma、Sketch等设计工具
+- 或使用 Figma、Sketch 等设计工具
 `); 

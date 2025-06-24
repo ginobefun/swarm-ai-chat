@@ -10,13 +10,15 @@ interface NavbarProps {
     onCreateNew?: () => void
     onNotificationClick?: () => void
     onUserClick?: () => void
+    onAgentDiscovery?: () => void
 }
 
 const Navbar: React.FC<NavbarProps> = ({
     onMenuClick,
     onCreateNew,
     onNotificationClick,
-    onUserClick
+    onUserClick,
+    onAgentDiscovery
 }) => {
     const { t } = useTranslation()
     const [searchValue, setSearchValue] = useState('')
@@ -57,6 +59,13 @@ const Navbar: React.FC<NavbarProps> = ({
                 <LanguageToggle className="nav-toggle" />
                 <ThemeToggle className="nav-toggle" />
 
+                <button
+                    className="nav-btn"
+                    onClick={onAgentDiscovery}
+                    title="发现AI角色"
+                >
+                    🤖
+                </button>
                 <button
                     className="nav-btn"
                     onClick={onNotificationClick}
