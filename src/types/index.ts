@@ -9,6 +9,54 @@ export interface Message {
     avatarStyle?: string
 }
 
+// 会话参与者类型
+export interface SessionParticipant {
+    id: string
+    type: 'user' | 'agent'
+    name: string
+    avatar: string
+    avatarStyle?: string
+}
+
+// 会话类型
+export interface Session {
+    id: string
+    title: string
+    type: 'single' | 'group'
+    description?: string
+    participants: SessionParticipant[]
+    lastMessage?: {
+        content: string
+        sender: string
+        timestamp: Date
+    }
+    messageCount: number
+    isPinned: boolean
+    isArchived: boolean
+    createdBy: string
+    createdAt: Date
+    updatedAt: Date
+}
+
+// 会话过滤选项
+export interface SessionFilter {
+    type?: 'all' | 'single' | 'group'
+    pinned?: boolean
+    agentId?: string
+    searchQuery?: string
+}
+
+// 会话分组
+export interface SessionGroup {
+    title: string
+    icon: string
+    sessions: Session[]
+    count: number
+}
+
+// 会话操作类型
+export type SessionAction = 'rename' | 'pin' | 'unpin' | 'archive' | 'delete' | 'duplicate'
+
 // 聊天项类型
 export interface ChatItem {
     id: string
@@ -98,4 +146,37 @@ export interface AgentDetailProps {
     isOpen: boolean
     onClose: () => void
     onStartChat?: (agentId: string) => void
+}
+
+// 创建会话请求类型
+export interface CreateSessionRequest {
+    title?: string
+    type: 'single' | 'group'
+    agentIds: string[]
+    description?: string
+}
+
+// 更新会话请求类型
+export interface UpdateSessionRequest {
+    title?: string
+    description?: string
+    isPinned?: boolean
+    isArchived?: boolean
+}
+
+// 会话上下文菜单Props
+export interface SessionContextMenuProps {
+    session: Session
+    isOpen: boolean
+    position: { x: number; y: number }
+    onClose: () => void
+    onAction: (action: SessionAction) => void
+}
+
+// 创建会话对话框Props
+export interface CreateSessionDialogProps {
+    isOpen: boolean
+    onClose: () => void
+    onCreateSession: (request: CreateSessionRequest) => void
+    availableAgents: AIAgent[]
 } 
