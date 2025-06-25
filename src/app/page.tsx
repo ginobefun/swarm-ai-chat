@@ -6,7 +6,6 @@ import SessionList from '@/components/session/SessionList'
 import ChatArea from '@/components/chat/ChatArea'
 import WorkspacePanel from '@/components/workspace/WorkspacePanel'
 import { useSessionManager } from '@/hooks/useSessionManager'
-import type { Session } from '@/types'
 
 /**
  * Home component - Main application page
@@ -28,11 +27,9 @@ export default function Home() {
         currentSession,  // Currently selected session
         isLoading,      // Loading state for session operations
         error,          // Error state for session operations
-        createSession,  // Function to create new sessions
         selectSession,  // Function to select a session
         updateSession,  // Function to update session properties
-        deleteSession,  // Function to delete sessions
-        pinSession      // Function to pin/unpin sessions
+        deleteSession   // Function to delete sessions
     } = useSessionManager()
 
     // UI state management for responsive design
@@ -68,21 +65,6 @@ export default function Home() {
         // Cleanup event listener on component unmount
         return () => window.removeEventListener('resize', handleResize)
     }, [])
-
-    /**
-     * Handle session creation with proper error handling
-     * Wraps the createSession call with try-catch for better user experience
-     * 
-     * @param sessionData - The session data to create
-     */
-    const handleCreateSession = async (sessionData: Session) => {
-        try {
-            await createSession(sessionData)
-        } catch (error) {
-            console.error('Failed to create session:', error)
-            // TODO: Show user-friendly error notification instead of console.error
-        }
-    }
 
     /**
      * Handle session selection with mobile responsiveness
@@ -150,10 +132,8 @@ export default function Home() {
                         isLoading={isLoading}
                         error={error}
                         onSelectSession={handleSelectSession}
-                        onCreateSession={handleCreateSession}
                         onUpdateSession={updateSession}
                         onDeleteSession={deleteSession}
-                        onPinSession={pinSession}
                     />
                 </div>
 

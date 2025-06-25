@@ -8,7 +8,7 @@ import {
     SenderType,
     ContentType,
     MessageStatus
-} from '@/generated/prisma'
+} from '@prisma/client'
 
 // ============================================================================
 // API 响应类型 - 基于数据库类型扩展

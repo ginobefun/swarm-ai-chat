@@ -8,7 +8,7 @@ import { useTranslation } from '@/contexts/AppContext'
 
 interface ChatAreaProps {
     session: Session | null
-    onSessionUpdate?: (sessionId: string, updates: any) => void
+    onSessionUpdate?: (sessionId: string, updates: Partial<Session>) => void
 }
 
 const ChatArea: React.FC<ChatAreaProps> = ({

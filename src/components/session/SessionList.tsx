@@ -19,10 +19,8 @@ interface SessionListProps {
     isLoading: boolean                                                      // Loading state for session operations
     error: string | null                                                   // Error message if session loading fails
     onSelectSession: (sessionId: string) => void                          // Callback when a session is selected
-    onCreateSession: (sessionData: Session) => Promise<void>               // Callback to create a new session
     onUpdateSession: (sessionId: string, updates: Partial<Session>) => Promise<void> // Callback to update session
     onDeleteSession: (sessionId: string) => Promise<void>                 // Callback to delete session
-    onPinSession: (sessionId: string) => Promise<void>                    // Callback to pin/unpin session
 }
 
 /**
@@ -53,10 +51,8 @@ const SessionList: React.FC<SessionListProps> = (props) => {
         isLoading,
         error,
         onSelectSession,
-        onCreateSession,
         onUpdateSession,
-        onDeleteSession,
-        onPinSession
+        onDeleteSession
     } = props
 
     const { t } = useTranslation()

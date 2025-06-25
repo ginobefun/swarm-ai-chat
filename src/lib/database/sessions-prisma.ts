@@ -1,5 +1,5 @@
 import { prisma } from './prisma'
-import type { Session as PrismaSession, SessionType, SessionStatus } from '@/generated/prisma'
+import type { Session as PrismaSession, SessionType, SessionStatus, Prisma } from '@prisma/client'
 
 // 定义会话类型，与前端兼容
 export interface Session {
@@ -10,7 +10,7 @@ export interface Session {
     status: 'active' | 'paused' | 'completed' | 'archived'
     createdById: string
     primaryAgentId?: string | null
-    configuration: never
+    configuration: Prisma.JsonValue
     isPublic: boolean
     isTemplate: boolean
     messageCount: number
@@ -86,7 +86,7 @@ export async function createSession(sessionData: {
     type?: 'direct' | 'group' | 'workflow'
     createdById: string
     primaryAgentId?: string
-    configuration?: any
+    configuration?: Prisma.InputJsonValue
     isPublic?: boolean
     isTemplate?: boolean
 }): Promise<Session> {
@@ -116,12 +116,12 @@ export async function updateSession(
     updates: Partial<Pick<Session, 'title' | 'description' | 'status' | 'configuration'>>
 ): Promise<Session> {
     try {
-        const updateData: any = {}
+        const updateData: Prisma.SessionUpdateInput = {}
 
         if (updates.title !== undefined) updateData.title = updates.title
         if (updates.description !== undefined) updateData.description = updates.description
         if (updates.status !== undefined) updateData.status = updates.status.toUpperCase() as SessionStatus
-        if (updates.configuration !== undefined) updateData.configuration = updates.configuration
+        if (updates.configuration !== undefined) updateData.configuration = updates.configuration as Prisma.InputJsonValue
 
         const session = await prisma.session.update({
             where: { id },
