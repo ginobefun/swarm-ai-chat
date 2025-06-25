@@ -5,10 +5,13 @@ import { AIAgent, SkillTag } from '../types'
 import AgentDetail from './AgentDetail'
 
 interface AgentDiscoveryProps {
+    isOpen?: boolean
     onStartChat?: (agentId: string) => void
+    onClose?: () => void
 }
 
-const AgentDiscovery: React.FC<AgentDiscoveryProps> = ({ onStartChat }) => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const AgentDiscovery: React.FC<AgentDiscoveryProps> = ({ isOpen = true, onStartChat, onClose }) => {
     const [agents, setAgents] = useState<AIAgent[]>([])
     const [skillTags, setSkillTags] = useState<SkillTag[]>([])
     const [loading, setLoading] = useState(true)
@@ -28,7 +31,7 @@ const AgentDiscovery: React.FC<AgentDiscoveryProps> = ({ onStartChat }) => {
 
                 const response = await fetch('/api/agents')
                 if (!response.ok) {
-                    throw new Error(`API 错误: ${response.status}`)
+                    throw new Error(`API 错误：${response.status}`)
                 }
 
                 const data = await response.json()
@@ -54,7 +57,7 @@ const AgentDiscovery: React.FC<AgentDiscoveryProps> = ({ onStartChat }) => {
                     throw new Error(data.message || '获取数据失败')
                 }
             } catch (err) {
-                console.error('获取 AI 角色数据失败:', err)
+                console.error('获取 AI 角色数据失败：', err)
                 setError(err instanceof Error ? err.message : '获取数据失败')
             } finally {
                 setLoading(false)
@@ -133,7 +136,7 @@ const AgentDiscovery: React.FC<AgentDiscoveryProps> = ({ onStartChat }) => {
 
                 const response = await fetch('/api/agents')
                 if (!response.ok) {
-                    throw new Error(`API 错误: ${response.status}`)
+                    throw new Error(`API 错误：${response.status}`)
                 }
 
                 const data = await response.json()
@@ -159,7 +162,7 @@ const AgentDiscovery: React.FC<AgentDiscoveryProps> = ({ onStartChat }) => {
                     throw new Error(data.message || '获取数据失败')
                 }
             } catch (err) {
-                console.error('获取 AI 角色数据失败:', err)
+                console.error('获取 AI 角色数据失败：', err)
                 setError(err instanceof Error ? err.message : '获取数据失败')
             } finally {
                 setLoading(false)
@@ -172,24 +175,24 @@ const AgentDiscovery: React.FC<AgentDiscoveryProps> = ({ onStartChat }) => {
     // 加载状态
     if (loading) {
         return (
-            <div className="agent-discovery">
-                <div className="discovery-header">
-                    <div className="header-content">
-                        <h1 className="page-title">
-                            <span className="title-icon">🤖</span>
+            <div className="p-6 max-w-6xl mx-auto">
+                <div className="text-center mb-8">
+                    <div className="max-w-2xl mx-auto">
+                        <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                            <span className="mr-3">🤖</span>
                             AI 角色中心
                         </h1>
-                        <p className="page-subtitle">
+                        <p className="text-lg text-slate-600 dark:text-slate-400 m-0">
                             发现并选择最适合您需求的 AI 专家，开始高效的协作之旅
                         </p>
                     </div>
                 </div>
 
-                <div className="loading-container">
-                    <div className="loading-spinner">
-                        <div className="spinner"></div>
+                <div className="flex flex-col items-center justify-center py-16 px-6">
+                    <div className="mb-6">
+                        <div className="w-10 h-10 border-4 border-slate-200 dark:border-slate-700 border-t-indigo-600 rounded-full animate-spin"></div>
                     </div>
-                    <p className="loading-text">正在加载 AI 角色数据...</p>
+                    <p className="text-slate-600 dark:text-slate-400 text-lg m-0">正在加载 AI 角色数据...</p>
                 </div>
             </div>
         )
@@ -198,26 +201,26 @@ const AgentDiscovery: React.FC<AgentDiscoveryProps> = ({ onStartChat }) => {
     // 错误状态
     if (error) {
         return (
-            <div className="agent-discovery">
-                <div className="discovery-header">
-                    <div className="header-content">
-                        <h1 className="page-title">
-                            <span className="title-icon">🤖</span>
+            <div className="p-6 max-w-6xl mx-auto">
+                <div className="text-center mb-8">
+                    <div className="max-w-2xl mx-auto">
+                        <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                            <span className="mr-3">🤖</span>
                             AI 角色中心
                         </h1>
-                        <p className="page-subtitle">
+                        <p className="text-lg text-slate-600 dark:text-slate-400 m-0">
                             发现并选择最适合您需求的 AI 专家，开始高效的协作之旅
                         </p>
                     </div>
                 </div>
 
-                <div className="error-container">
-                    <div className="error-icon">⚠️</div>
-                    <h3 className="error-title">加载失败</h3>
-                    <p className="error-message">{error}</p>
+                <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+                    <div className="text-5xl mb-4">😵</div>
+                    <h2 className="text-2xl font-semibold text-red-600 dark:text-red-400 mb-2">加载失败</h2>
+                    <p className="text-slate-600 dark:text-slate-400 mb-6">{error}</p>
                     <button
-                        className="retry-button"
                         onClick={handleRetry}
+                        className="bg-indigo-600 text-white border-none px-6 py-3 rounded-lg text-base cursor-pointer transition-colors hover:bg-indigo-700"
                     >
                         重试
                     </button>
@@ -227,36 +230,39 @@ const AgentDiscovery: React.FC<AgentDiscoveryProps> = ({ onStartChat }) => {
     }
 
     return (
-        <div className="agent-discovery">
-            {/* 头部 */}
-            <div className="discovery-header">
-                <div className="header-content">
-                    <h1 className="page-title">
-                        <span className="title-icon">🤖</span>
+        <div className="p-6 max-w-6xl mx-auto">
+            {/* 页面头部 */}
+            <div className="text-center mb-8">
+                <div className="max-w-2xl mx-auto">
+                    <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                        <span className="mr-3">🤖</span>
                         AI 角色中心
                     </h1>
-                    <p className="page-subtitle">
+                    <p className="text-lg text-slate-600 dark:text-slate-400 m-0">
                         发现并选择最适合您需求的 AI 专家，开始高效的协作之旅
                     </p>
                 </div>
             </div>
 
-            {/* 搜索和过滤 */}
-            <div className="filters-section">
-                <div className="search-container">
-                    <div className="search-input-wrapper">
-                        <span className="search-icon">🔍</span>
+            {/* 筛选器部分 */}
+            <div className="mb-8">
+                {/* 搜索框 */}
+                <div className="mb-6">
+                    <div className="relative max-w-lg mx-auto">
+                        <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400">
+                            🔍
+                        </div>
                         <input
                             type="text"
-                            placeholder="搜索角色、技能或专业领域..."
+                            placeholder="搜索 AI 角色..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="search-input"
+                            className="w-full py-3 pl-12 pr-12 border-2 border-slate-200 dark:border-slate-600 rounded-full text-base bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 transition-colors focus:outline-none focus:border-indigo-600"
                         />
                         {searchQuery && (
                             <button
-                                className="clear-search"
                                 onClick={() => setSearchQuery('')}
+                                className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-none border-none text-slate-400 cursor-pointer p-1"
                             >
                                 ✕
                             </button>
@@ -264,15 +270,20 @@ const AgentDiscovery: React.FC<AgentDiscoveryProps> = ({ onStartChat }) => {
                     </div>
                 </div>
 
-                <div className="filter-tabs">
-                    <div className="filter-group">
-                        <label className="filter-label">专业领域：</label>
-                        <div className="tabs">
+                {/* 筛选标签 */}
+                <div className="flex flex-col gap-4 items-center">
+                    {/* 专业领域筛选 */}
+                    <div className="flex flex-col items-center gap-2">
+                        <span className="font-medium text-slate-700 dark:text-slate-300">专业领域</span>
+                        <div className="flex gap-2 flex-wrap justify-center">
                             {specialties.map(specialty => (
                                 <button
                                     key={specialty}
-                                    className={`tab ${selectedCategory === specialty ? 'active' : ''}`}
                                     onClick={() => setSelectedCategory(specialty)}
+                                    className={`px-4 py-2 border-2 rounded-full cursor-pointer transition-all text-sm ${selectedCategory === specialty
+                                        ? 'bg-indigo-600 border-indigo-600 text-white'
+                                        : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-500'
+                                        }`}
                                 >
                                     {specialty === 'all' ? '全部' : specialty}
                                 </button>
@@ -280,18 +291,20 @@ const AgentDiscovery: React.FC<AgentDiscoveryProps> = ({ onStartChat }) => {
                         </div>
                     </div>
 
-                    <div className="filter-group">
-                        <label className="filter-label">技能类型：</label>
-                        <div className="tabs">
+                    {/* 技能类别筛选 */}
+                    <div className="flex flex-col items-center gap-2">
+                        <span className="font-medium text-slate-700 dark:text-slate-300">技能类别</span>
+                        <div className="flex gap-2 flex-wrap justify-center">
                             {skillCategories.map(category => (
                                 <button
                                     key={category}
-                                    className={`tab ${selectedSkillCategory === category ? 'active' : ''}`}
-                                    onClick={() => setSelectedSkillCategory(category as 'all' | 'core' | 'tool' | 'domain')}
+                                    onClick={() => setSelectedSkillCategory(category as never)}
+                                    className={`px-4 py-2 border-2 rounded-full cursor-pointer transition-all text-sm ${selectedSkillCategory === category
+                                        ? 'bg-indigo-600 border-indigo-600 text-white'
+                                        : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-500'
+                                        }`}
                                 >
-                                    {category === 'all' ? '全部' :
-                                        category === 'core' ? '核心能力' :
-                                            category === 'tool' ? '工具能力' : '领域专长'}
+                                    {category === 'all' ? '全部' : category}
                                 </button>
                             ))}
                         </div>
@@ -299,106 +312,122 @@ const AgentDiscovery: React.FC<AgentDiscoveryProps> = ({ onStartChat }) => {
                 </div>
             </div>
 
-            {/* 结果统计 */}
-            <div className="results-info">
-                <span className="results-count">
-                    找到 {filteredAgents.length} 个 AI 角色
-                </span>
-                {(searchQuery || selectedCategory !== 'all' || selectedSkillCategory !== 'all') && (
+            {/* 结果信息 */}
+            {(searchQuery || selectedCategory !== 'all' || selectedSkillCategory !== 'all') && (
+                <div className="flex justify-between items-center mb-6 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                    <span className="font-medium text-slate-700 dark:text-slate-300">
+                        找到 {filteredAgents.length} 个 AI 角色
+                    </span>
                     <button
-                        className="clear-filters"
                         onClick={() => {
                             setSearchQuery('')
                             setSelectedCategory('all')
                             setSelectedSkillCategory('all')
                         }}
+                        className="bg-none border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400 px-3 py-1.5 rounded-md cursor-pointer text-sm transition-all hover:bg-slate-100 dark:hover:bg-slate-700"
                     >
-                        清除筛选
+                        清除所有筛选
                     </button>
-                )}
-            </div>
+                </div>
+            )}
 
             {/* 角色网格 */}
-            <div className="agents-grid">
-                {filteredAgents.map(agent => (
-                    <div
-                        key={agent.id}
-                        className="agent-card"
-                        onClick={() => handleAgentClick(agent)}
-                    >
-                        <div className="agent-card-header">
-                            <div
-                                className="agent-avatar"
-                                style={{ background: agent.avatarStyle }}
-                            >
-                                {agent.avatar}
-                            </div>
-                            <div className="agent-status">
-                                <span className={`status-dot ${agent.isActive ? 'active' : 'inactive'}`} />
-                            </div>
-                        </div>
-
-                        <div className="agent-card-content">
-                            <h3 className="agent-name">{agent.name}</h3>
-                            <p className="agent-specialty">{agent.specialty}</p>
-                            <p className="agent-description">{agent.description}</p>
-                        </div>
-
-                        <div className="agent-card-tags">
-                            {agent.skillTags?.slice(0, 3).map(tag => (
-                                <span
-                                    key={tag.id}
-                                    className="skill-tag"
-                                    style={{ backgroundColor: tag.color || '#f0f0f0' }}
+            {filteredAgents.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
+                    {filteredAgents.map(agent => (
+                        <div
+                            key={agent.id}
+                            onClick={() => handleAgentClick(agent)}
+                            className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-5 cursor-pointer transition-all duration-300 shadow-sm hover:shadow-lg hover:-translate-y-1 hover:border-indigo-600"
+                        >
+                            {/* 卡片头部 */}
+                            <div className="flex justify-between items-start mb-4">
+                                <div
+                                    className="w-15 h-15 rounded-full flex items-center justify-center text-2xl text-white font-bold"
+                                    style={{ background: agent.avatarStyle || '#667eea' }}
                                 >
-                                    {tag.name}
-                                </span>
-                            ))}
-                            {(agent.skillTags?.length || 0) > 3 && (
-                                <span className="tag-more">+{(agent.skillTags?.length || 0) - 3}</span>
-                            )}
-                        </div>
-
-                        <div className="agent-card-footer">
-                            <div className="agent-stats">
-                                <span className="stat">
-                                    <span className="stat-icon">💬</span>
-                                    {agent.conversationStarters?.length || 0} 个话题
-                                </span>
-                                <span className="stat">
-                                    <span className="stat-icon">🔧</span>
-                                    {agent.tools?.length || 0} 个工具
-                                </span>
+                                    {agent.avatar}
+                                </div>
+                                <div className="relative">
+                                    <div className={`w-3 h-3 rounded-full border-2 border-white shadow-sm ${agent.isActive ? 'bg-green-500' : 'bg-slate-400'
+                                        }`}></div>
+                                </div>
                             </div>
-                            <button
-                                className="start-chat-btn"
-                                onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleStartChat(agent.id)
-                                }}
-                            >
-                                开始对话
-                            </button>
-                        </div>
-                    </div>
-                ))}
-            </div>
 
-            {/* 无结果状态 */}
-            {filteredAgents.length === 0 && !loading && (
-                <div className="no-results">
-                    <div className="no-results-icon">🤖</div>
-                    <h3 className="no-results-title">未找到匹配的角色</h3>
-                    <p className="no-results-message">
-                        尝试调整搜索关键词或筛选条件
+                            {/* 卡片内容 */}
+                            <div className="mb-4">
+                                <h3 className="text-xl font-semibold mb-1 text-slate-900 dark:text-slate-100">
+                                    {agent.name}
+                                </h3>
+                                <p className="text-sm text-indigo-600 dark:text-indigo-400 font-medium mb-2">
+                                    {agent.specialty}
+                                </p>
+                                <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed m-0">
+                                    {agent.description}
+                                </p>
+                            </div>
+
+                            {/* 技能标签 */}
+                            <div className="flex flex-wrap gap-1.5 mb-4">
+                                {agent.skillTags?.slice(0, 3).map(tag => (
+                                    <span
+                                        key={tag.id}
+                                        className="text-xs px-2 py-1 rounded-full text-slate-700 dark:text-slate-300 font-medium"
+                                        style={{ backgroundColor: tag.color || '#f3f4f6' }}
+                                    >
+                                        {tag.name}
+                                    </span>
+                                ))}
+                                {(agent.skillTags?.length || 0) > 3 && (
+                                    <span className="text-xs px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded-full text-slate-600 dark:text-slate-400 font-medium">
+                                        +{(agent.skillTags?.length || 0) - 3}
+                                    </span>
+                                )}
+                            </div>
+
+                            {/* 卡片底部 */}
+                            <div className="flex justify-between items-center">
+                                <div className="flex gap-3">
+                                    <div className="flex items-center gap-1 text-xs text-slate-600 dark:text-slate-400">
+                                        <span className="text-sm">⭐</span>
+                                        {/* {agent.rating || 5.0} */}
+                                        5.0
+                                    </div>
+                                    <div className="flex items-center gap-1 text-xs text-slate-600 dark:text-slate-400">
+                                        <span className="text-sm">💬</span>
+                                        {/* {agent.conversationCount || 0} */}
+                                        0
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation()
+                                        handleStartChat(agent.id)
+                                    }}
+                                    className="bg-indigo-600 text-white border-none px-3 py-1.5 rounded-md text-sm cursor-pointer transition-colors font-medium hover:bg-indigo-700"
+                                >
+                                    开始对话
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            ) : (
+                <div className="text-center py-16 px-6">
+                    <div className="text-6xl mb-4 opacity-50">🔍</div>
+                    <h3 className="text-2xl font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                        未找到匹配的 AI 角色
+                    </h3>
+                    <p className="text-slate-600 dark:text-slate-400 mb-6">
+                        尝试调整搜索条件或清除筛选器
                     </p>
                     <button
-                        className="clear-filters"
                         onClick={() => {
                             setSearchQuery('')
                             setSelectedCategory('all')
                             setSelectedSkillCategory('all')
                         }}
+                        className="bg-indigo-600 text-white border-none px-6 py-3 rounded-lg text-base cursor-pointer transition-colors hover:bg-indigo-700"
                     >
                         清除所有筛选
                     </button>
@@ -414,446 +443,6 @@ const AgentDiscovery: React.FC<AgentDiscoveryProps> = ({ onStartChat }) => {
                     onStartChat={handleStartChat}
                 />
             )}
-
-            <style jsx>{`
-                .agent-discovery {
-                    padding: 24px;
-                    max-width: 1200px;
-                    margin: 0 auto;
-                }
-
-                .discovery-header {
-                    text-align: center;
-                    margin-bottom: 32px;
-                }
-
-                .header-content {
-                    max-width: 600px;
-                    margin: 0 auto;
-                }
-
-                .page-title {
-                    font-size: 2.5rem;
-                    font-weight: 700;
-                    margin-bottom: 16px;
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    -webkit-background-clip: text;
-                    -webkit-text-fill-color: transparent;
-                    background-clip: text;
-                }
-
-                .title-icon {
-                    margin-right: 12px;
-                }
-
-                .page-subtitle {
-                    font-size: 1.1rem;
-                    color: #6b7280;
-                    margin: 0;
-                }
-
-                .loading-container {
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    justify-content: center;
-                    padding: 64px 24px;
-                }
-
-                .loading-spinner {
-                    margin-bottom: 24px;
-                }
-
-                .spinner {
-                    width: 40px;
-                    height: 40px;
-                    border: 4px solid #f3f4f6;
-                    border-top: 4px solid #667eea;
-                    border-radius: 50%;
-                    animation: spin 1s linear infinite;
-                }
-
-                @keyframes spin {
-                    0% { transform: rotate(0deg); }
-                    100% { transform: rotate(360deg); }
-                }
-
-                .loading-text {
-                    color: #6b7280;
-                    font-size: 1.1rem;
-                    margin: 0;
-                }
-
-                .error-container {
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    justify-content: center;
-                    padding: 64px 24px;
-                    text-align: center;
-                }
-
-                .error-icon {
-                    font-size: 3rem;
-                    margin-bottom: 16px;
-                }
-
-                .error-title {
-                    font-size: 1.5rem;
-                    font-weight: 600;
-                    color: #ef4444;
-                    margin-bottom: 8px;
-                }
-
-                .error-message {
-                    color: #6b7280;
-                    margin-bottom: 24px;
-                }
-
-                .retry-button {
-                    background: #667eea;
-                    color: white;
-                    border: none;
-                    padding: 12px 24px;
-                    border-radius: 8px;
-                    font-size: 1rem;
-                    cursor: pointer;
-                    transition: background-color 0.2s;
-                }
-
-                .retry-button:hover {
-                    background: #5a67d8;
-                }
-
-                .filters-section {
-                    margin-bottom: 32px;
-                }
-
-                .search-container {
-                    margin-bottom: 24px;
-                }
-
-                .search-input-wrapper {
-                    position: relative;
-                    max-width: 500px;
-                    margin: 0 auto;
-                }
-
-                .search-icon {
-                    position: absolute;
-                    left: 16px;
-                    top: 50%;
-                    transform: translateY(-50%);
-                    color: #9ca3af;
-                }
-
-                .search-input {
-                    width: 100%;
-                    padding: 12px 16px 12px 48px;
-                    border: 2px solid #e5e7eb;
-                    border-radius: 25px;
-                    font-size: 1rem;
-                    transition: border-color 0.2s;
-                }
-
-                .search-input:focus {
-                    outline: none;
-                    border-color: #667eea;
-                }
-
-                .clear-search {
-                    position: absolute;
-                    right: 16px;
-                    top: 50%;
-                    transform: translateY(-50%);
-                    background: none;
-                    border: none;
-                    color: #9ca3af;
-                    cursor: pointer;
-                    padding: 4px;
-                }
-
-                .filter-tabs {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 16px;
-                    align-items: center;
-                }
-
-                .filter-group {
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    gap: 8px;
-                }
-
-                .filter-label {
-                    font-weight: 500;
-                    color: #374151;
-                }
-
-                .tabs {
-                    display: flex;
-                    gap: 8px;
-                    flex-wrap: wrap;
-                    justify-content: center;
-                }
-
-                .tab {
-                    padding: 8px 16px;
-                    border: 2px solid #e5e7eb;
-                    background: white;
-                    border-radius: 20px;
-                    cursor: pointer;
-                    transition: all 0.2s;
-                    font-size: 0.9rem;
-                }
-
-                .tab:hover {
-                    border-color: #d1d5db;
-                }
-
-                .tab.active {
-                    background: #667eea;
-                    border-color: #667eea;
-                    color: white;
-                }
-
-                .results-info {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    margin-bottom: 24px;
-                    padding: 16px;
-                    background: #f9fafb;
-                    border-radius: 8px;
-                }
-
-                .results-count {
-                    font-weight: 500;
-                    color: #374151;
-                }
-
-                .clear-filters {
-                    background: none;
-                    border: 1px solid #d1d5db;
-                    color: #6b7280;
-                    padding: 6px 12px;
-                    border-radius: 6px;
-                    cursor: pointer;
-                    font-size: 0.9rem;
-                    transition: all 0.2s;
-                }
-
-                .clear-filters:hover {
-                    background: #f3f4f6;
-                }
-
-                .agents-grid {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-                    gap: 20px;
-                    margin-bottom: 32px;
-                }
-
-                .agent-card {
-                    background: white;
-                    border: 1px solid #e5e7eb;
-                    border-radius: 12px;
-                    padding: 20px;
-                    cursor: pointer;
-                    transition: all 0.3s ease;
-                    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-                }
-
-                .agent-card:hover {
-                    transform: translateY(-2px);
-                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-                    border-color: #667eea;
-                }
-
-                .agent-card-header {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: flex-start;
-                    margin-bottom: 16px;
-                }
-
-                .agent-avatar {
-                    width: 60px;
-                    height: 60px;
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 1.5rem;
-                    color: white;
-                    font-weight: bold;
-                }
-
-                .agent-status {
-                    position: relative;
-                }
-
-                .status-dot {
-                    width: 12px;
-                    height: 12px;
-                    border-radius: 50%;
-                    border: 2px solid white;
-                    box-shadow: 0 0 0 1px #e5e7eb;
-                }
-
-                .status-dot.active {
-                    background: #10b981;
-                }
-
-                .status-dot.inactive {
-                    background: #6b7280;
-                }
-
-                .agent-card-content {
-                    margin-bottom: 16px;
-                }
-
-                .agent-name {
-                    font-size: 1.25rem;
-                    font-weight: 600;
-                    margin-bottom: 4px;
-                    color: #1f2937;
-                }
-
-                .agent-specialty {
-                    font-size: 0.9rem;
-                    color: #667eea;
-                    font-weight: 500;
-                    margin-bottom: 8px;
-                }
-
-                .agent-description {
-                    font-size: 0.9rem;
-                    color: #6b7280;
-                    line-height: 1.4;
-                    margin: 0;
-                }
-
-                .agent-card-tags {
-                    display: flex;
-                    flex-wrap: wrap;
-                    gap: 6px;
-                    margin-bottom: 16px;
-                }
-
-                .skill-tag {
-                    font-size: 0.75rem;
-                    padding: 4px 8px;
-                    border-radius: 12px;
-                    color: #374151;
-                    font-weight: 500;
-                }
-
-                .tag-more {
-                    font-size: 0.75rem;
-                    padding: 4px 8px;
-                    background: #f3f4f6;
-                    border-radius: 12px;
-                    color: #6b7280;
-                    font-weight: 500;
-                }
-
-                .agent-card-footer {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                }
-
-                .agent-stats {
-                    display: flex;
-                    gap: 12px;
-                }
-
-                .stat {
-                    display: flex;
-                    align-items: center;
-                    gap: 4px;
-                    font-size: 0.8rem;
-                    color: #6b7280;
-                }
-
-                .stat-icon {
-                    font-size: 0.9rem;
-                }
-
-                .start-chat-btn {
-                    background: #667eea;
-                    color: white;
-                    border: none;
-                    padding: 6px 12px;
-                    border-radius: 6px;
-                    font-size: 0.85rem;
-                    cursor: pointer;
-                    transition: background-color 0.2s;
-                    font-weight: 500;
-                }
-
-                .start-chat-btn:hover {
-                    background: #5a67d8;
-                }
-
-                .no-results {
-                    text-align: center;
-                    padding: 64px 24px;
-                }
-
-                .no-results-icon {
-                    font-size: 4rem;
-                    margin-bottom: 16px;
-                    opacity: 0.5;
-                }
-
-                .no-results-title {
-                    font-size: 1.5rem;
-                    font-weight: 600;
-                    color: #374151;
-                    margin-bottom: 8px;
-                }
-
-                .no-results-message {
-                    color: #6b7280;
-                    margin-bottom: 24px;
-                }
-
-                @media (max-width: 768px) {
-                    .agent-discovery {
-                        padding: 16px;
-                    }
-
-                    .page-title {
-                        font-size: 2rem;
-                    }
-
-                    .filter-tabs {
-                        align-items: stretch;
-                    }
-
-                    .filter-group {
-                        align-items: stretch;
-                    }
-
-                    .tabs {
-                        justify-content: flex-start;
-                    }
-
-                    .results-info {
-                        flex-direction: column;
-                        gap: 12px;
-                        align-items: stretch;
-                    }
-
-                    .agents-grid {
-                        grid-template-columns: 1fr;
-                    }
-                }
-            `}</style>
         </div>
     )
 }

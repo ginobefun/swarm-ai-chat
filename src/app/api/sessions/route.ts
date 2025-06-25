@@ -1,17 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import {
     createSession,
-    getUserSessions,
     updateSession,
-    deleteSession
+    deleteSession,
+    searchSessions,
+    getSessionsByUserId,
+    getAllSessions
     // addAgentToSession,
     // removeAgentFromSession
-} from '@/lib/database/sessions'
+} from '@/lib/database/sessions-prisma'
 import { isDatabaseConfigured } from '@/lib/database/connection'
-import { CreateSessionRequest, UpdateSessionRequest, SessionFilter } from '@/types'
-
-// 模拟用户ID (实际项目中应该从认证系统获取)
-const MOCK_USER_ID = 'user-001'
 
 export async function GET(request: NextRequest) {
     try {
@@ -24,51 +22,37 @@ export async function GET(request: NextRequest) {
         }
 
         const { searchParams } = new URL(request.url)
+        const userId = searchParams.get('userId')
+        const search = searchParams.get('search')
 
-        // 构建过滤条件
-        const filter: SessionFilter = {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            type: (searchParams.get('type') as any) || 'all',
-            pinned: searchParams.get('pinned') === 'true' ? true : undefined,
-            agentId: searchParams.get('agentId') || undefined,
-            searchQuery: searchParams.get('q') || undefined
+        let sessions
+
+        if (search) {
+            // 搜索会话
+            sessions = await searchSessions(search, userId || undefined)
+        } else if (userId) {
+            // 获取特定用户的会话
+            sessions = await getSessionsByUserId(userId)
+        } else {
+            // 获取所有会话
+            sessions = await getAllSessions()
         }
-
-        const sessions = await getUserSessions(MOCK_USER_ID, filter)
-
-        // 按分组组织会话
-        const pinnedSessions = sessions.filter(s => s.isPinned)
-        const recentSessions = sessions.filter(s => !s.isPinned)
-
-        // 按AI角色分组
-        const agentGroups = new Map<string, (typeof sessions)>()
-        sessions.forEach(session => {
-            session.participants
-                .filter(p => p.type === 'agent')
-                .forEach(agent => {
-                    if (!agentGroups.has(agent.id)) {
-                        agentGroups.set(agent.id, [])
-                    }
-                    agentGroups.get(agent.id)!.push(session)
-                })
-        })
 
         return NextResponse.json({
             success: true,
-            sessions,
-            groups: {
-                pinned: pinnedSessions,
-                recent: recentSessions,
-                byAgent: Object.fromEntries(agentGroups)
-            },
+            data: sessions,
             count: sessions.length
         })
     } catch (error) {
-        console.error('Error fetching sessions:', error)
-        return NextResponse.json({
-            success: false,
-            error: error instanceof Error ? error.message : 'Failed to fetch sessions'
-        }, { status: 500 })
+        console.error('获取会话列表失败：', error)
+        return NextResponse.json(
+            {
+                success: false,
+                error: '获取会话列表失败',
+                details: error instanceof Error ? error.message : '未知错误'
+            },
+            { status: 500 }
+        )
     }
 }
 
@@ -83,34 +67,42 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json()
-        const createRequest: CreateSessionRequest = body
 
-        // 验证请求数据
-        if (!createRequest.agentIds || createRequest.agentIds.length === 0) {
-            return NextResponse.json({
-                success: false,
-                error: 'At least one agent ID is required'
-            }, { status: 400 })
+        // 验证必要字段
+        if (!body.createdById) {
+            return NextResponse.json(
+                { success: false, error: '缺少必要字段：createdById' },
+                { status: 400 }
+            )
         }
 
-        // 确定会话类型
-        if (!createRequest.type) {
-            createRequest.type = createRequest.agentIds.length === 1 ? 'single' : 'group'
+        const sessionData = {
+            title: body.title || '新会话',
+            description: body.description,
+            type: body.type || 'direct',
+            createdById: body.createdById,
+            primaryAgentId: body.primaryAgentId,
+            configuration: body.configuration || {},
+            isPublic: body.isPublic || false,
+            isTemplate: body.isTemplate || false
         }
 
-        const session = await createSession(MOCK_USER_ID, createRequest)
+        const session = await createSession(sessionData)
 
         return NextResponse.json({
             success: true,
-            session,
-            message: 'Session created successfully'
-        })
+            data: session
+        }, { status: 201 })
     } catch (error) {
-        console.error('Error creating session:', error)
-        return NextResponse.json({
-            success: false,
-            error: error instanceof Error ? error.message : 'Failed to create session'
-        }, { status: 500 })
+        console.error('创建会话失败：', error)
+        return NextResponse.json(
+            {
+                success: false,
+                error: '创建会话失败',
+                details: error instanceof Error ? error.message : '未知错误'
+            },
+            { status: 500 }
+        )
     }
 }
 
@@ -124,32 +116,32 @@ export async function PUT(request: NextRequest) {
             }, { status: 500 })
         }
 
-        const { searchParams } = new URL(request.url)
-        const sessionId = searchParams.get('id')
+        const body = await request.json()
+        const { id, ...updates } = body
 
-        if (!sessionId) {
-            return NextResponse.json({
-                success: false,
-                error: 'Session ID is required'
-            }, { status: 400 })
+        if (!id) {
+            return NextResponse.json(
+                { success: false, error: '缺少会话 ID' },
+                { status: 400 }
+            )
         }
 
-        const body = await request.json()
-        const updateRequest: UpdateSessionRequest = body
-
-        const session = await updateSession(sessionId, MOCK_USER_ID, updateRequest)
+        const session = await updateSession(id, updates)
 
         return NextResponse.json({
             success: true,
-            session,
-            message: 'Session updated successfully'
+            data: session
         })
     } catch (error) {
-        console.error('Error updating session:', error)
-        return NextResponse.json({
-            success: false,
-            error: error instanceof Error ? error.message : 'Failed to update session'
-        }, { status: 500 })
+        console.error('更新会话失败：', error)
+        return NextResponse.json(
+            {
+                success: false,
+                error: '更新会话失败',
+                details: error instanceof Error ? error.message : '未知错误'
+            },
+            { status: 500 }
+        )
     }
 }
 
@@ -164,26 +156,30 @@ export async function DELETE(request: NextRequest) {
         }
 
         const { searchParams } = new URL(request.url)
-        const sessionId = searchParams.get('id')
+        const id = searchParams.get('id')
 
-        if (!sessionId) {
-            return NextResponse.json({
-                success: false,
-                error: 'Session ID is required'
-            }, { status: 400 })
+        if (!id) {
+            return NextResponse.json(
+                { success: false, error: '缺少会话 ID' },
+                { status: 400 }
+            )
         }
 
-        await deleteSession(sessionId, MOCK_USER_ID)
+        await deleteSession(id)
 
         return NextResponse.json({
             success: true,
-            message: 'Session deleted successfully'
+            message: '会话删除成功'
         })
     } catch (error) {
-        console.error('Error deleting session:', error)
-        return NextResponse.json({
-            success: false,
-            error: error instanceof Error ? error.message : 'Failed to delete session'
-        }, { status: 500 })
+        console.error('删除会话失败：', error)
+        return NextResponse.json(
+            {
+                success: false,
+                error: '删除会话失败',
+                details: error instanceof Error ? error.message : '未知错误'
+            },
+            { status: 500 }
+        )
     }
 } 

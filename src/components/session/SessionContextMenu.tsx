@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef } from 'react'
 import { SessionContextMenuProps, SessionAction } from '@/types'
+import { useTranslation } from '@/contexts/AppContext'
 
 const SessionContextMenu: React.FC<SessionContextMenuProps> = ({
     session,
@@ -10,6 +11,7 @@ const SessionContextMenu: React.FC<SessionContextMenuProps> = ({
     onClose,
     onAction
 }) => {
+    const { t } = useTranslation()
     const menuRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
@@ -41,278 +43,111 @@ const SessionContextMenu: React.FC<SessionContextMenuProps> = ({
         onClose()
     }
 
-    if (!isOpen) return null
+    if (!isOpen || !session) return null
 
     const menuItems = [
         {
-            action: 'rename' as SessionAction,
+            key: 'rename',
             icon: '✏️',
-            label: '重命名',
-            description: '修改会话标题'
+            label: t('session.rename'),
+            action: () => handleAction('rename')
         },
         {
-            action: session.isPinned ? 'unpin' : 'pin' as SessionAction,
-            icon: session.isPinned ? '📌' : '📍',
-            label: session.isPinned ? '取消置顶' : '置顶',
-            description: session.isPinned ? '取消会话置顶' : '将会话置顶显示'
+            key: 'pin',
+            icon: session.isPinned ? '📌' : '📌',
+            label: session.isPinned ? t('session.unpin') : t('session.pin'),
+            action: () => handleAction('pin')
         },
         {
-            action: 'duplicate' as SessionAction,
+            key: 'duplicate',
             icon: '📋',
-            label: '复制会话',
-            description: '创建相同配置的新会话'
+            label: t('session.duplicate'),
+            action: () => handleAction('duplicate')
         },
         {
-            action: 'archive' as SessionAction,
-            icon: '📦',
-            label: '归档',
-            description: '将会话移到归档中'
+            key: 'export',
+            icon: '📤',
+            label: t('session.export'),
+            action: () => handleAction('export')
         },
-        null, // 分隔线
+        { key: 'divider' },
         {
-            action: 'delete' as SessionAction,
+            key: 'delete',
             icon: '🗑️',
-            label: '删除',
-            description: '永久删除此会话',
+            label: t('session.delete'),
+            action: () => handleAction('delete'),
             danger: true
         }
     ]
 
     return (
         <>
-            {/* 背景遮罩 */}
-            <div className="context-menu-overlay" onClick={onClose} />
-
-            {/* 菜单内容 */}
             <div
-                ref={menuRef}
-                className="context-menu"
+                className="fixed inset-0 z-[1000] bg-transparent"
+                onClick={onClose}
+            />
+            <div
+                className="fixed z-[1001] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl backdrop-blur-xl min-w-60 max-w-80 overflow-hidden animate-menu-slide-in"
                 style={{
                     left: position.x,
                     top: position.y
                 }}
             >
-                <div className="menu-header">
-                    <div className="session-info">
-                        <span className="session-name">{session.title}</span>
-                        <span className="session-type">
-                            {session.type === 'group' ? '群聊' : '单聊'}
-                        </span>
+                <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+                    <div className="flex flex-col gap-0.5">
+                        <div className="font-medium text-slate-900 dark:text-slate-100 text-sm whitespace-nowrap overflow-hidden text-ellipsis">
+                            {session.title}
+                        </div>
+                        <div className="text-xs text-slate-600 dark:text-slate-400 uppercase font-medium">
+                            {session.type === 'group' ? t('session.groupChat') : t('session.singleChat')}
+                        </div>
                     </div>
                 </div>
 
-                <div className="menu-items">
-                    {menuItems.map((item, index) => {
-                        if (item === null) {
-                            return <div key={index} className="menu-divider" />
+                <div className="py-1">
+                    {menuItems.map((item) => {
+                        if (item.key === 'divider') {
+                            return (
+                                <div
+                                    key={item.key}
+                                    className="h-px bg-slate-200 dark:bg-slate-700 my-1"
+                                />
+                            )
                         }
 
                         return (
                             <button
-                                key={item.action}
-                                className={`menu-item ${item.danger ? 'danger' : ''}`}
-                                onClick={() => handleAction(item.action)}
-                                title={item.description}
+                                key={item.key}
+                                onClick={item.action}
+                                className={`w-full flex items-center gap-3 px-4 py-2 border-none bg-none cursor-pointer transition-all duration-150 text-sm text-left hover:bg-slate-50 dark:hover:bg-slate-800 ${item.danger
+                                        ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20'
+                                        : 'text-slate-900 dark:text-slate-100'
+                                    }`}
                             >
-                                <span className="item-icon">{item.icon}</span>
-                                <div className="item-content">
-                                    <span className="item-label">{item.label}</span>
-                                    <span className="item-description">{item.description}</span>
+                                <span className="text-base flex-shrink-0 w-5 text-center">
+                                    {item.icon}
+                                </span>
+                                <div className="flex-1 flex flex-col gap-0.5">
+                                    <span className="font-medium leading-tight">
+                                        {item.label}
+                                    </span>
                                 </div>
                             </button>
                         )
                     })}
                 </div>
 
-                <div className="menu-footer">
-                    <div className="session-stats">
-                        <span className="stats-item">
-                            👥 {session.participants.filter(p => p.type === 'agent').length} 个AI角色
+                <div className="px-4 py-2 pt-2 pb-3 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+                    <div className="flex flex-col gap-1">
+                        <span className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
+                            👥 {session.participants.filter(p => p.type === 'agent').length} {t('session.agentsCount')}
                         </span>
-                        <span className="stats-item">
-                            💬 {session.messageCount} 条消息
+                        <span className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
+                            💬 {session.messageCount} {t('session.messagesCount')}
                         </span>
                     </div>
                 </div>
             </div>
-
-            <style jsx>{`
-                .context-menu-overlay {
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    bottom: 0;
-                    z-index: 1000;
-                    background: transparent;
-                }
-
-                .context-menu {
-                    position: fixed;
-                    z-index: 1001;
-                    background: var(--background);
-                    border: 1px solid var(--border-color);
-                    border-radius: var(--radius-lg);
-                    box-shadow: var(--shadow-xl);
-                    backdrop-filter: blur(12px);
-                    min-width: 240px;
-                    max-width: 320px;
-                    overflow: hidden;
-                    animation: menuSlideIn 0.15s ease-out;
-                }
-
-                @keyframes menuSlideIn {
-                    from {
-                        opacity: 0;
-                        transform: scale(0.95) translateY(-4px);
-                    }
-                    to {
-                        opacity: 1;
-                        transform: scale(1) translateY(0);
-                    }
-                }
-
-                .menu-header {
-                    padding: 12px 16px;
-                    border-bottom: 1px solid var(--border-color);
-                    background: var(--background-secondary);
-                }
-
-                .session-info {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 2px;
-                }
-
-                .session-name {
-                    font-weight: 500;
-                    color: var(--text-primary);
-                    font-size: 14px;
-                    white-space: nowrap;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                }
-
-                .session-type {
-                    font-size: 12px;
-                    color: var(--text-secondary);
-                    text-transform: uppercase;
-                    font-weight: 500;
-                }
-
-                .menu-items {
-                    padding: 8px 0;
-                }
-
-                .menu-item {
-                    width: 100%;
-                    display: flex;
-                    align-items: center;
-                    gap: 12px;
-                    padding: 12px 16px;
-                    border: none;
-                    background: transparent;
-                    color: var(--text-primary);
-                    cursor: pointer;
-                    transition: all var(--transition-fast);
-                    text-align: left;
-                }
-
-                .menu-item:hover {
-                    background: var(--background-hover);
-                }
-
-                .menu-item.danger {
-                    color: var(--danger-color);
-                }
-
-                .menu-item.danger:hover {
-                    background: rgba(239, 68, 68, 0.1);
-                    color: var(--danger-color);
-                }
-
-                .item-icon {
-                    font-size: 16px;
-                    flex-shrink: 0;
-                    width: 20px;
-                    text-align: center;
-                }
-
-                .item-content {
-                    flex: 1;
-                    min-width: 0;
-                }
-
-                .item-label {
-                    display: block;
-                    font-weight: 500;
-                    font-size: 14px;
-                    margin-bottom: 2px;
-                }
-
-                .item-description {
-                    display: block;
-                    font-size: 12px;
-                    color: var(--text-secondary);
-                    white-space: nowrap;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                }
-
-                .menu-item.danger .item-description {
-                    color: rgba(239, 68, 68, 0.7);
-                }
-
-                .menu-divider {
-                    height: 1px;
-                    background: var(--border-color);
-                    margin: 8px 16px;
-                }
-
-                .menu-footer {
-                    padding: 12px 16px;
-                    border-top: 1px solid var(--border-color);
-                    background: var(--background-secondary);
-                }
-
-                .session-stats {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 4px;
-                }
-
-                .stats-item {
-                    font-size: 11px;
-                    color: var(--text-tertiary);
-                    display: flex;
-                    align-items: center;
-                    gap: 4px;
-                }
-
-                /* 响应式适配 */
-                @media (max-width: 640px) {
-                    .context-menu {
-                        min-width: 200px;
-                        max-width: calc(100vw - 32px);
-                    }
-
-                    .menu-item {
-                        padding: 10px 12px;
-                    }
-
-                    .item-description {
-                        display: none;
-                    }
-                }
-
-                /* 确保菜单不会超出屏幕边界 */
-                @media (max-height: 600px) {
-                    .context-menu {
-                        max-height: 80vh;
-                        overflow-y: auto;
-                    }
-                }
-            `}</style>
         </>
     )
 }

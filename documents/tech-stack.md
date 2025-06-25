@@ -541,5 +541,4 @@ test('user can send message and receive AI response', async ({ page }) => {
 ---
 
 **文档维护者**: 技术架构组  
-**最后更新**: 2025 年 6 月  
-**下次评审**: 2025 年 8 月
+**最后更新**: 2025 年 6 月

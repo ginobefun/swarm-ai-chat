@@ -1,0 +1,8 @@
+# .eslintignore
+
+# ignore all next.js build output and cache
+.next/
+node_modules/
+
+# ignore prisma generated code directory
+src/generated/

@@ -568,15 +568,7 @@ export const mentionItems = aiAgents.map(agent => ({
     type: 'agent' as const
 }))
 
-// 将 AI 角色转换为聊天项格式
-export const agentChatItems = aiAgents.map(agent => ({
-    id: agent.id,
-    name: agent.name,
-    preview: agent.description,
-    avatar: agent.avatar,
-    avatarType: 'ai' as const,
-    timestamp: ''
-}))
+
 
 // AI 角色响应配置
 export const aiAgentResponses = aiAgents.reduce((acc, agent) => {

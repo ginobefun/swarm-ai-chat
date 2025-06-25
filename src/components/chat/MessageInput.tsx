@@ -1,8 +1,8 @@
 'use client'
 
 import React, { useState, useRef, useEffect } from 'react'
-import { MentionItem } from '../types'
-import { useTranslation } from '../contexts/AppContext'
+import { MentionItem } from '@/types'
+import { useTranslation } from '@/contexts/AppContext'
 
 interface MessageInputProps {
     onSendMessage: (message: string) => void

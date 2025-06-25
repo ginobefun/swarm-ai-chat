@@ -1,3 +1,42 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// 直接导入和复用 Prisma 生成的枚举类型
+import {
+    SessionType,
+    SessionStatus,
+    ParticipantRole,
+    SenderType,
+    ContentType,
+    MessageStatus,
+    SkillCategory,
+    Role,
+    SubscriptionStatus,
+    FeedbackType,
+    EntityType
+} from '@/generated/prisma'
+
+// 导出枚举供前端使用 - 直接复用 Prisma 枚举
+export {
+    SessionType,
+    SessionStatus,
+    ParticipantRole,
+    SenderType,
+    ContentType,
+    MessageStatus,
+    SkillCategory,
+    Role,
+    SubscriptionStatus,
+    FeedbackType,
+    EntityType
+}
+
+// 导出类型（注意：Prisma 生成的枚举值实际上是映射后的小写值）
+export type SessionTypeValue = SessionType // 实际值：'direct' | 'group' | 'workflow'
+export type SessionStatusValue = SessionStatus // 实际值：'active' | 'paused' | 'completed' | 'archived'
+export type ParticipantRoleValue = ParticipantRole // 实际值：'owner' | 'admin' | 'participant' | 'observer'
+export type SenderTypeValue = SenderType // 实际值：'user' | 'agent' | 'system'
+export type ContentTypeValue = ContentType // 实际值：'text' | 'file' | 'image' | 'code' | 'system'
+export type MessageStatusValue = MessageStatus // 实际值：'sending' | 'sent' | 'delivered' | 'read' | 'failed'
+
 // 消息类型
 export interface Message {
     id: string
@@ -18,29 +57,37 @@ export interface SessionParticipant {
     avatarStyle?: string
 }
 
-// 会话类型
+// 会话类型 (统一与数据库模型一致，兼容前端需求)
 export interface Session {
     id: string
-    title: string
-    type: 'single' | 'group'
-    description?: string
+    title?: string | null
+    description?: string | null
+    type: 'direct' | 'group' | 'workflow'
+    status?: 'active' | 'paused' | 'completed' | 'archived'
+    createdById: string
+    primaryAgentId?: string | null
+    configuration?: any
+    isPublic?: boolean
+    isTemplate?: boolean
+    messageCount: number
+    totalCost?: number
+    createdAt: Date
+    updatedAt: Date
+    // 客户端扩展字段
     participants: SessionParticipant[]
     lastMessage?: {
         content: string
         sender: string
         timestamp: Date
     }
-    messageCount: number
-    isPinned: boolean
-    isArchived: boolean
-    createdBy: string
-    createdAt: Date
-    updatedAt: Date
+    isPinned?: boolean
+    isArchived?: boolean
 }
 
 // 会话过滤选项
 export interface SessionFilter {
-    type?: 'all' | 'single' | 'group'
+    type?: 'all' | 'direct' | 'group' | 'workflow'
+    status?: 'active' | 'paused' | 'completed' | 'archived'
     pinned?: boolean
     agentId?: string
     searchQuery?: string
@@ -56,26 +103,6 @@ export interface SessionGroup {
 
 // 会话操作类型
 export type SessionAction = 'rename' | 'pin' | 'unpin' | 'archive' | 'delete' | 'duplicate'
-
-// 聊天项类型
-export interface ChatItem {
-    id: string
-    name: string
-    preview: string
-    avatar: string
-    avatarType: 'user' | 'group' | 'ai'
-    timestamp: string
-    unreadCount?: number
-    isActive?: boolean
-    isPinned?: boolean
-}
-
-// 聊天分组类型
-export interface ChatSection {
-    title: string
-    icon: string
-    chats: ChatItem[]
-}
 
 // 工作区模块类型
 export interface WorkspaceModule {
@@ -151,20 +178,23 @@ export interface AgentDetailProps {
 // 创建会话请求类型
 export interface CreateSessionRequest {
     title?: string
-    type: 'single' | 'group'
-    agentIds: string[]
+    type?: 'direct' | 'group' | 'workflow'
     description?: string
+    createdById?: string
+    primaryAgentId?: string
+    agentIds?: string[]
 }
 
 // 更新会话请求类型
 export interface UpdateSessionRequest {
     title?: string
     description?: string
+    status?: 'active' | 'paused' | 'completed' | 'archived'
     isPinned?: boolean
     isArchived?: boolean
 }
 
-// 会话上下文菜单Props
+// 会话上下文菜单 Props
 export interface SessionContextMenuProps {
     session: Session
     isOpen: boolean
@@ -173,10 +203,30 @@ export interface SessionContextMenuProps {
     onAction: (action: SessionAction) => void
 }
 
-// 创建会话对话框Props
+// 创建会话对话框 Props
 export interface CreateSessionDialogProps {
     isOpen: boolean
     onClose: () => void
     onCreateSession: (request: CreateSessionRequest) => void
     availableAgents: AIAgent[]
+}
+
+// 确认对话框 Props
+export interface ConfirmDialogProps {
+    isOpen: boolean
+    title: string
+    message: string
+    onConfirm: () => void
+    onCancel: () => void
+    isDanger?: boolean
+    isLoading?: boolean
+}
+
+// 内联重命名输入框 Props
+export interface InlineRenameInputProps {
+    isOpen: boolean
+    currentName: string
+    onSave: (newName: string) => void
+    onCancel: () => void
+    maxLength?: number
 } 

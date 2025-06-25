@@ -1,238 +1,219 @@
 'use client'
 
-import React, { useState, useCallback } from 'react'
-import Navbar from '../components/Navbar'
-import Sidebar from '../components/Sidebar'
-import ChatArea from '../components/ChatArea'
-import Workspace from '../components/Workspace'
-import AgentDiscovery from '../components/AgentDiscovery'
-import { Message } from '../types'
-import { mockChatSections, mockMessages, mockMentionItems, aiAgentResponses } from '../data/mockData'
-import { useTranslation } from '../contexts/AppContext'
+import { useState, useEffect } from 'react'
+import Navbar from '@/components/Navbar'
+import SessionList from '@/components/session/SessionList'
+import ChatArea from '@/components/chat/ChatArea'
+import WorkspacePanel from '@/components/workspace/WorkspacePanel'
+import { useSessionManager } from '@/hooks/useSessionManager'
+import type { Session } from '@/types'
 
+/**
+ * Home component - Main application page
+ * 
+ * This is the primary page component that orchestrates the entire SwarmAI.chat interface.
+ * It implements a three-column layout: SessionList (sidebar), ChatArea (main), and WorkspacePanel (right).
+ * Features include:
+ * - Responsive design with mobile-first approach
+ * - Session management and selection
+ * - Dynamic sidebar and workspace panel visibility
+ * - Real-time updates and error handling
+ * 
+ * @returns JSX element representing the complete application interface
+ */
 export default function Home() {
-    const { t } = useTranslation()
+    // Session management hook provides all session-related functionality
+    const {
+        sessions,        // Array of user sessions
+        currentSession,  // Currently selected session
+        isLoading,      // Loading state for session operations
+        error,          // Error state for session operations
+        createSession,  // Function to create new sessions
+        selectSession,  // Function to select a session
+        updateSession,  // Function to update session properties
+        deleteSession,  // Function to delete sessions
+        pinSession      // Function to pin/unpin sessions
+    } = useSessionManager()
 
-    const [activeChatId, setActiveChatId] = useState('chat-1')
-    const [messages, setMessages] = useState<Message[]>(mockMessages)
-    const [isWorkspaceVisible, setIsWorkspaceVisible] = useState(true)
-    const [isTyping, setIsTyping] = useState(false)
-    const [typingUser, setTypingUser] = useState('')
-    const [showAgentDiscovery, setShowAgentDiscovery] = useState(false)
+    // UI state management for responsive design
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false)    // Mobile sidebar visibility
+    const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(true) // Workspace panel visibility
 
-    // 处理聊天选择
-    const handleChatSelect = useCallback((chatId: string) => {
-        setActiveChatId(chatId)
-        // 这里可以加载对应聊天的消息
+    /**
+     * Responsive layout control effect
+     * Automatically adjusts sidebar and workspace visibility based on screen size
+     * Implements mobile-first responsive design principles
+     */
+    useEffect(() => {
+        const handleResize = () => {
+            const width = window.innerWidth
+
+            // Mobile: sidebar should be closed by default
+            if (width >= 768) {
+                setIsSidebarOpen(false) // Reset mobile sidebar state on larger screens
+            }
+
+            // Desktop: workspace should be visible by default
+            if (width >= 1024) {
+                setIsWorkspaceOpen(true) // Show workspace on desktop
+            } else {
+                setIsWorkspaceOpen(false) // Hide workspace on tablets and mobile
+            }
+        }
+
+        // Initial setup and event listener for window resize
+        handleResize()
+        window.addEventListener('resize', handleResize)
+
+        // Cleanup event listener on component unmount
+        return () => window.removeEventListener('resize', handleResize)
     }, [])
 
-    // 处理发送消息
-    const handleSendMessage = useCallback((messageContent: string) => {
-        // 添加用户消息
-        const userMessage: Message = {
-            id: `msg-${Date.now()}`,
-            content: messageContent,
-            sender: '我',
-            senderType: 'user',
-            timestamp: new Date(),
-            avatar: '我'
+    /**
+     * Handle session creation with proper error handling
+     * Wraps the createSession call with try-catch for better user experience
+     * 
+     * @param sessionData - The session data to create
+     */
+    const handleCreateSession = async (sessionData: Session) => {
+        try {
+            await createSession(sessionData)
+        } catch (error) {
+            console.error('Failed to create session:', error)
+            // TODO: Show user-friendly error notification instead of console.error
         }
+    }
 
-        setMessages(prev => [...prev, userMessage])
+    /**
+     * Handle session selection with mobile responsiveness
+     * Automatically closes sidebar on mobile after session selection
+     * 
+     * @param sessionId - The ID of the session to select
+     */
+    const handleSelectSession = (sessionId: string) => {
+        selectSession(sessionId)
 
-        // 检查是否提及了 AI 角色
-        const mentionedAgents = mockMentionItems.filter(item =>
-            messageContent.includes(`@${item.name}`)
-        )
-
-        if (mentionedAgents.length > 0) {
-            // 模拟 AI 响应
-            const agent = mentionedAgents[0]
-            setIsTyping(true)
-            setTypingUser(agent.name)
-
-            setTimeout(() => {
-                const agentResponse = aiAgentResponses[agent.name as keyof typeof aiAgentResponses]
-                const response = agentResponse?.responses[
-                    Math.floor(Math.random() * agentResponse.responses.length)
-                ] || t('messages.processing')
-
-                const aiMessage: Message = {
-                    id: `msg-${Date.now()}-ai`,
-                    content: response,
-                    sender: agent.name,
-                    senderType: 'ai',
-                    timestamp: new Date(),
-                    avatar: agent.avatar,
-                    avatarStyle: agentResponse?.avatarStyle
-                }
-
-                setMessages(prev => [...prev, aiMessage])
-                setIsTyping(false)
-                setTypingUser('')
-            }, 2000)
-        } else {
-            // 没有提及特定 AI 角色，随机选择一个响应
-            const randomAgent = mockMentionItems[Math.floor(Math.random() * mockMentionItems.length)]
-            setIsTyping(true)
-            setTypingUser(randomAgent.name)
-
-            setTimeout(() => {
-                const agentResponse = aiAgentResponses[randomAgent.name as keyof typeof aiAgentResponses]
-                if (agentResponse) {
-                    const response = agentResponse.responses[
-                        Math.floor(Math.random() * agentResponse.responses.length)
-                    ]
-
-                    const aiMessage: Message = {
-                        id: `msg-${Date.now()}-ai`,
-                        content: response,
-                        sender: randomAgent.name,
-                        senderType: 'ai',
-                        timestamp: new Date(),
-                        avatar: randomAgent.avatar,
-                        avatarStyle: agentResponse.avatarStyle
-                    }
-
-                    setMessages(prev => [...prev, aiMessage])
-                }
-                setIsTyping(false)
-                setTypingUser('')
-            }, 2000)
+        // On mobile, close sidebar after selecting a session for better UX
+        if (window.innerWidth < 768) {
+            setIsSidebarOpen(false)
         }
-    }, [t])
-
-    // 切换工作区显示
-    const handleToggleWorkspace = useCallback(() => {
-        setIsWorkspaceVisible(prev => !prev)
-    }, [])
-
-    // 获取当前聊天信息
-    const getCurrentChat = () => {
-        for (const section of mockChatSections) {
-            const chat = section.chats.find(c => c.id === activeChatId)
-            if (chat) return chat
-        }
-        return null
     }
 
-    const currentChat = getCurrentChat()
-
-    // 处理导航栏操作
-    const handleMenuClick = () => {
-        console.log('打开菜单')
+    /**
+     * Toggle mobile sidebar visibility
+     * Used primarily for mobile navigation
+     */
+    const toggleSidebar = () => {
+        setIsSidebarOpen(!isSidebarOpen)
     }
 
-    const handleCreateNew = () => {
-        console.log('创建新对话')
-    }
-
-    const handleNotificationClick = () => {
-        console.log('打开通知')
-    }
-
-    const handleUserClick = () => {
-        console.log('打开用户菜单')
-    }
-
-    const handleAgentDiscovery = () => {
-        setShowAgentDiscovery(true)
-    }
-
-    const handleStartChatWithAgent = (agentId: string) => {
-        // 创建新的聊天会话或切换到已存在的会话
-        console.log('开始与 AI 角色对话：', agentId)
-        setShowAgentDiscovery(false)
-        // 这里可以添加创建新聊天的逻辑
-    }
-
-    const handleAddMember = () => {
-        console.log('添加成员')
-    }
-
-    const handleOpenSettings = () => {
-        console.log('打开设置')
+    /**
+     * Toggle workspace panel visibility
+     * Allows users to hide/show the workspace panel for more chat space
+     */
+    const toggleWorkspace = () => {
+        setIsWorkspaceOpen(!isWorkspaceOpen)
     }
 
     return (
-        <div>
+        <div className="flex flex-col h-screen bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
+            {/* 
+                Navigation bar with responsive controls
+                Provides access to sidebar and workspace toggles on mobile 
+            */}
             <Navbar
-                onMenuClick={handleMenuClick}
-                onCreateNew={handleCreateNew}
-                onNotificationClick={handleNotificationClick}
-                onUserClick={handleUserClick}
-                onAgentDiscovery={handleAgentDiscovery}
+                onToggleSidebar={toggleSidebar}
+                onToggleWorkspace={toggleWorkspace}
+                isSidebarOpen={isSidebarOpen}
+                isWorkspaceOpen={isWorkspaceOpen}
             />
 
-            <div className="main-container">
-                <Sidebar
-                    chatSections={mockChatSections}
-                    onChatSelect={handleChatSelect}
-                    activeChatId={activeChatId}
-                    onStartChat={handleStartChatWithAgent}
-                />
+            <div className="flex flex-1 overflow-hidden">
+                {/* 
+                    Session List Sidebar
+                    
+                    Responsive behavior:
+                    - Mobile: Overlay sidebar that slides in from left
+                    - Desktop: Fixed sidebar always visible
+                    
+                    Accessibility features:
+                    - Proper ARIA labels and focus management
+                    - Keyboard navigation support
+                */}
+                <div className={`w-80 min-w-72 max-w-96 border-r border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 flex flex-col md:relative md:translate-x-0 md:shadow-none transition-transform duration-300 ${isSidebarOpen
+                    ? 'fixed top-16 left-0 h-[calc(100vh-4rem)] z-50 translate-x-0 shadow-xl'
+                    : 'fixed top-16 left-0 h-[calc(100vh-4rem)] z-50 -translate-x-full shadow-xl md:relative md:top-0 md:h-full md:z-auto'
+                    }`}>
+                    <SessionList
+                        sessions={sessions}
+                        currentSessionId={currentSession?.id}
+                        isLoading={isLoading}
+                        error={error}
+                        onSelectSession={handleSelectSession}
+                        onCreateSession={handleCreateSession}
+                        onUpdateSession={updateSession}
+                        onDeleteSession={deleteSession}
+                        onPinSession={pinSession}
+                    />
+                </div>
 
-                <ChatArea
-                    chatTitle={currentChat?.name || '产品需求文档'}
-                    chatMembers={t('chat.members')}
-                    messages={messages}
-                    mentionItems={mockMentionItems}
-                    isTyping={isTyping}
-                    typingUser={typingUser}
-                    onSendMessage={handleSendMessage}
-                    onAddMember={handleAddMember}
-                    onOpenSettings={handleOpenSettings}
-                    onToggleWorkspace={handleToggleWorkspace}
-                />
+                {/* 
+                    Main Chat Area
+                    
+                    Features:
+                    - Flexible layout that adapts to available space
+                    - Real-time message updates
+                    - Session-aware content display
+                */}
+                <div className="flex-1 flex flex-col min-w-0">
+                    <ChatArea
+                        session={currentSession}
+                        onSessionUpdate={updateSession}
+                    />
+                </div>
 
-                <Workspace
-                    isVisible={isWorkspaceVisible}
-                    onClose={() => setIsWorkspaceVisible(false)}
-                />
+                {/* 
+                    Workspace Panel
+                    
+                    Responsive behavior:
+                    - Hidden on mobile and tablet (< 1024px)
+                    - Visible on desktop (>= 1024px)
+                    - Can be toggled via navbar controls
+                    
+                    Features:
+                    - Session-aware content display
+                    - Modular workspace components
+                    - Real-time updates based on current session
+                */}
+                {isWorkspaceOpen && (
+                    <div className="hidden lg:flex w-90 min-w-72 max-w-[30rem] border-l border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+                        <WorkspacePanel session={currentSession} />
+                    </div>
+                )}
             </div>
 
-            {/* 角色发现页面 */}
-            {showAgentDiscovery && (
-                <div style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    background: 'var(--background)',
-                    zIndex: 999,
-                    overflow: 'auto'
-                }}>
-                    <div style={{
-                        position: 'sticky',
-                        top: 0,
-                        zIndex: 1000,
-                        background: 'var(--background)',
-                        borderBottom: '1px solid var(--border-color)',
-                        padding: '16px 24px',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center'
-                    }}>
-                        <h1 style={{ margin: 0, fontSize: '20px', fontWeight: 600 }}>
-                            AI 角色发现
-                        </h1>
-                        <button
-                            onClick={() => setShowAgentDiscovery(false)}
-                            style={{
-                                background: 'none',
-                                border: '1px solid var(--border-color)',
-                                borderRadius: 'var(--radius-md)',
-                                padding: '8px 16px',
-                                cursor: 'pointer',
-                                color: 'var(--text-secondary)'
-                            }}
-                        >
-                            关闭
-                        </button>
-                    </div>
-                    <AgentDiscovery onStartChat={handleStartChatWithAgent} />
-                </div>
+            {/* 
+                Mobile Sidebar Backdrop
+                
+                Provides:
+                - Dark overlay when sidebar is open on mobile
+                - Click-to-close functionality
+                - Proper z-index stacking
+                - Smooth transition animations
+            */}
+            {isSidebarOpen && (
+                <div
+                    className="fixed inset-0 bg-black/50 z-40 md:hidden"
+                    onClick={() => setIsSidebarOpen(false)}
+                    role="button"
+                    aria-label="Close sidebar"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            setIsSidebarOpen(false)
+                        }
+                    }}
+                />
             )}
         </div>
     )

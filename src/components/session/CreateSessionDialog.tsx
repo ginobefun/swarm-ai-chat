@@ -1,519 +1,410 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { CreateSessionDialogProps } from '@/types'
+import { useTranslation } from '@/contexts/AppContext'
 
+/**
+ * CreateSessionDialog component - Modal dialog for creating new chat sessions
+ * 
+ * Features:
+ * - Session information input (title, description)
+ * - AI agent selection with search and filtering
+ * - Visual agent display with avatars and specialties
+ * - Form validation and error handling
+ * - Responsive design for mobile and desktop
+ * - Accessibility support with ARIA labels and keyboard navigation
+ * - Dark mode compatible styling
+ * - Loading states during session creation
+ * 
+ * Layout:
+ * - Header: Title and close button
+ * - Body: Session form and agent selection grid
+ * - Footer: Cancel and create action buttons
+ * 
+ * @param props - CreateSessionDialogProps containing dialog state and handlers
+ * @returns JSX element for the create session modal dialog
+ */
 const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({
     isOpen,
     onClose,
     onCreateSession,
-    availableAgents
+    availableAgents = []
 }) => {
-    const [selectedAgents, setSelectedAgents] = useState<string[]>([])
+    const { t } = useTranslation()
+
+    // Form state management
     const [sessionTitle, setSessionTitle] = useState('')
     const [sessionDescription, setSessionDescription] = useState('')
+    const [selectedAgentIds, setSelectedAgentIds] = useState<string[]>([])
     const [searchQuery, setSearchQuery] = useState('')
     const [isCreating, setIsCreating] = useState(false)
+    const [error, setError] = useState<string | null>(null)
 
-    // 重置表单当对话框打开/关闭时
-    useEffect(() => {
-        if (isOpen) {
-            setSelectedAgents([])
-            setSessionTitle('')
-            setSessionDescription('')
-            setSearchQuery('')
-        }
-    }, [isOpen])
-
-    // 过滤可用的AI角色
+    /**
+     * Filter available agents based on search query
+     * Searches through agent name and specialty fields
+     */
     const filteredAgents = availableAgents.filter(agent =>
         agent.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        agent.specialty.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        agent.description.toLowerCase().includes(searchQuery.toLowerCase())
+        agent.specialty.toLowerCase().includes(searchQuery.toLowerCase())
     )
 
+    /**
+     * Toggle agent selection for session creation
+     * Manages the list of selected AI agents
+     * 
+     * @param agentId - ID of the agent to toggle
+     */
     const handleAgentToggle = (agentId: string) => {
-        setSelectedAgents(prev =>
+        setSelectedAgentIds(prev =>
             prev.includes(agentId)
                 ? prev.filter(id => id !== agentId)
                 : [...prev, agentId]
         )
+        // Clear any previous errors when user makes changes
+        if (error) setError(null)
     }
 
+    /**
+     * Handle session creation with comprehensive validation and error handling
+     * Validates form data, creates session, and manages UI state
+     */
     const handleCreate = async () => {
-        if (selectedAgents.length === 0) return
+        // Form validation
+        if (!sessionTitle.trim()) {
+            setError(t('session.titleRequired') || 'Session title is required')
+            return
+        }
+
+        if (selectedAgentIds.length === 0) {
+            setError(t('session.agentRequired') || 'At least one AI agent must be selected')
+            return
+        }
 
         setIsCreating(true)
+        setError(null)
+
         try {
             await onCreateSession({
-                title: sessionTitle || undefined,
-                type: selectedAgents.length === 1 ? 'single' : 'group',
-                agentIds: selectedAgents,
-                description: sessionDescription || undefined
+                title: sessionTitle.trim(),
+                type: selectedAgentIds.length === 1 ? 'direct' : 'group',
+                description: sessionDescription.trim() || undefined,
+                agentIds: selectedAgentIds
             })
+
+            // Reset form state on successful creation
+            resetForm()
             onClose()
         } catch (error) {
-            console.error('创建会话失败:', error)
+            console.error('Create session error:', error)
+            setError(
+                error instanceof Error
+                    ? error.message
+                    : t('session.createError') || 'Failed to create session'
+            )
         } finally {
             setIsCreating(false)
         }
     }
 
+    /**
+     * Reset all form fields to initial state
+     * Used after successful creation or dialog cancellation
+     */
+    const resetForm = () => {
+        setSessionTitle('')
+        setSessionDescription('')
+        setSelectedAgentIds([])
+        setSearchQuery('')
+        setError(null)
+    }
+
+    /**
+     * Handle dialog close with form reset
+     * Ensures clean state when dialog is reopened
+     */
+    const handleClose = () => {
+        resetForm()
+        onClose()
+    }
+
+    /**
+     * Handle backdrop click to close dialog
+     * Only closes if clicking on the backdrop, not the dialog content
+     * 
+     * @param e - React mouse event
+     */
     const handleBackdropClick = (e: React.MouseEvent) => {
         if (e.target === e.currentTarget) {
-            onClose()
+            handleClose()
         }
     }
 
+    /**
+     * Handle keyboard navigation within the dialog
+     * Supports Tab navigation and Escape to close
+     * 
+     * @param e - React keyboard event
+     */
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Escape') {
+            handleClose()
+        }
+    }
+
+    // Don't render if dialog is not open
     if (!isOpen) return null
 
     return (
-        <div className="create-session-overlay" onClick={handleBackdropClick}>
-            <div className="create-session-dialog">
-                {/* 头部 */}
-                <div className="dialog-header">
-                    <h2 className="dialog-title">
-                        <span className="title-icon">💬</span>
-                        创建新会话
+        <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[1000] p-5"
+            onClick={handleBackdropClick}
+            onKeyDown={handleKeyDown}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="create-session-title"
+            aria-describedby="create-session-description"
+        >
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden animate-dialog-slide-in">
+
+                {/* Dialog Header */}
+                <div className="flex items-center justify-between px-6 py-5 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+                    <h2
+                        id="create-session-title"
+                        className="text-xl font-semibold text-slate-900 dark:text-slate-100 m-0 flex items-center gap-3"
+                    >
+                        <span className="text-2xl" aria-hidden="true">💬</span>
+                        {t('session.createNewSession')}
                     </h2>
-                    <button className="close-btn" onClick={onClose}>
+                    <button
+                        onClick={handleClose}
+                        disabled={isCreating}
+                        className="w-8 h-8 border-none bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-full cursor-pointer transition-all duration-150 flex items-center justify-center text-base hover:bg-slate-200 dark:hover:bg-slate-600 hover:text-slate-900 dark:hover:text-slate-100 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                        aria-label="Close dialog"
+                        title="Close dialog"
+                    >
                         ✕
                     </button>
                 </div>
 
-                {/* 内容 */}
-                <div className="dialog-content">
-                    {/* 会话信息 */}
-                    <div className="session-info-section">
-                        <div className="form-group">
-                            <label htmlFor="session-title">会话标题（可选）</label>
+                {/* Dialog Content */}
+                <div className="px-6 py-6 max-h-[calc(90vh-160px)] overflow-y-auto">
+                    <div
+                        id="create-session-description"
+                        className="sr-only"
+                    >
+                        Create a new chat session by providing a title, optional description, and selecting AI agents to participate.
+                    </div>
+
+                    {/* Error Message Display */}
+                    {error && (
+                        <div
+                            className="mb-6 p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg"
+                            role="alert"
+                            aria-live="assertive"
+                        >
+                            <div className="flex items-center gap-2">
+                                <span className="text-red-500 text-lg" aria-hidden="true">⚠️</span>
+                                <span className="text-red-700 dark:text-red-300 text-sm font-medium">
+                                    {error}
+                                </span>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Session Information Form */}
+                    <div className="mb-6">
+                        <div className="mb-4">
+                            <label
+                                htmlFor="session-title"
+                                className="block text-sm font-medium text-slate-900 dark:text-slate-100 mb-1.5"
+                            >
+                                {t('session.sessionName')} <span className="text-red-500" aria-label="required">*</span>
+                            </label>
                             <input
                                 id="session-title"
                                 type="text"
-                                placeholder="不填写将自动生成"
                                 value={sessionTitle}
-                                onChange={(e) => setSessionTitle(e.target.value)}
-                                className="form-input"
+                                onChange={(e) => {
+                                    setSessionTitle(e.target.value)
+                                    if (error) setError(null) // Clear error on input
+                                }}
+                                className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-900 transition-all duration-150 focus:outline-none focus:border-indigo-600 focus:ring-3 focus:ring-indigo-600/10"
+                                placeholder={t('session.enterSessionName')}
+                                maxLength={50}
+                                required
+                                disabled={isCreating}
+                                autoFocus
+                                aria-describedby="session-title-help"
                             />
-                        </div>
-
-                        <div className="form-group">
-                            <label htmlFor="session-description">会话描述（可选）</label>
-                            <textarea
-                                id="session-description"
-                                placeholder="描述这个会话的目的或用途"
-                                value={sessionDescription}
-                                onChange={(e) => setSessionDescription(e.target.value)}
-                                className="form-textarea"
-                                rows={2}
-                            />
-                        </div>
-                    </div>
-
-                    {/* AI角色选择 */}
-                    <div className="agent-selection-section">
-                        <div className="section-header">
-                            <h3 className="section-title">
-                                选择AI角色 ({selectedAgents.length} 个已选择)
-                            </h3>
-                            <div className="search-box">
-                                <input
-                                    type="text"
-                                    placeholder="搜索AI角色..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="search-input"
-                                />
+                            <div
+                                id="session-title-help"
+                                className="text-xs text-slate-500 dark:text-slate-400 mt-1"
+                            >
+                                {sessionTitle.length}/50 characters
                             </div>
                         </div>
 
-                        <div className="agents-grid">
+                        <div className="mb-4">
+                            <label
+                                htmlFor="session-description"
+                                className="block text-sm font-medium text-slate-900 dark:text-slate-100 mb-1.5"
+                            >
+                                {t('session.description')} ({t('common.optional')})
+                            </label>
+                            <textarea
+                                id="session-description"
+                                value={sessionDescription}
+                                onChange={(e) => setSessionDescription(e.target.value)}
+                                className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-900 transition-all duration-150 resize-vertical min-h-[60px] focus:outline-none focus:border-indigo-600 focus:ring-3 focus:ring-indigo-600/10"
+                                placeholder={t('session.enterDescription')}
+                                maxLength={200}
+                                disabled={isCreating}
+                                aria-describedby="session-description-help"
+                            />
+                            <div
+                                id="session-description-help"
+                                className="text-xs text-slate-500 dark:text-slate-400 mt-1"
+                            >
+                                {sessionDescription.length}/200 characters
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* AI Agent Selection Section */}
+                    <div className="mt-6">
+                        <div className="mb-4">
+                            <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100 m-0 mb-3">
+                                {t('session.selectAgents')} <span className="text-red-500" aria-label="required">*</span>
+                            </h3>
+                            <div className="relative">
+                                <input
+                                    type="search"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-all duration-150 focus:outline-none focus:border-indigo-600 focus:ring-3 focus:ring-indigo-600/10"
+                                    placeholder={t('session.searchAgents')}
+                                    disabled={isCreating}
+                                    aria-label="Search AI agents by name or specialty"
+                                    autoComplete="off"
+                                    spellCheck="false"
+                                />
+                                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 pointer-events-none">
+                                    🔍
+                                </div>
+                            </div>
+                            {selectedAgentIds.length > 0 && (
+                                <div className="mt-2 text-xs text-slate-600 dark:text-slate-400">
+                                    {selectedAgentIds.length} agent{selectedAgentIds.length !== 1 ? 's' : ''} selected
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Agent Selection Grid */}
+                        <div
+                            className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4"
+                            role="group"
+                            aria-label="Available AI agents"
+                        >
                             {filteredAgents.map(agent => (
                                 <div
                                     key={agent.id}
-                                    className={`agent-card ${selectedAgents.includes(agent.id) ? 'selected' : ''}`}
-                                    onClick={() => handleAgentToggle(agent.id)}
+                                    onClick={() => !isCreating && handleAgentToggle(agent.id)}
+                                    className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all duration-150 relative ${selectedAgentIds.includes(agent.id)
+                                            ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950/50 shadow-lg shadow-indigo-600/10'
+                                            : 'border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 hover:border-indigo-600 hover:bg-slate-50 dark:hover:bg-slate-800 hover:-translate-y-0.5'
+                                        } ${isCreating ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    role="checkbox"
+                                    aria-checked={selectedAgentIds.includes(agent.id)}
+                                    aria-label={`${agent.name} - ${agent.specialty}`}
+                                    tabIndex={isCreating ? -1 : 0}
+                                    onKeyDown={(e) => {
+                                        if ((e.key === 'Enter' || e.key === ' ') && !isCreating) {
+                                            e.preventDefault()
+                                            handleAgentToggle(agent.id)
+                                        }
+                                    }}
                                 >
+                                    {/* Agent Avatar */}
                                     <div
-                                        className="agent-avatar"
-                                        style={{ background: agent.avatarStyle }}
+                                        className="w-10 h-10 rounded-lg flex items-center justify-center text-lg text-white flex-shrink-0"
+                                        style={{ background: agent.avatarStyle || '#667eea' }}
+                                        aria-hidden="true"
                                     >
                                         {agent.avatar}
                                     </div>
-                                    <div className="agent-info">
-                                        <div className="agent-name">{agent.name}</div>
-                                        <div className="agent-specialty">{agent.specialty}</div>
+
+                                    {/* Agent Information */}
+                                    <div className="flex-1 min-w-0">
+                                        <div className="font-medium text-slate-900 dark:text-slate-100 mb-0.5 whitespace-nowrap overflow-hidden text-ellipsis">
+                                            {agent.name}
+                                        </div>
+                                        <div className="text-xs text-slate-600 dark:text-slate-400 whitespace-nowrap overflow-hidden text-ellipsis">
+                                            {agent.specialty}
+                                        </div>
                                     </div>
-                                    <div className="selection-indicator">
-                                        {selectedAgents.includes(agent.id) ? '✓' : '+'}
+
+                                    {/* Selection Indicator */}
+                                    <div
+                                        className={`w-6 h-6 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0 ${selectedAgentIds.includes(agent.id)
+                                                ? 'bg-indigo-600 text-white'
+                                                : 'bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-400'
+                                            }`}
+                                        aria-hidden="true"
+                                    >
+                                        ✓
                                     </div>
                                 </div>
                             ))}
                         </div>
 
+                        {/* No Agents Found State */}
                         {filteredAgents.length === 0 && (
-                            <div className="empty-state">
-                                <span className="empty-icon">🔍</span>
-                                <p>未找到匹配的AI角色</p>
+                            <div className="text-center py-10 px-5 text-slate-600 dark:text-slate-400">
+                                <div className="text-5xl mb-3 opacity-50" aria-hidden="true">🤖</div>
+                                <div>{t('session.noAgentsFound')}</div>
+                                {searchQuery && (
+                                    <button
+                                        onClick={() => setSearchQuery('')}
+                                        className="mt-3 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 text-sm underline focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
+                                    >
+                                        Clear search
+                                    </button>
+                                )}
                             </div>
                         )}
                     </div>
                 </div>
 
-                {/* 底部操作 */}
-                <div className="dialog-footer">
+                {/* Dialog Footer */}
+                <div className="flex justify-end gap-3 px-6 py-5 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
                     <button
-                        className="btn-secondary"
-                        onClick={onClose}
+                        onClick={handleClose}
                         disabled={isCreating}
+                        className="px-4 py-2.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-600 rounded-lg font-medium transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800"
                     >
-                        取消
+                        {t('common.cancel')}
                     </button>
                     <button
-                        className="btn-primary"
                         onClick={handleCreate}
-                        disabled={selectedAgents.length === 0 || isCreating}
+                        disabled={isCreating || !sessionTitle.trim() || selectedAgentIds.length === 0}
+                        className="px-4 py-2.5 bg-indigo-600 text-white border-none rounded-lg font-medium transition-all hover:bg-indigo-700 hover:-translate-y-px disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800"
                     >
                         {isCreating ? (
                             <>
-                                <span className="loading-spinner"></span>
-                                创建中...
+                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" aria-hidden="true"></div>
+                                {t('common.creating')}
                             </>
                         ) : (
                             <>
-                                <span className="btn-icon">💬</span>
-                                创建会话
+                                <span className="text-base" aria-hidden="true">💬</span>
+                                {t('session.createSession')}
                             </>
                         )}
                     </button>
                 </div>
             </div>
-
-            <style jsx>{`
-                .create-session-overlay {
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    bottom: 0;
-                    background: rgba(0, 0, 0, 0.6);
-                    backdrop-filter: blur(4px);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    z-index: 1000;
-                    padding: 20px;
-                }
-
-                .create-session-dialog {
-                    background: var(--background);
-                    border-radius: var(--radius-lg);
-                    width: 100%;
-                    max-width: 720px;
-                    max-height: 90vh;
-                    overflow: hidden;
-                    box-shadow: var(--shadow-xl);
-                    border: 1px solid var(--border-color);
-                    display: flex;
-                    flex-direction: column;
-                }
-
-                .dialog-header {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    padding: 20px 24px;
-                    border-bottom: 1px solid var(--border-color);
-                }
-
-                .dialog-title {
-                    margin: 0;
-                    font-size: 18px;
-                    font-weight: 600;
-                    color: var(--text-primary);
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                }
-
-                .title-icon {
-                    font-size: 20px;
-                }
-
-                .close-btn {
-                    width: 32px;
-                    height: 32px;
-                    border-radius: var(--radius-full);
-                    border: 1px solid var(--border-color);
-                    background: var(--background);
-                    color: var(--text-secondary);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    cursor: pointer;
-                    transition: all var(--transition-fast);
-                }
-
-                .close-btn:hover {
-                    background: var(--background-hover);
-                    color: var(--text-primary);
-                }
-
-                .dialog-content {
-                    flex: 1;
-                    overflow-y: auto;
-                    padding: 24px;
-                }
-
-                .session-info-section {
-                    margin-bottom: 32px;
-                }
-
-                .form-group {
-                    margin-bottom: 20px;
-                }
-
-                .form-group label {
-                    display: block;
-                    font-size: 14px;
-                    font-weight: 500;
-                    color: var(--text-primary);
-                    margin-bottom: 8px;
-                }
-
-                .form-input, .form-textarea {
-                    width: 100%;
-                    padding: 12px 16px;
-                    border: 1px solid var(--border-color);
-                    border-radius: var(--radius-md);
-                    background: var(--background);
-                    color: var(--text-primary);
-                    font-size: 14px;
-                    transition: all var(--transition-fast);
-                }
-
-                .form-input:focus, .form-textarea:focus {
-                    outline: none;
-                    border-color: var(--primary-color);
-                    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-                }
-
-                .form-textarea {
-                    resize: vertical;
-                    min-height: 60px;
-                }
-
-                .agent-selection-section {
-                    border-top: 1px solid var(--border-color);
-                    padding-top: 24px;
-                }
-
-                .section-header {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    margin-bottom: 20px;
-                    gap: 16px;
-                }
-
-                .section-title {
-                    margin: 0;
-                    font-size: 16px;
-                    font-weight: 600;
-                    color: var(--text-primary);
-                }
-
-                .search-box {
-                    flex: 0 0 240px;
-                }
-
-                .search-input {
-                    width: 100%;
-                    padding: 8px 12px;
-                    border: 1px solid var(--border-color);
-                    border-radius: var(--radius-md);
-                    background: var(--background);
-                    color: var(--text-primary);
-                    font-size: 14px;
-                }
-
-                .agents-grid {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-                    gap: 12px;
-                    max-height: 400px;
-                    overflow-y: auto;
-                }
-
-                .agent-card {
-                    display: flex;
-                    align-items: center;
-                    gap: 12px;
-                    padding: 12px 16px;
-                    border: 1px solid var(--border-color);
-                    border-radius: var(--radius-md);
-                    background: var(--background);
-                    cursor: pointer;
-                    transition: all var(--transition-fast);
-                }
-
-                .agent-card:hover {
-                    background: var(--background-hover);
-                    transform: translateY(-1px);
-                }
-
-                .agent-card.selected {
-                    border-color: var(--primary-color);
-                    background: rgba(99, 102, 241, 0.05);
-                }
-
-                .agent-avatar {
-                    width: 40px;
-                    height: 40px;
-                    border-radius: var(--radius-full);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 18px;
-                    flex-shrink: 0;
-                }
-
-                .agent-info {
-                    flex: 1;
-                    min-width: 0;
-                }
-
-                .agent-name {
-                    font-weight: 500;
-                    color: var(--text-primary);
-                    font-size: 14px;
-                    margin-bottom: 2px;
-                }
-
-                .agent-specialty {
-                    font-size: 12px;
-                    color: var(--text-secondary);
-                    white-space: nowrap;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                }
-
-                .selection-indicator {
-                    width: 24px;
-                    height: 24px;
-                    border-radius: var(--radius-full);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 16px;
-                    font-weight: 600;
-                    flex-shrink: 0;
-                }
-
-                .agent-card.selected .selection-indicator {
-                    background: var(--primary-color);
-                    color: white;
-                }
-
-                .agent-card:not(.selected) .selection-indicator {
-                    border: 2px solid var(--border-color);
-                    color: var(--text-secondary);
-                }
-
-                .empty-state {
-                    text-align: center;
-                    padding: 40px 20px;
-                    color: var(--text-secondary);
-                }
-
-                .empty-icon {
-                    font-size: 48px;
-                    display: block;
-                    margin-bottom: 12px;
-                }
-
-                .dialog-footer {
-                    display: flex;
-                    justify-content: flex-end;
-                    gap: 12px;
-                    padding: 20px 24px;
-                    border-top: 1px solid var(--border-color);
-                }
-
-                .btn-secondary, .btn-primary {
-                    padding: 12px 24px;
-                    border-radius: var(--radius-md);
-                    font-weight: 500;
-                    cursor: pointer;
-                    transition: all var(--transition-fast);
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                    font-size: 14px;
-                }
-
-                .btn-secondary {
-                    background: var(--background);
-                    color: var(--text-primary);
-                    border: 1px solid var(--border-color);
-                }
-
-                .btn-secondary:hover:not(:disabled) {
-                    background: var(--background-hover);
-                }
-
-                .btn-primary {
-                    background: var(--primary-color);
-                    color: white;
-                    border: 1px solid var(--primary-color);
-                }
-
-                .btn-primary:hover:not(:disabled) {
-                    background: var(--primary-color-hover);
-                }
-
-                .btn-primary:disabled, .btn-secondary:disabled {
-                    opacity: 0.5;
-                    cursor: not-allowed;
-                }
-
-                .loading-spinner {
-                    width: 16px;
-                    height: 16px;
-                    border: 2px solid rgba(255, 255, 255, 0.3);
-                    border-top: 2px solid white;
-                    border-radius: 50%;
-                    animation: spin 1s linear infinite;
-                }
-
-                @keyframes spin {
-                    0% { transform: rotate(0deg); }
-                    100% { transform: rotate(360deg); }
-                }
-
-                @media (max-width: 640px) {
-                    .create-session-dialog {
-                        max-width: 100%;
-                        margin: 0;
-                        height: 100vh;
-                        border-radius: 0;
-                    }
-
-                    .section-header {
-                        flex-direction: column;
-                        align-items: stretch;
-                        gap: 12px;
-                    }
-
-                    .search-box {
-                        flex: none;
-                    }
-
-                    .agents-grid {
-                        grid-template-columns: 1fr;
-                    }
-                }
-            `}</style>
         </div>
     )
 }

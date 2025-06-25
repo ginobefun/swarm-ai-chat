@@ -1,17 +1,20 @@
-import { neon } from '@neondatabase/serverless'
+import { prisma } from './prisma'
 
-// 获取数据库连接字符串
-const getDatabaseUrl = () => {
-    const url = process.env.DATABASE_URL
-    if (!url) {
-        // 在构建时使用默认值，运行时会报错
-        return 'postgresql://placeholder:placeholder@placeholder/placeholder'
+// 创建与 Neon 兼容的 SQL 模板字符串函数
+export const sql = (strings: TemplateStringsArray, ...values: unknown[]) => {
+    // 构建 SQL 查询
+    let query = ''
+    for (let i = 0; i < strings.length; i++) {
+        query += strings[i]
+        if (i < values.length) {
+            // 对于 Prisma，我们需要使用 $queryRaw 并正确处理参数
+            query += `$${i + 1}`
+        }
     }
-    return url
-}
 
-// 创建数据库连接
-export const sql = neon(getDatabaseUrl())
+    // 返回 Prisma 查询结果
+    return prisma.$queryRawUnsafe(query, ...values)
+}
 
 // 检查是否正确配置了数据库
 export const isDatabaseConfigured = () => {
@@ -22,7 +25,7 @@ export const isDatabaseConfigured = () => {
 // 数据库连接测试函数
 export async function testConnection() {
     try {
-        const result = await sql`SELECT 1 as test`
+        const result = await prisma.$queryRaw`SELECT 1 as test`
         console.log('Database connection successful:', result)
         return true
     } catch (error) {
@@ -34,13 +37,13 @@ export async function testConnection() {
 // 检查表是否存在
 export async function checkTableExists(tableName: string) {
     try {
-        const result = await sql`
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_schema = 'public' 
-        AND table_name = ${tableName}
-      )
-    `
+        const result = await prisma.$queryRaw`
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_name = ${tableName}
+            )
+        ` as Array<{ exists: boolean }>
         return result[0]?.exists || false
     } catch (error) {
         console.error(`Error checking table ${tableName}:`, error)
@@ -54,10 +57,10 @@ export async function initializeDatabase() {
         console.log('Initializing database...')
 
         // 启用 UUID 扩展
-        await sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`
+        await prisma.$executeRaw`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`
 
         // 启用向量扩展（如果需要）
-        // await sql`CREATE EXTENSION IF NOT EXISTS vector`
+        // await prisma.$executeRaw`CREATE EXTENSION IF NOT EXISTS vector`
 
         console.log('Database extensions enabled')
         return true

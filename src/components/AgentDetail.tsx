@@ -2,13 +2,13 @@
 
 import React from 'react'
 import { AgentDetailProps } from '../types'
+
 const AgentDetail: React.FC<AgentDetailProps> = ({
     agent,
     isOpen,
     onClose,
     onStartChat
 }) => {
-
     if (!isOpen) return null
 
     const handleStartChat = () => {
@@ -25,110 +25,162 @@ const AgentDetail: React.FC<AgentDetailProps> = ({
     }
 
     return (
-        <div className="agent-detail-overlay" onClick={handleBackdropClick}>
-            <div className="agent-detail-modal">
+        <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[1000] p-5"
+            onClick={handleBackdropClick}
+        >
+            <div className="bg-white dark:bg-slate-900 rounded-xl w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-xl border border-slate-200 dark:border-slate-700 flex flex-col">
                 {/* 头部 */}
-                <div className="agent-detail-header">
-                    <button className="close-btn" onClick={onClose}>
+                <div className="flex justify-end p-4 border-b border-slate-200 dark:border-slate-700">
+                    <button
+                        onClick={onClose}
+                        className="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 flex items-center justify-center cursor-pointer transition-all duration-150 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100"
+                    >
                         ✕
                     </button>
                 </div>
 
                 {/* 主要内容 */}
-                <div className="agent-detail-content">
+                <div className="flex-1 overflow-y-auto p-6">
                     {/* 角色基本信息 */}
-                    <div className="agent-info-section">
-                        <div className="agent-avatar-large" style={{ background: agent.avatarStyle }}>
+                    <div className="flex flex-col md:flex-row gap-6 mb-8">
+                        <div
+                            className="w-24 h-24 md:w-32 md:h-32 rounded-2xl flex items-center justify-center text-4xl md:text-5xl text-white font-bold flex-shrink-0"
+                            style={{ background: agent.avatarStyle || '#667eea' }}
+                        >
                             {agent.avatar}
                         </div>
-                        <div className="agent-basic-info">
-                            <h2 className="agent-name">{agent.name}</h2>
-                            <p className="agent-specialty">{agent.specialty}</p>
-                            <p className="agent-description">{agent.description}</p>
+                        <div className="flex-1">
+                            <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-2">
+                                {agent.name}
+                            </h2>
+                            <p className="text-lg text-indigo-600 dark:text-indigo-400 font-medium mb-3">
+                                {agent.specialty}
+                            </p>
+                            <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
+                                {agent.description}
+                            </p>
                         </div>
                     </div>
 
                     {/* 性格特点 */}
-                    <div className="agent-section">
-                        <h3 className="section-title">
-                            <span className="section-icon">✨</span>
+                    <div className="mb-8">
+                        <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
+                            <span className="text-2xl">✨</span>
                             性格特点
                         </h3>
-                        <p className="agent-personality">{agent.personality}</p>
+                        <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
+                            {agent.personality}
+                        </p>
                     </div>
 
                     {/* 技能标签 */}
-                    <div className="agent-section">
-                        <h3 className="section-title">
-                            <span className="section-icon">🏷️</span>
+                    <div className="mb-8">
+                        <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
+                            <span className="text-2xl">🏷️</span>
                             核心技能
                         </h3>
-                        <div className="skill-tags">
+                        <div className="flex flex-wrap gap-2">
                             {agent.skillTags?.map((skill) => (
                                 <span
                                     key={skill.id}
-                                    className={`skill-tag skill-tag-${skill.category}`}
-                                    style={{ backgroundColor: skill.color }}
+                                    className="px-3 py-1.5 rounded-full text-sm font-medium text-slate-700 dark:text-slate-300"
+                                    style={{ backgroundColor: skill.color || '#f3f4f6' }}
                                 >
                                     #{skill.name}
                                 </span>
-                            )) || <p className="empty-state">暂无技能标签</p>}
+                            )) || (
+                                    <p className="text-slate-500 dark:text-slate-400 italic">
+                                        暂无技能标签
+                                    </p>
+                                )}
                         </div>
                     </div>
 
                     {/* 绑定工具 */}
-                    <div className="agent-section">
-                        <h3 className="section-title">
-                            <span className="section-icon">🛠️</span>
+                    <div className="mb-8">
+                        <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
+                            <span className="text-2xl">🛠️</span>
                             绑定工具
                         </h3>
-                        <div className="tools-grid">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {agent.tools?.map((tool) => (
-                                <div key={tool.id} className="tool-item">
-                                    <span className="tool-icon">{tool.icon}</span>
-                                    <div className="tool-info">
-                                        <span className="tool-name">{tool.name}</span>
-                                        <span className="tool-description">{tool.description}</span>
+                                <div
+                                    key={tool.id}
+                                    className="flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700"
+                                >
+                                    <span className="text-2xl flex-shrink-0">{tool.icon}</span>
+                                    <div className="flex-1">
+                                        <div className="font-medium text-slate-900 dark:text-slate-100 mb-1">
+                                            {tool.name}
+                                        </div>
+                                        <div className="text-sm text-slate-600 dark:text-slate-400">
+                                            {tool.description}
+                                        </div>
                                     </div>
                                 </div>
-                            )) || <p className="empty-state">暂无绑定工具</p>}
+                            )) || (
+                                    <p className="text-slate-500 dark:text-slate-400 italic col-span-full">
+                                        暂无绑定工具
+                                    </p>
+                                )}
                         </div>
                     </div>
 
                     {/* 使用示例 */}
-                    <div className="agent-section">
-                        <h3 className="section-title">
-                            <span className="section-icon">💡</span>
+                    <div className="mb-8">
+                        <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
+                            <span className="text-2xl">💡</span>
                             使用示例
                         </h3>
-                        <div className="usage-examples">
+                        <div className="space-y-4">
                             {agent.usageExamples?.map((example) => (
-                                <div key={example.id} className="example-item">
-                                    <h4 className="example-title">{example.title}</h4>
-                                    <p className="example-description">{example.description}</p>
-                                    <div className="example-prompt">
-                                        <span className="prompt-label">示例提示：</span>
-                                        <code className="prompt-text">&ldquo;{example.prompt}&rdquo;</code>
+                                <div
+                                    key={example.id}
+                                    className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700"
+                                >
+                                    <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-2">
+                                        {example.title}
+                                    </h4>
+                                    <p className="text-slate-600 dark:text-slate-400 mb-3">
+                                        {example.description}
+                                    </p>
+                                    <div className="bg-white dark:bg-slate-900 p-3 rounded-md border border-slate-200 dark:border-slate-600">
+                                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300 block mb-1">
+                                            示例提示：
+                                        </span>
+                                        <code className="text-sm text-indigo-600 dark:text-indigo-400 font-mono">
+                                            &quot;{example.prompt}&quot;
+                                        </code>
                                     </div>
                                 </div>
-                            )) || <p className="empty-state">暂无使用示例</p>}
+                            )) || (
+                                    <p className="text-slate-500 dark:text-slate-400 italic">
+                                        暂无使用示例
+                                    </p>
+                                )}
                         </div>
                     </div>
 
-                    {/* 技术偏好 */}
-                    <div className="agent-section">
-                        <h3 className="section-title">
-                            <span className="section-icon">🔧</span>
+                    {/* 技术配置 */}
+                    <div className="mb-6">
+                        <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
+                            <span className="text-2xl">🔧</span>
                             技术配置
                         </h3>
-                        <div className="tech-config">
-                            <div className="config-item">
-                                <span className="config-label">推荐模型：</span>
-                                <span className="config-value">{agent.modelPreference}</span>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                                <span className="font-medium text-slate-700 dark:text-slate-300">推荐模型：</span>
+                                <span className="text-slate-900 dark:text-slate-100">
+                                    {agent.modelPreference || 'GPT-4'}
+                                </span>
                             </div>
-                            <div className="config-item">
-                                <span className="config-label">状态：</span>
-                                <span className={`status-badge ${agent.isActive ? 'active' : 'inactive'}`}>
+                            <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                                <span className="font-medium text-slate-700 dark:text-slate-300">状态：</span>
+                                <span className={`px-2 py-1 rounded-full text-sm font-medium ${agent.isActive
+                                    ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
+                                    : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
+                                    }`}>
                                     {agent.isActive ? '可用' : '不可用'}
                                 </span>
                             </div>
@@ -137,384 +189,22 @@ const AgentDetail: React.FC<AgentDetailProps> = ({
                 </div>
 
                 {/* 底部操作 */}
-                <div className="agent-detail-footer">
-                    <button className="btn-secondary" onClick={onClose}>
+                <div className="flex gap-3 p-6 border-t border-slate-200 dark:border-slate-700">
+                    <button
+                        onClick={onClose}
+                        className="px-6 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg font-medium transition-colors hover:bg-slate-200 dark:hover:bg-slate-600"
+                    >
                         关闭
                     </button>
-                    <button className="btn-primary" onClick={handleStartChat}>
-                        <span className="btn-icon">💬</span>
+                    <button
+                        onClick={handleStartChat}
+                        className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-medium transition-colors hover:bg-indigo-700"
+                    >
+                        <span className="text-lg">💬</span>
                         开始对话
                     </button>
                 </div>
             </div>
-
-            <style jsx>{`
-                .agent-detail-overlay {
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    bottom: 0;
-                    background: rgba(0, 0, 0, 0.6);
-                    backdrop-filter: blur(4px);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    z-index: 1000;
-                    padding: 20px;
-                }
-
-                .agent-detail-modal {
-                    background: var(--background);
-                    border-radius: var(--radius-lg);
-                    width: 100%;
-                    max-width: 800px;
-                    max-height: 90vh;
-                    overflow: hidden;
-                    box-shadow: var(--shadow-xl);
-                    border: 1px solid var(--border-color);
-                    display: flex;
-                    flex-direction: column;
-                }
-
-                .agent-detail-header {
-                    display: flex;
-                    justify-content: flex-end;
-                    padding: 16px 20px;
-                    border-bottom: 1px solid var(--border-color);
-                }
-
-                .close-btn {
-                    width: 32px;
-                    height: 32px;
-                    border-radius: var(--radius-full);
-                    border: 1px solid var(--border-color);
-                    background: var(--background);
-                    color: var(--text-secondary);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    cursor: pointer;
-                    transition: all var(--transition-fast);
-                }
-
-                .close-btn:hover {
-                    background: var(--background-hover);
-                    color: var(--text-primary);
-                }
-
-                .agent-detail-content {
-                    flex: 1;
-                    overflow-y: auto;
-                    padding: 24px;
-                }
-
-                .agent-info-section {
-                    display: flex;
-                    gap: 20px;
-                    margin-bottom: 32px;
-                    align-items: flex-start;
-                }
-
-                .agent-avatar-large {
-                    width: 80px;
-                    height: 80px;
-                    border-radius: var(--radius-lg);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 36px;
-                    flex-shrink: 0;
-                    box-shadow: var(--shadow-md);
-                }
-
-                .agent-basic-info {
-                    flex: 1;
-                }
-
-                .agent-name {
-                    font-size: 28px;
-                    font-weight: 700;
-                    color: var(--text-primary);
-                    margin: 0 0 8px 0;
-                }
-
-                .agent-specialty {
-                    font-size: 16px;
-                    font-weight: 600;
-                    color: var(--primary-color);
-                    margin: 0 0 12px 0;
-                }
-
-                .agent-description {
-                    font-size: 15px;
-                    line-height: 1.6;
-                    color: var(--text-secondary);
-                    margin: 0;
-                }
-
-                .agent-section {
-                    margin-bottom: 28px;
-                }
-
-                .section-title {
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                    font-size: 18px;
-                    font-weight: 600;
-                    color: var(--text-primary);
-                    margin: 0 0 16px 0;
-                }
-
-                .section-icon {
-                    font-size: 20px;
-                }
-
-                .agent-personality {
-                    font-size: 15px;
-                    line-height: 1.6;
-                    color: var(--text-secondary);
-                    margin: 0;
-                }
-
-                .skill-tags {
-                    display: flex;
-                    flex-wrap: wrap;
-                    gap: 8px;
-                }
-
-                .skill-tag {
-                    padding: 6px 12px;
-                    border-radius: var(--radius-full);
-                    font-size: 13px;
-                    font-weight: 500;
-                    color: white;
-                    white-space: nowrap;
-                    box-shadow: var(--shadow-sm);
-                }
-
-                .tools-grid {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                    gap: 12px;
-                }
-
-                .tool-item {
-                    display: flex;
-                    align-items: center;
-                    gap: 12px;
-                    padding: 12px;
-                    border-radius: var(--radius-md);
-                    background: var(--background-secondary);
-                    border: 1px solid var(--border-color);
-                    transition: all var(--transition-fast);
-                }
-
-                .tool-item:hover {
-                    background: var(--background-hover);
-                    transform: translateY(-1px);
-                    box-shadow: var(--shadow-sm);
-                }
-
-                .tool-icon {
-                    font-size: 20px;
-                    flex-shrink: 0;
-                }
-
-                .tool-info {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 2px;
-                }
-
-                .tool-name {
-                    font-size: 14px;
-                    font-weight: 600;
-                    color: var(--text-primary);
-                }
-
-                .tool-description {
-                    font-size: 12px;
-                    color: var(--text-secondary);
-                }
-
-                .usage-examples {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 16px;
-                }
-
-                .example-item {
-                    padding: 16px;
-                    border-radius: var(--radius-md);
-                    background: var(--background-secondary);
-                    border: 1px solid var(--border-color);
-                }
-
-                .example-title {
-                    font-size: 16px;
-                    font-weight: 600;
-                    color: var(--text-primary);
-                    margin: 0 0 8px 0;
-                }
-
-                .example-description {
-                    font-size: 14px;
-                    line-height: 1.5;
-                    color: var(--text-secondary);
-                    margin: 0 0 12px 0;
-                }
-
-                .example-prompt {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 6px;
-                }
-
-                .prompt-label {
-                    font-size: 12px;
-                    font-weight: 600;
-                    color: var(--text-tertiary);
-                }
-
-                .prompt-text {
-                    padding: 8px 12px;
-                    background: var(--background);
-                    border-radius: var(--radius-sm);
-                    font-size: 13px;
-                    font-family: 'SF Mono', 'Monaco', 'Cascadia Code', monospace;
-                    color: var(--primary-color);
-                    border: 1px solid var(--border-color);
-                }
-
-                .tech-config {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 12px;
-                }
-
-                .config-item {
-                    display: flex;
-                    align-items: center;
-                    gap: 12px;
-                }
-
-                .config-label {
-                    font-size: 14px;
-                    font-weight: 600;
-                    color: var(--text-secondary);
-                    min-width: 80px;
-                }
-
-                .config-value {
-                    font-size: 14px;
-                    color: var(--text-primary);
-                    font-family: 'SF Mono', 'Monaco', 'Cascadia Code', monospace;
-                    background: var(--background-secondary);
-                    padding: 4px 8px;
-                    border-radius: var(--radius-sm);
-                }
-
-                .status-badge {
-                    padding: 4px 12px;
-                    border-radius: var(--radius-full);
-                    font-size: 12px;
-                    font-weight: 600;
-                }
-
-                .status-badge.active {
-                    background: #dcfce7;
-                    color: #166534;
-                }
-
-                .status-badge.inactive {
-                    background: #fef2f2;
-                    color: #991b1b;
-                }
-
-                .agent-detail-footer {
-                    display: flex;
-                    justify-content: flex-end;
-                    gap: 12px;
-                    padding: 20px 24px;
-                    border-top: 1px solid var(--border-color);
-                    background: var(--background-secondary);
-                }
-
-                .btn-secondary, .btn-primary {
-                    padding: 10px 20px;
-                    border-radius: var(--radius-md);
-                    font-size: 14px;
-                    font-weight: 600;
-                    border: 1px solid var(--border-color);
-                    cursor: pointer;
-                    transition: all var(--transition-fast);
-                    display: flex;
-                    align-items: center;
-                    gap: 6px;
-                }
-
-                .btn-secondary {
-                    background: var(--background);
-                    color: var(--text-secondary);
-                }
-
-                .btn-secondary:hover {
-                    background: var(--background-hover);
-                    color: var(--text-primary);
-                }
-
-                .btn-primary {
-                    background: var(--primary-color);
-                    color: white;
-                    border-color: var(--primary-color);
-                }
-
-                .btn-primary:hover {
-                    background: var(--primary-color-dark);
-                    transform: translateY(-1px);
-                    box-shadow: var(--shadow-md);
-                }
-
-                .btn-icon {
-                    font-size: 16px;
-                }
-
-                /* 移动端适配 */
-                @media (max-width: 768px) {
-                    .agent-detail-overlay {
-                        padding: 10px;
-                    }
-
-                    .agent-detail-modal {
-                        max-height: 95vh;
-                    }
-
-                    .agent-info-section {
-                        flex-direction: column;
-                        text-align: center;
-                        gap: 16px;
-                    }
-
-                    .agent-avatar-large {
-                        align-self: center;
-                    }
-
-                    .tools-grid {
-                        grid-template-columns: 1fr;
-                    }
-
-                    .agent-detail-footer {
-                        flex-direction: column-reverse;
-                    }
-
-                    .btn-secondary, .btn-primary {
-                        width: 100%;
-                        justify-content: center;
-                    }
-                }
-            `}</style>
         </div>
     )
 }

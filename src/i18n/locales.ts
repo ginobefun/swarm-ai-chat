@@ -15,6 +15,9 @@ export interface Messages {
         search: string
         create: string
         menu: string
+        retry: string
+        creating: string
+        optional: string
     }
 
     // 导航栏
@@ -59,6 +62,9 @@ export interface Messages {
         commands: string
         send: string
         members: string
+        selectSession: string
+        noMembers: string
+        untitledSession: string
     }
 
     // 工作区
@@ -116,6 +122,79 @@ export interface Messages {
         completed: string
         pending: string
     }
+
+    // 会话管理
+    session: {
+        // 会话类型
+        createSession: string
+        createNewSession: string
+        sessionTitle: string
+        sessionName: string
+        sessionDescription: string
+        description: string
+        enterSessionName: string
+        enterDescription: string
+
+        // AI 角色选择
+        selectAgents: string
+        agentsSelected: string
+        searchAgents: string
+        noAgentsFound: string
+
+        // 会话操作
+        rename: string
+        pin: string
+        unpin: string
+        archive: string
+        duplicate: string
+        export: string
+        confirmDelete: string
+        confirmDeleteMessage: string
+        operationFailed: string
+        retryLater: string
+        copy: string
+
+        // 会话类型
+        allSessions: string
+        singleChat: string
+        directChat: string
+        groupChat: string
+        workflowChat: string
+
+        // 会话状态
+        noMessages: string
+        noSessions: string
+        messagesCount: string
+        agentsCount: string
+        unknownTime: string
+        unknownAgent: string
+
+        // 会话分组
+        pinnedSessions: string
+        recentSessions: string
+        aiAgentGroups: string
+        searchSessions: string
+
+        // 重命名相关
+        renameSession: string
+        newSessionName: string
+        newName: string
+        enterNewName: string
+        nameRequired: string
+        nameTooShort: string
+        nameTooLong: string
+
+        // 创建会话相关
+        titleRequired: string
+        agentRequired: string
+        createError: string
+
+        // 其他
+        optional: string
+        autoGenerate: string
+        describePurpose: string
+        creating: string
+    }
 }
 
 export const locales: Record<LocaleKey, Messages> = {
@@ -132,6 +211,9 @@ export const locales: Record<LocaleKey, Messages> = {
             search: '搜索',
             create: '创建',
             menu: '菜单',
+            retry: '重试',
+            creating: '创建中...',
+            optional: '可选',
         },
         navbar: {
             logo: 'SwarmAI',
@@ -170,6 +252,9 @@ export const locales: Record<LocaleKey, Messages> = {
             commands: '快捷命令',
             send: '发送消息',
             members: '你、@需求分析师、@用户研究员、@技术评估师',
+            selectSession: '请选择一个会话开始对话',
+            noMembers: '暂无成员',
+            untitledSession: '未命名会话',
         },
         workspace: {
             title: '工作区',
@@ -219,6 +304,77 @@ export const locales: Record<LocaleKey, Messages> = {
             completed: '已完成',
             pending: '待完成',
         },
+        session: {
+            // 会话类型
+            createSession: '创建会话',
+            createNewSession: '创建新会话',
+            sessionTitle: '会话标题',
+            sessionName: '会话名称',
+            sessionDescription: '会话描述',
+            description: '描述',
+            enterSessionName: '请输入会话名称',
+            enterDescription: '请输入会话描述',
+
+            // AI 角色选择
+            selectAgents: '选择 AI 角色',
+            agentsSelected: '个已选择',
+            searchAgents: '搜索 AI 角色...',
+            noAgentsFound: '未找到匹配的 AI 角色',
+
+            // 会话操作
+            rename: '重命名',
+            pin: '置顶',
+            unpin: '取消置顶',
+            archive: '归档',
+            duplicate: '复制会话',
+            export: '导出',
+            confirmDelete: '确定要删除这个会话吗？',
+            confirmDeleteMessage: '此操作不可撤销。',
+            operationFailed: '操作失败',
+            retryLater: '请稍后重试',
+            copy: '副本',
+
+            // 会话类型
+            allSessions: '全部会话',
+            singleChat: '单聊',
+            directChat: '单聊',
+            groupChat: '群聊',
+            workflowChat: '工作流',
+
+            // 会话状态
+            noMessages: '暂无消息',
+            noSessions: '暂无会话',
+            messagesCount: '条消息',
+            agentsCount: '个 AI 角色',
+            unknownTime: '未知时间',
+            unknownAgent: '未知角色',
+
+            // 会话分组
+            pinnedSessions: '置顶会话',
+            recentSessions: '最近会话',
+            aiAgentGroups: 'AI 角色分组',
+            searchSessions: '搜索会话...',
+
+            // 重命名相关
+            renameSession: '重命名会话',
+            newSessionName: '新会话名称',
+            newName: '新名称',
+            enterNewName: '请输入新的名称',
+            nameRequired: '名称不能为空',
+            nameTooShort: '名称至少需要 1 个字符',
+            nameTooLong: '名称不能超过 100 个字符',
+
+            // 创建会话相关
+            titleRequired: '会话标题是必需的',
+            agentRequired: '至少需要选择一个 AI 角色',
+            createError: '创建会话失败',
+
+            // 其他
+            optional: '可选',
+            autoGenerate: '不填写将自动生成',
+            describePurpose: '描述这个会话的目的或用途',
+            creating: '创建中...',
+        },
     },
     'en': {
         common: {
@@ -233,6 +389,9 @@ export const locales: Record<LocaleKey, Messages> = {
             search: 'Search',
             create: 'Create',
             menu: 'Menu',
+            retry: 'Retry',
+            creating: 'Creating...',
+            optional: 'Optional',
         },
         navbar: {
             logo: 'SwarmAI',
@@ -271,6 +430,9 @@ export const locales: Record<LocaleKey, Messages> = {
             commands: 'Commands',
             send: 'Send Message',
             members: 'You, @Requirement Analyst, @User Researcher, @Tech Evaluator',
+            selectSession: 'Please select a session to start conversation',
+            noMembers: 'No members',
+            untitledSession: 'Untitled Session',
         },
         workspace: {
             title: 'Workspace',
@@ -319,6 +481,77 @@ export const locales: Record<LocaleKey, Messages> = {
             designArchitecture: 'Design Technical Architecture',
             completed: 'Completed',
             pending: 'Pending',
+        },
+        session: {
+            // Session types
+            createSession: 'Create Session',
+            createNewSession: 'Create New Session',
+            sessionTitle: 'Session Title',
+            sessionName: 'Session Name',
+            sessionDescription: 'Session Description',
+            description: 'Description',
+            enterSessionName: 'Enter session name',
+            enterDescription: 'Enter session description',
+
+            // AI agent selection
+            selectAgents: 'Select AI Agents',
+            agentsSelected: ' selected',
+            searchAgents: 'Search AI agents...',
+            noAgentsFound: 'No matching AI agents found',
+
+            // Session operations
+            rename: 'Rename',
+            pin: 'Pin',
+            unpin: 'Unpin',
+            archive: 'Archive',
+            duplicate: 'Duplicate',
+            export: 'Export',
+            confirmDelete: 'Are you sure to delete this session?',
+            confirmDeleteMessage: 'This action cannot be undone.',
+            operationFailed: 'Operation failed',
+            retryLater: 'Please try again later',
+            copy: '(Copy)',
+
+            // Session types
+            allSessions: 'All Sessions',
+            singleChat: 'Single Chat',
+            directChat: 'Direct Chat',
+            groupChat: 'Group Chat',
+            workflowChat: 'Workflow',
+
+            // Session status
+            noMessages: 'No messages',
+            noSessions: 'No sessions yet',
+            messagesCount: ' messages',
+            agentsCount: ' AI agents',
+            unknownTime: 'Unknown time',
+            unknownAgent: 'Unknown Agent',
+
+            // Session groups
+            pinnedSessions: 'Pinned Sessions',
+            recentSessions: 'Recent Sessions',
+            aiAgentGroups: 'AI Agent Groups',
+            searchSessions: 'Search sessions...',
+
+            // Rename related
+            renameSession: 'Rename Session',
+            newSessionName: 'New Session Name',
+            newName: 'New Name',
+            enterNewName: 'Enter new name',
+            nameRequired: 'Name is required',
+            nameTooShort: 'Name must be at least 1 character',
+            nameTooLong: 'Name must be less than 100 characters',
+
+            // Create session related
+            titleRequired: 'Session title is required',
+            agentRequired: 'At least one AI agent must be selected',
+            createError: 'Failed to create session',
+
+            // Others
+            optional: 'Optional',
+            autoGenerate: 'Will auto-generate if not provided',
+            describePurpose: 'Describe the purpose of this session',
+            creating: 'Creating...',
         },
     },
 } 

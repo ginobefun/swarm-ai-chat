@@ -4,85 +4,112 @@ import "./globals.css"
 import { LanguageProvider } from '../contexts/AppContext'
 import { ThemeProvider } from '../components/ThemeProvider'
 
+// Configure Google Fonts with CSS variables for optimal performance
+// Geist Sans is used for body text and UI elements
 const geistSans = Geist({
-    variable: "--font-geist-sans",
-    subsets: ["latin"],
+    variable: "--font-geist-sans", // CSS custom property for dynamic font switching
+    subsets: ["latin"], // Only load Latin characters to reduce bundle size
 })
 
+// Geist Mono is used for code blocks and monospace text
 const geistMono = Geist_Mono({
-    variable: "--font-geist-mono",
-    subsets: ["latin"],
+    variable: "--font-geist-mono", // CSS custom property for monospace font
+    subsets: ["latin"], // Only load Latin characters to reduce bundle size
 })
 
+// Comprehensive SEO and metadata configuration
+// Note: Static metadata doesn't support internationalization
+// Using English as default for better international accessibility
 export const metadata: Metadata = {
+    // Dynamic title configuration with template support
     title: {
-        default: "SwarmAI.chat - AI 协作平台",
-        template: "%s | SwarmAI.chat"
+        default: "SwarmAI.chat - AI Collaboration Platform", // English default for international users
+        template: "%s | SwarmAI.chat" // Template for other pages
     },
-    description: "SwarmAI.chat 是新一代 AI 协作平台，通过多智能体团队协作模式，为用户提供专业的需求分析、用户研究、技术评估等服务。零学习成本，即开即用。",
+    // Detailed description for better SEO ranking
+    description: "SwarmAI.chat is a next-generation AI collaboration platform that enables professional services through multi-agent team collaboration, including requirement analysis, user research, and technical evaluation. Zero learning curve, ready to use.",
+
+    // Keywords for search engine optimization (English for international reach)
     keywords: [
         "SwarmAI",
-        "AI 协作",
-        "多智能体",
-        "AI 团队",
-        "需求分析",
-        "用户研究",
-        "技术评估",
-        "数据分析",
-        "创意设计",
-        "人工智能",
-        "AI 助手",
-        "智能对话"
+        "AI collaboration",
+        "multi-agent",
+        "AI team",
+        "requirement analysis",
+        "user research",
+        "technical evaluation",
+        "data analysis",
+        "creative design",
+        "artificial intelligence",
+        "AI assistant",
+        "intelligent conversation"
     ],
+
+    // Author and creator information
     authors: [{ name: "SwarmAI Team" }],
     creator: "SwarmAI Team",
     publisher: "SwarmAI",
+
+    // Search engine crawling configuration
     robots: {
-        index: true,
-        follow: true,
+        index: true, // Allow search engines to index this site
+        follow: true, // Allow search engines to follow links
         googleBot: {
             index: true,
             follow: true,
-            'max-video-preview': -1,
-            'max-image-preview': 'large',
-            'max-snippet': -1,
+            'max-video-preview': -1, // No video preview limit
+            'max-image-preview': 'large', // Allow large image previews
+            'max-snippet': -1, // No snippet length limit
         },
     },
+
+    // Open Graph tags for social media sharing
     openGraph: {
         type: "website",
-        locale: "zh_CN",
-        alternateLocale: ["en_US"],
+        locale: "en_US", // Default to English for international users
+        alternateLocale: ["zh_CN", "ja_JP", "ko_KR"], // Support for Asian markets
         url: "https://swarm-ai.chat",
         siteName: "SwarmAI.chat",
-        title: "SwarmAI.chat - AI 协作平台",
-        description: "新一代 AI 协作平台，多智能体团队协作，专业服务，零学习成本",
+        title: "SwarmAI.chat - AI Collaboration Platform",
+        description: "Next-generation AI collaboration platform with multi-agent team collaboration for professional services",
         images: [
             {
-                url: "/og-image.png",
+                url: "/og-image.png", // Note: should be .png, not .svg for better compatibility
                 width: 1200,
                 height: 630,
-                alt: "SwarmAI.chat - AI 协作平台",
+                alt: "SwarmAI.chat - AI Collaboration Platform",
             },
         ],
     },
+
+    // Twitter Card configuration for Twitter sharing
     twitter: {
-        card: "summary_large_image",
+        card: "summary_large_image", // Large image card type
         site: "@SwarmAI_chat",
         creator: "@SwarmAI_chat",
-        title: "SwarmAI.chat - AI 协作平台",
-        description: "新一代 AI 协作平台，多智能体团队协作，专业服务，零学习成本",
-        images: ["/og-image.png"],
+        title: "SwarmAI.chat - AI Collaboration Platform",
+        description: "Next-generation AI collaboration platform with multi-agent team collaboration",
+        images: ["/og-image.png"], // Consistent with Open Graph image
     },
+
+    // Viewport configuration for responsive design
     viewport: {
-        width: "device-width",
-        initialScale: 1,
-        maximumScale: 1,
+        width: "device-width", // Use device width
+        initialScale: 1, // No initial zoom
+        maximumScale: 1, // Prevent user zoom (consider removing for accessibility)
     },
+
+    // Theme color for browser UI (address bar, etc.)
     themeColor: [
-        { media: "(prefers-color-scheme: light)", color: "#6366f1" },
-        { media: "(prefers-color-scheme: dark)", color: "#1a1a1a" },
+        { media: "(prefers-color-scheme: light)", color: "#6366f1" }, // Light mode: Indigo-500
+        { media: "(prefers-color-scheme: dark)", color: "#1a1a1a" }, // Dark mode: Dark gray
     ],
+
+    // PWA manifest file
     manifest: "/manifest.json",
+
+    // Favicon and icon configuration
+    // Using SVG icons for scalability across all devices
     icons: {
         icon: [
             { url: "/favicon.svg", type: "image/svg+xml" },
@@ -95,36 +122,53 @@ export const metadata: Metadata = {
             { url: "/apple-touch-icon.svg", sizes: "180x180", type: "image/svg+xml" },
         ],
     },
+
+    // Search engine verification codes (should be configured in production)
     verification: {
-        google: "verification_code_here",
-        yandex: "verification_code_here",
+        google: "verification_code_here", // TODO: Replace with actual Google verification code
+        yandex: "verification_code_here", // TODO: Replace with actual Yandex verification code
         other: {
-            "msvalidate.01": "verification_code_here",
+            "msvalidate.01": "verification_code_here", // TODO: Replace with actual Bing verification code
         },
     },
+
+    // Additional metadata for categorization
     category: "technology",
     classification: "AI Platform",
-    referrer: "origin-when-cross-origin",
-    generator: "Next.js",
+    referrer: "origin-when-cross-origin", // Privacy-conscious referrer policy
+    generator: "Next.js", // Framework information
     applicationName: "SwarmAI.chat",
+
+    // Apple-specific configuration for web app appearance
     appleWebApp: {
-        capable: true,
+        capable: true, // Enable web app mode on iOS
         title: "SwarmAI.chat",
-        statusBarStyle: "default",
+        statusBarStyle: "default", // Use default status bar style
     },
 }
 
+/**
+ * Root layout component that wraps all pages
+ * Provides theme support, internationalization, and proper font loading
+ * 
+ * @param children - The page content to be rendered
+ * @returns The complete HTML structure with providers and styling
+ */
 export default function RootLayout({
     children,
 }: Readonly<{
     children: React.ReactNode
 }>) {
     return (
-        <html lang="en">
+        <html lang="en" suppressHydrationWarning>
             <body
                 className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+                // Suppress hydration warnings for theme switching
+                suppressHydrationWarning
             >
+                {/* Theme provider must wrap everything for proper dark mode support */}
                 <ThemeProvider>
+                    {/* Language provider for internationalization support */}
                     <LanguageProvider>
                         {children}
                     </LanguageProvider>

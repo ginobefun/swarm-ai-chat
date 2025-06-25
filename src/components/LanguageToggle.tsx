@@ -33,26 +33,29 @@ export const LanguageToggle: React.FC<LanguageToggleProps> = ({ className = '' }
     const currentLang = getCurrentLanguage()
 
     return (
-        <div className={`language-toggle ${className}`}>
+        <div className={`relative inline-block ${className}`}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="language-toggle__button"
+                className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-700 cursor-pointer text-sm font-medium transition-all duration-200 hover:bg-slate-50 hover:border-indigo-500 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700"
                 title={t('navbar.language')}
             >
-                <span className="language-flag">{currentLang.flag}</span>
-                <span className="language-label">{currentLang.label}</span>
-                <span className="dropdown-arrow">▼</span>
+                <span className="text-base">{currentLang.flag}</span>
+                <span className="font-medium hidden md:inline">{currentLang.label}</span>
+                <span className={`text-xs text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>▼</span>
             </button>
 
             {isOpen && (
-                <div className="language-toggle__dropdown">
+                <div className="absolute top-full right-0 mt-1 min-w-36 bg-white border border-slate-300 rounded-lg shadow-lg z-[1000] overflow-hidden dark:bg-slate-800 dark:border-slate-600">
                     {languages.map((lang) => (
                         <button
                             key={lang.key}
                             onClick={() => handleLanguageChange(lang.key)}
-                            className={`language-option ${locale === lang.key ? 'active' : ''}`}
+                            className={`flex items-center gap-3 w-full px-4 py-3 text-sm text-left transition-colors duration-200 hover:bg-slate-50 dark:hover:bg-slate-700 ${locale === lang.key
+                                    ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                                    : 'text-slate-700 dark:text-slate-200'
+                                }`}
                         >
-                            <span className="language-flag">{lang.flag}</span>
+                            <span className="text-base">{lang.flag}</span>
                             <span>{lang.label}</span>
                         </button>
                     ))}
@@ -62,115 +65,10 @@ export const LanguageToggle: React.FC<LanguageToggleProps> = ({ className = '' }
             {/* 点击外部关闭 */}
             {isOpen && (
                 <div
-                    className="language-toggle__overlay"
+                    className="fixed inset-0 z-[999]"
                     onClick={() => setIsOpen(false)}
                 />
             )}
-
-            <style jsx>{`
-        .language-toggle {
-          position: relative;
-          display: inline-block;
-        }
-
-        .language-toggle__button {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          padding: 8px 12px;
-          background: var(--surface);
-          border: 1px solid var(--border);
-          border-radius: var(--radius-md);
-          color: var(--text-primary);
-          cursor: pointer;
-          font-size: 14px;
-          transition: all 0.2s ease;
-        }
-
-        .language-toggle__button:hover {
-          background: var(--surface-secondary);
-          border-color: var(--primary-color);
-        }
-
-        .language-flag {
-          font-size: 16px;
-        }
-
-        .language-label {
-          font-weight: 500;
-        }
-
-        .dropdown-arrow {
-          font-size: 10px;
-          transition: transform 0.2s ease;
-          color: var(--text-muted);
-        }
-
-        .language-toggle__button:hover .dropdown-arrow {
-          transform: rotate(180deg);
-        }
-
-        .language-toggle__dropdown {
-          position: absolute;
-          top: 100%;
-          right: 0;
-          margin-top: 4px;
-          min-width: 140px;
-          background: var(--surface);
-          border: 1px solid var(--border);
-          border-radius: var(--radius-md);
-          box-shadow: var(--shadow-md);
-          z-index: 1000;
-          overflow: hidden;
-        }
-
-        .language-option {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          width: 100%;
-          padding: 12px 16px;
-          background: none;
-          border: none;
-          color: var(--text-primary);
-          cursor: pointer;
-          font-size: 14px;
-          text-align: left;
-          transition: background 0.2s ease;
-        }
-
-        .language-option:hover {
-          background: var(--surface-secondary);
-        }
-
-        .language-option.active {
-          background: var(--primary-color);
-          color: white;
-        }
-
-        .language-option .language-flag {
-          font-size: 16px;
-        }
-
-        .language-toggle__overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          z-index: 999;
-        }
-
-        @media (max-width: 768px) {
-          .language-label {
-            display: none;
-          }
-          
-          .language-toggle__button {
-            padding: 8px;
-          }
-        }
-      `}</style>
         </div>
     )
 } 
