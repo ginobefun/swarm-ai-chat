@@ -120,27 +120,33 @@ const MessageInput: React.FC<MessageInputProps> = ({
     }, [inputValue])
 
     return (
-        <div className="input-area">
-            <div className="input-wrapper">
-                <div className="input-actions">
+        <div className="border-t border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
+            <div className="relative max-w-4xl mx-auto">
+                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 flex items-center gap-1 z-10">
                     <button
-                        className="input-btn"
+                        className="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-md transition-colors duration-150"
                         onClick={handleMentionButtonClick}
                         title={t('chat.mention')}
                     >
                         @
                     </button>
-                    <button className="input-btn" title={t('chat.attachment')}>
+                    <button
+                        className="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-md transition-colors duration-150"
+                        title={t('chat.attachment')}
+                    >
                         📎
                     </button>
-                    <button className="input-btn" title={t('chat.commands')}>
+                    <button
+                        className="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-md transition-colors duration-150"
+                        title={t('chat.commands')}
+                    >
                         /
                     </button>
                 </div>
 
                 <textarea
                     ref={textareaRef}
-                    className="input-field"
+                    className="w-full bg-gray-100 dark:bg-slate-800 border-0 rounded-2xl pl-28 pr-12 py-4 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 resize-none outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200 min-h-[52px] max-h-32"
                     placeholder={placeholder || t('chat.inputPlaceholder')}
                     value={inputValue}
                     onChange={handleInputChange}
@@ -150,7 +156,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
                 />
 
                 <button
-                    className="send-btn"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 w-8 h-8 flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 dark:disabled:bg-gray-600 text-white rounded-full transition-colors duration-150 disabled:cursor-not-allowed"
                     onClick={handleSendMessage}
                     disabled={!inputValue.trim() || disabled}
                     title={t('chat.send')}
@@ -160,19 +166,24 @@ const MessageInput: React.FC<MessageInputProps> = ({
 
                 {/* @提及弹窗 */}
                 {showMentionPopup && (
-                    <div ref={mentionPopupRef} className="mention-popup" style={{ display: 'block' }}>
+                    <div
+                        ref={mentionPopupRef}
+                        className="absolute bottom-full left-3 mb-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-lg max-h-60 overflow-y-auto min-w-64 animate-menu-slide-in z-20"
+                    >
                         {filteredMentions.map((mention) => (
                             <div
                                 key={mention.id}
-                                className="mention-item"
+                                className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer transition-colors duration-150 text-sm first:rounded-t-lg last:rounded-b-lg"
                                 onClick={() => handleMentionSelect(mention)}
                             >
-                                <div className="mention-avatar">{mention.avatar}</div>
+                                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-xs text-white">
+                                    {mention.avatar}
+                                </div>
                                 <span>{mention.name}</span>
                             </div>
                         ))}
                         {filteredMentions.length === 0 && (
-                            <div className="mention-item" style={{ color: '#86868b', cursor: 'default' }}>
+                            <div className="flex items-center gap-3 px-4 py-3 text-gray-500 dark:text-gray-400 cursor-default text-sm">
                                 {t('messages.noMatches')}
                             </div>
                         )}

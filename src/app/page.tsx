@@ -98,7 +98,7 @@ export default function Home() {
     }
 
     return (
-        <div className="flex flex-col h-screen bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
+        <div className="flex flex-col h-screen bg-gray-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100">
             {/* 
                 Navigation bar with responsive controls
                 Provides access to sidebar and workspace toggles on mobile 
@@ -122,9 +122,9 @@ export default function Home() {
                     - Proper ARIA labels and focus management
                     - Keyboard navigation support
                 */}
-                <div className={`w-80 min-w-72 max-w-96 border-r border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 flex flex-col md:relative md:translate-x-0 md:shadow-none transition-transform duration-300 ${isSidebarOpen
-                    ? 'fixed top-16 left-0 h-[calc(100vh-4rem)] z-50 translate-x-0 shadow-xl'
-                    : 'fixed top-16 left-0 h-[calc(100vh-4rem)] z-50 -translate-x-full shadow-xl md:relative md:top-0 md:h-full md:z-auto'
+                <div className={`w-[320px] min-w-[280px] max-w-[360px] border-r border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex flex-col md:relative md:translate-x-0 md:shadow-none transition-transform duration-300 ${isSidebarOpen
+                    ? 'fixed top-[60px] left-0 h-[calc(100vh-60px)] z-50 translate-x-0 shadow-2xl'
+                    : 'fixed top-[60px] left-0 h-[calc(100vh-60px)] z-50 -translate-x-full shadow-2xl md:relative md:top-0 md:h-full md:z-auto'
                     }`}>
                     <SessionList
                         sessions={sessions}
@@ -145,7 +145,7 @@ export default function Home() {
                     - Real-time message updates
                     - Session-aware content display
                 */}
-                <div className="flex-1 flex flex-col min-w-0">
+                <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-slate-900">
                     <ChatArea
                         session={currentSession}
                         onSessionUpdate={updateSession}
@@ -166,7 +166,7 @@ export default function Home() {
                     - Real-time updates based on current session
                 */}
                 {isWorkspaceOpen && (
-                    <div className="hidden lg:flex w-90 min-w-72 max-w-[30rem] border-l border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+                    <div className="hidden lg:flex w-[360px] min-w-[320px] max-w-[400px] border-l border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800">
                         <WorkspacePanel session={currentSession} />
                     </div>
                 )}
