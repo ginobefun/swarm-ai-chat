@@ -33,10 +33,10 @@ export const LanguageToggle: React.FC<LanguageToggleProps> = ({ className = '' }
     const currentLang = getCurrentLanguage()
 
     return (
-        <div className={`relative inline-block ${className}`}>
+        <div className="relative inline-block">
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-700 cursor-pointer text-sm font-medium transition-all duration-200 hover:bg-slate-50 hover:border-indigo-500 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700"
+                className={`flex items-center gap-2 px-3 py-2 text-slate-700 cursor-pointer text-sm font-medium transition-all duration-200 hover:border-indigo-500 dark:text-slate-200 ${className}`}
                 title={t('navbar.language')}
             >
                 <span className="text-base">{currentLang.flag}</span>
@@ -51,8 +51,8 @@ export const LanguageToggle: React.FC<LanguageToggleProps> = ({ className = '' }
                             key={lang.key}
                             onClick={() => handleLanguageChange(lang.key)}
                             className={`flex items-center gap-3 w-full px-4 py-3 text-sm text-left transition-colors duration-200 hover:bg-slate-50 dark:hover:bg-slate-700 ${locale === lang.key
-                                    ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                                    : 'text-slate-700 dark:text-slate-200'
+                                ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                                : 'text-slate-700 dark:text-slate-200'
                                 }`}
                         >
                             <span className="text-base">{lang.flag}</span>

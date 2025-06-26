@@ -1,9 +1,11 @@
 'use client'
 
 import React, { useState } from 'react'
+import { motion } from 'framer-motion'
 import { useTranslation } from '../contexts/AppContext'
 import { ThemeToggle } from './ThemeToggle'
 import { LanguageToggle } from './LanguageToggle'
+import { SwarmLogo } from './SwarmLogo'
 
 /**
  * Props interface for Navbar component
@@ -17,45 +19,32 @@ interface NavbarProps {
     onCreateNew?: () => void         // Handle create new session/chat action
     onNotificationClick?: () => void // Handle notification bell click
     onUserClick?: () => void         // Handle user profile/menu click
-    onAgentDiscovery?: () => void    // Handle AI agent discovery click
 }
 
 /**
- * Navbar component - Top navigation bar with responsive design
+ * SwarmAI Navbar - 现代化多智能体协作平台导航栏
  * 
- * Features:
- * - Responsive layout with mobile-first approach
- * - Global search functionality
- * - Theme and language switching
- * - Quick action buttons (create, notifications, user menu)
- * - Accessibility support with proper ARIA labels
- * - Dark mode support throughout all elements
- * 
- * Layout:
- * - Mobile: Hamburger menu + logo + search + essential controls
- * - Desktop: Full navigation with all controls visible
- * 
- * @param props - NavbarProps containing callback functions and state
- * @returns JSX element representing the top navigation bar
+ * 设计原则：
+ * 1. 视觉层次清晰 - 品牌标识、搜索、主要操作按钮分层设计
+ * 2. 以用户为中心 - 快速访问最重要的功能（创建、搜索、发现）
+ * 3. 一致性 - 统一的设计语言和交互模式
+ * 4. 反馈 - 丰富的微交互和状态反馈
+ * 5. 现代化美学 - 渐变、阴影、动画等现代设计元素
+ * 6. 呼吸感 - 合适的间距和留白
  */
 const Navbar: React.FC<NavbarProps> = ({
     onToggleSidebar,
-    isSidebarOpen,        // TODO: Use for visual feedback
+    isSidebarOpen,
     onCreateNew,
     onNotificationClick,
-    onUserClick,
-    onAgentDiscovery
+    onUserClick
 }) => {
     const { t } = useTranslation()
-
-    // Local state for search functionality
     const [searchValue, setSearchValue] = useState('')
+    const [isSearchFocused, setIsSearchFocused] = useState(false)
 
     /**
-     * Handle search input changes
-     * Updates local search state as user types
-     * 
-     * @param e - React change event from search input
+     * Handle search input changes with enhanced UX
      */
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSearchValue(e.target.value)
@@ -63,41 +52,29 @@ const Navbar: React.FC<NavbarProps> = ({
 
     /**
      * Handle search form submission
-     * Processes search query and prevents default form behavior
-     * TODO: Implement actual search functionality
-     * 
-     * @param e - React form submission event
      */
     const handleSearchSubmit = (e: React.FormEvent) => {
         e.preventDefault()
-
-        // TODO: Implement comprehensive search functionality
-        // Should search through: conversations, AI agents, files, messages
         console.log('Search query:', searchValue)
-
-        // TODO: Clear search or navigate to search results page
-        // setSearchValue('') // Optional: clear after search
     }
 
     /**
-     * Handle keyboard navigation for accessibility
-     * Provides keyboard shortcuts for common actions
-     * 
-     * @param e - Keyboard event
+     * Enhanced keyboard navigation with modern shortcuts
      */
     const handleKeyDown = (e: React.KeyboardEvent) => {
-        // Global keyboard shortcuts
         if (e.metaKey || e.ctrlKey) {
             switch (e.key) {
-                case 'k': // Cmd/Ctrl + K for search focus
+                case 'k':
                     e.preventDefault()
-                    // TODO: Focus search input
+                    // Focus search input
+                    const searchInput = document.querySelector('#global-search') as HTMLInputElement
+                    searchInput?.focus()
                     break
-                case 'n': // Cmd/Ctrl + N for new chat
+                case 'n':
                     e.preventDefault()
                     onCreateNew?.()
                     break
-                case 'b': // Cmd/Ctrl + B for sidebar toggle
+                case 'b':
                     e.preventDefault()
                     onToggleSidebar?.()
                     break
@@ -106,160 +83,166 @@ const Navbar: React.FC<NavbarProps> = ({
     }
 
     return (
-        <nav
-            className="fixed top-0 left-0 right-0 h-[60px] bg-white/95 backdrop-blur-sm border-b border-gray-200 z-[1000] flex items-center px-6 gap-4 dark:bg-slate-900/95 dark:border-slate-700"
+        <motion.nav
+            initial={{ y: -10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="fixed top-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-xl border-b border-gray-100 z-[1000] flex items-center justify-between px-6 dark:bg-slate-900/80 dark:border-slate-800"
             role="navigation"
-            aria-label="Main navigation"
+            aria-label="主导航"
             onKeyDown={handleKeyDown}
         >
-            {/* 
-                Mobile Sidebar Toggle Button
-                Hidden on desktop (lg:hidden), visible only on mobile/tablet
-                Provides access to session list on smaller screens
-            */}
-            <button
-                className="flex items-center justify-center w-10 h-10 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-900 transition-all duration-150 lg:hidden dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-400 dark:hover:text-slate-100"
-                onClick={onToggleSidebar}
-                title={t('navbar.menu')}
-                aria-label="Toggle sidebar navigation"
-                aria-expanded={isSidebarOpen}
-                aria-controls="sidebar-navigation"
-            >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-            </button>
+            {/* Left Section: Mobile Toggle + Brand Logo */}
+            <div className="flex items-center gap-4 flex-shrink-0">
+                {/* Mobile Sidebar Toggle with Enhanced Animation */}
+                <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="flex items-center justify-center w-9 h-9 rounded-xl bg-gray-50 hover:bg-gray-100 text-gray-600 hover:text-gray-900 transition-all duration-200 lg:hidden dark:bg-slate-800/50 dark:hover:bg-slate-700 dark:text-slate-400 dark:hover:text-slate-100 border border-gray-200/50 dark:border-slate-700/50"
+                    onClick={onToggleSidebar}
+                    title={t('navbar.menu')}
+                    aria-label="切换侧边栏导航"
+                    aria-expanded={isSidebarOpen}
+                >
+                    <motion.div
+                        animate={isSidebarOpen ? { rotate: 90 } : { rotate: 0 }}
+                        transition={{ duration: 0.2 }}
+                    >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </motion.div>
+                </motion.button>
 
-            {/* 
-                Brand Logo/Title
-                Flex-shrink-0 prevents logo from being compressed
-                Uses brand color (indigo) with dark mode support
-            */}
-            <div className="flex items-center gap-3 flex-shrink-0">
-                <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
-                    <span className="text-white font-bold text-lg">S</span>
-                </div>
-                <div
-                    className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent dark:from-indigo-400 dark:to-purple-400"
+                {/* Enhanced Brand Logo with Gradient and Animation */}
+                <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    className="flex items-center gap-3 flex-shrink-0 group cursor-pointer"
                     role="banner"
                 >
-                    SwarmAI
-                </div>
+                    {/* SwarmAI Logo */}
+                    <SwarmLogo size="md" />
+
+                    {/* Brand Text with Gradient */}
+                    <div className="flex flex-col">
+                        <div className="text-lg font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent dark:from-indigo-400 dark:via-purple-400 dark:to-pink-400">
+                            SwarmAI
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-slate-400 font-medium hidden sm:block">
+                            多智能体协作
+                        </div>
+                    </div>
+                </motion.div>
             </div>
 
-            {/* 
-                Global Search Form
-                Responsive design: takes available space up to max-width
-                Includes proper form semantics and accessibility
-            */}
-            <form
+            {/* Enhanced Global Search with Modern Design */}
+            <motion.form
                 onSubmit={handleSearchSubmit}
-                className="flex-1 max-w-lg"
+                className="flex-1 max-w-sm mx-4"
                 role="search"
-                aria-label="Global search"
+                aria-label="全局搜索"
+                layout
             >
-                <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                    </div>
-                    <input
-                        type="search"
-                        className="w-full h-10 bg-gray-100 rounded-lg border-0 pl-10 pr-4 text-sm text-gray-900 placeholder-gray-500 outline-none transition-all duration-200 focus:bg-white focus:shadow-md focus:ring-2 focus:ring-indigo-500/20 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-400 dark:focus:bg-slate-700"
-                        placeholder={t('navbar.searchPlaceholder')}
-                        value={searchValue}
-                        onChange={handleSearchChange}
-                        aria-label="Search conversations, agents, and files"
-                        autoComplete="off"
-                        spellCheck="false"
-                    />
+                <div className="relative group">
+                    <motion.div
+                        animate={{
+                            scale: isSearchFocused ? 1.02 : 1,
+                            boxShadow: isSearchFocused
+                                ? "0 8px 32px rgba(99, 102, 241, 0.15)"
+                                : "0 2px 8px rgba(0, 0, 0, 0.05)"
+                        }}
+                        transition={{ duration: 0.2 }}
+                        className="relative"
+                    >
+                        {/* Search Icon with Animation */}
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <motion.div
+                                animate={isSearchFocused ? { scale: 1.1, rotate: 5 } : { scale: 1, rotate: 0 }}
+                                transition={{ duration: 0.2 }}
+                            >
+                                <svg className="w-4 h-4 text-gray-400 group-hover:text-indigo-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                            </motion.div>
+                        </div>
+
+                        {/* Enhanced Search Input */}
+                        <input
+                            id="global-search"
+                            type="search"
+                            className="w-full h-10 bg-gray-50/80 rounded-xl border-0 pl-10 pr-16 text-sm text-gray-900 placeholder-gray-500 outline-none transition-all duration-300 focus:bg-white focus:shadow-lg focus:ring-2 focus:ring-indigo-500/20 dark:bg-slate-800/50 dark:text-slate-100 dark:placeholder-slate-400 dark:focus:bg-slate-700/80 dark:focus:ring-indigo-400/20"
+                            placeholder={t('navbar.searchPlaceholder')}
+                            value={searchValue}
+                            onChange={handleSearchChange}
+                            onFocus={() => setIsSearchFocused(true)}
+                            onBlur={() => setIsSearchFocused(false)}
+                            aria-label="搜索对话、智能体和文件"
+                            autoComplete="off"
+                            spellCheck="false"
+                        />
+
+                        {/* Search Shortcut Hint */}
+                        <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                            <div className="hidden lg:flex items-center gap-1 text-xs text-gray-400 dark:text-slate-500">
+                                <kbd className="px-1.5 py-0.5 bg-gray-200 dark:bg-slate-700 rounded text-xs font-mono">⌘</kbd>
+                                <kbd className="px-1.5 py-0.5 bg-gray-200 dark:bg-slate-700 rounded text-xs font-mono">K</kbd>
+                            </div>
+                        </div>
+                    </motion.div>
                 </div>
-            </form>
+            </motion.form>
 
-            {/* 
-                Action Controls Container
-                Positioned to the right with ml-auto
-                Contains theme, language, and user action buttons
-            */}
-            <div className="flex items-center gap-3 ml-auto">
-                {/* Language and Theme Toggle Controls */}
-                <LanguageToggle
-                    className="nav-toggle"
-                    aria-label="Switch language"
-                />
-                <ThemeToggle
-                    className="nav-toggle"
-                    aria-label="Switch theme"
-                />
+            {/* Right Action Controls with Enhanced Design */}
+            <div className="flex items-center gap-4 flex-shrink-0 min-w-fit">
 
-                {/* 
-                    AI Agent Discovery Button
-                    Allows users to discover and browse available AI agents
-                */}
-                <button
-                    className="flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white shadow-sm hover:shadow-md transition-all duration-150"
-                    onClick={onAgentDiscovery}
-                    title={t('navbar.discoverAgents') || 'Discover AI Agents'} // Fallback for missing translation
-                    aria-label="Discover AI agents and assistants"
-                >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                    </svg>
-                </button>
+                {/* Theme and Language Controls */}
+                <div className="flex items-center gap-4 px-3 py-2 rounded-xl bg-gray-50/50 dark:bg-slate-800/30 border border-gray-200/50 dark:border-slate-700/50">
+                    <LanguageToggle />
+                    <ThemeToggle />
+                </div>
 
-                {/* 
-                    Primary Create New Button
-                    Main call-to-action for creating new conversations
-                    Uses brand color and hover effects for prominence
-                    Responsive text: icon only on mobile, text + icon on desktop
-                */}
-                <button
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium transition-all duration-150 shadow-sm hover:shadow-md dark:bg-indigo-500 dark:hover:bg-indigo-600"
-                    onClick={onCreateNew}
-                    title={t('navbar.createNew')}
-                    aria-label="Create new conversation or session"
-                >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                    <span className="hidden sm:inline">新建</span>
-                </button>
-
-                {/* 
-                    Notifications Button
-                    Shows user notifications and updates
-                    TODO: Add notification count badge
-                */}
-                <button
-                    className="flex items-center justify-center w-10 h-10 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-900 transition-all duration-150 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-400 dark:hover:text-slate-100"
+                {/* Notifications with Badge */}
+                <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-gray-50 hover:bg-gray-100 text-gray-600 hover:text-gray-900 transition-all duration-200 dark:bg-slate-800/50 dark:hover:bg-slate-700 dark:text-slate-400 dark:hover:text-slate-100 border border-gray-200/50 dark:border-slate-700/50"
                     onClick={onNotificationClick}
                     title={t('navbar.notifications')}
-                    aria-label="View notifications"
+                    aria-label="查看通知"
                 >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5z" />
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19H6.5A2.5 2.5 0 014 16.5v-9A2.5 2.5 0 016.5 5h9A2.5 2.5 0 0118 7.5V11" />
                     </svg>
-                </button>
+                    {/* Notification badge */}
+                    <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-red-500 to-pink-500 rounded-full border-2 border-white dark:border-slate-900"
+                    />
+                </motion.button>
 
-                {/* 
-                    User Profile/Menu Button
-                    Access to user account, settings, and profile
-                    TODO: Consider dropdown menu for user options
-                */}
-                <button
-                    className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-medium text-sm transition-all duration-150 shadow-sm hover:shadow-md"
+                {/* Enhanced User Profile Menu */}
+                <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="relative flex items-center justify-center w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-700 text-white font-semibold text-sm transition-all duration-200 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 overflow-hidden group"
                     onClick={onUserClick}
                     title={t('navbar.userMenu')}
-                    aria-label="User menu and account settings"
+                    aria-label="用户菜单和账户设置"
                     aria-haspopup="menu"
                 >
-                    U
-                </button>
+                    <span className="relative z-10">U</span>
+                    {/* Animated border */}
+                    <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+                        className="absolute inset-0 rounded-full border-2 border-white/30"
+                    />
+                </motion.button>
             </div>
-        </nav>
+        </motion.nav>
     )
 }
 
-export default Navbar 
+export default Navbar

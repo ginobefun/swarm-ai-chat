@@ -34,6 +34,7 @@ export interface Messages {
         lightMode: string
         darkMode: string
         systemMode: string
+        discoverAgents: string
     }
 
     // 侧边栏
@@ -65,6 +66,8 @@ export interface Messages {
         selectSession: string
         noMembers: string
         untitledSession: string
+        agents: string
+        messages: string
     }
 
     // 工作区
@@ -100,6 +103,11 @@ export interface Messages {
             dataProcessing: string
             creativityInspiration: string
             logicalAnalysis: string
+            requirementAnalyst: string
+            userResearcher: string
+            techEvaluator: string
+            dataAnalyst: string
+            creativeMaster: string
         }
     }
 
@@ -121,6 +129,50 @@ export interface Messages {
         designArchitecture: string
         completed: string
         pending: string
+    }
+
+    // 欢迎页面
+    welcome: {
+        title: string
+        subtitle: string
+        createNewSession: string
+        exploreAgents: string
+        quickStartLabel: string
+        featuredLabel: string
+        features: {
+            multiAgent: {
+                title: string
+                description: string
+            }
+            professionalRoles: {
+                title: string
+                description: string
+            }
+            structuredOutput: {
+                title: string
+                description: string
+            }
+        }
+        quickStart: {
+            title: string
+            subtitle: string
+            step1: {
+                title: string
+                description: string
+            }
+            step2: {
+                title: string
+                description: string
+            }
+            step3: {
+                title: string
+                description: string
+            }
+        }
+        featuredAgents: {
+            title: string
+            subtitle: string
+        }
     }
 
     // 会话管理
@@ -228,6 +280,7 @@ export const locales: Record<LocaleKey, Messages> = {
             lightMode: '浅色模式',
             darkMode: '深色模式',
             systemMode: '跟随系统',
+            discoverAgents: '发现 AI 智能体',
         },
         sidebar: {
             searchPlaceholder: '搜索对话...',
@@ -255,6 +308,8 @@ export const locales: Record<LocaleKey, Messages> = {
             selectSession: '请选择一个会话开始对话',
             noMembers: '暂无成员',
             untitledSession: '未命名会话',
+            agents: '个 AI 智能体',
+            messages: '条消息',
         },
         workspace: {
             title: '工作区',
@@ -286,6 +341,11 @@ export const locales: Record<LocaleKey, Messages> = {
                 dataProcessing: '擅长数据处理和可视化',
                 creativityInspiration: '激发创意灵感',
                 logicalAnalysis: '逻辑分析和论证',
+                requirementAnalyst: '专业的需求梳理和业务分析专家',
+                userResearcher: '深入了解用户需求和行为模式',
+                techEvaluator: '评估技术方案和架构设计',
+                dataAnalyst: '擅长数据分析和可视化报告',
+                creativeMaster: '激发创意灵感，提供创新思路',
             },
         },
         messages: {
@@ -303,6 +363,48 @@ export const locales: Record<LocaleKey, Messages> = {
             designArchitecture: '设计技术架构方案',
             completed: '已完成',
             pending: '待完成',
+        },
+        welcome: {
+            title: '欢迎使用 SwarmAI.chat',
+            subtitle: '多智能体协作平台，让 AI 团队为您服务',
+            createNewSession: '创建新会话',
+            exploreAgents: '探索 AI 智能体',
+            quickStartLabel: '快速上手',
+            featuredLabel: '精选推荐',
+            features: {
+                multiAgent: {
+                    title: '多智能体协作',
+                    description: '将不同专业领域的 AI 智能体组成团队，协同完成复杂任务'
+                },
+                professionalRoles: {
+                    title: '专业角色扮演',
+                    description: '每个 AI 都有专业背景，如分析师、创意师、技术专家等角色'
+                },
+                structuredOutput: {
+                    title: '结构化输出',
+                    description: '智能整理对话内容，生成摘要、任务清单等结构化文档'
+                }
+            },
+            quickStart: {
+                title: '如何开始？',
+                subtitle: '三个简单步骤，立即体验 AI 团队协作的强大功能',
+                step1: {
+                    title: '创建新会话',
+                    description: '点击左侧"创建新会话"开始对话'
+                },
+                step2: {
+                    title: '邀请 AI 智能体',
+                    description: '选择适合的 AI 智能体加入您的讨论'
+                },
+                step3: {
+                    title: '开始协作',
+                    description: '使用@符号定向特定 AI 回答问题'
+                }
+            },
+            featuredAgents: {
+                title: '热门 AI 智能体',
+                subtitle: '选择专业的 AI 角色来协助您完成各种任务'
+            }
         },
         session: {
             // 会话类型
@@ -406,6 +508,7 @@ export const locales: Record<LocaleKey, Messages> = {
             lightMode: 'Light Mode',
             darkMode: 'Dark Mode',
             systemMode: 'System',
+            discoverAgents: 'Discover AI Agents',
         },
         sidebar: {
             searchPlaceholder: 'Search chats...',
@@ -433,6 +536,8 @@ export const locales: Record<LocaleKey, Messages> = {
             selectSession: 'Please select a session to start conversation',
             noMembers: 'No members',
             untitledSession: 'Untitled Session',
+            agents: ' AI agents',
+            messages: ' messages',
         },
         workspace: {
             title: 'Workspace',
@@ -464,6 +569,11 @@ export const locales: Record<LocaleKey, Messages> = {
                 dataProcessing: 'Expert in data processing and visualization',
                 creativityInspiration: 'Inspiring creativity and innovation',
                 logicalAnalysis: 'Logical analysis and reasoning',
+                requirementAnalyst: 'Professional requirement analysis and business strategy expert',
+                userResearcher: 'Deep understanding of user needs and behavior patterns',
+                techEvaluator: 'Evaluate technical solutions and architecture design',
+                dataAnalyst: 'Expert in data analysis and visualization reports',
+                creativeMaster: 'Inspire creative ideas and provide innovative solutions',
             },
         },
         messages: {
@@ -481,6 +591,48 @@ export const locales: Record<LocaleKey, Messages> = {
             designArchitecture: 'Design Technical Architecture',
             completed: 'Completed',
             pending: 'Pending',
+        },
+        welcome: {
+            title: 'Welcome to SwarmAI.chat',
+            subtitle: 'Multi-agent collaboration platform where AI teams work for you',
+            createNewSession: 'Create New Session',
+            exploreAgents: 'Explore AI Agents',
+            quickStartLabel: 'Quick Start',
+            featuredLabel: 'Featured',
+            features: {
+                multiAgent: {
+                    title: 'Multi-Agent Collaboration',
+                    description: 'Assemble AI agents from different domains into teams to tackle complex tasks together'
+                },
+                professionalRoles: {
+                    title: 'Professional Role-Playing',
+                    description: 'Each AI has professional backgrounds as analysts, creatives, technical experts, and more'
+                },
+                structuredOutput: {
+                    title: 'Structured Output',
+                    description: 'Intelligently organize conversations to generate summaries, task lists, and structured documents'
+                }
+            },
+            quickStart: {
+                title: 'How to Get Started?',
+                subtitle: 'Three simple steps to experience the power of AI team collaboration',
+                step1: {
+                    title: 'Create New Session',
+                    description: 'Click "Create New Session" on the left to start chatting'
+                },
+                step2: {
+                    title: 'Invite AI Agents',
+                    description: 'Select suitable AI agents to join your discussion'
+                },
+                step3: {
+                    title: 'Start Collaborating',
+                    description: 'Use @ symbol to direct specific AI agents to answer questions'
+                }
+            },
+            featuredAgents: {
+                title: 'Popular AI Agents',
+                subtitle: 'Choose professional AI roles to assist you with various tasks'
+            }
         },
         session: {
             // Session types
