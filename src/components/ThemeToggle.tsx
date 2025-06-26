@@ -64,8 +64,8 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({ className = '' }) => {
                     <button
                         onClick={() => handleThemeChange('light')}
                         className={`flex items-center gap-3 w-full px-4 py-3 text-sm text-left transition-colors duration-200 hover:bg-slate-50 dark:hover:bg-slate-700 ${theme === 'light'
-                                ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                                : 'text-slate-700 dark:text-slate-200'
+                            ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                            : 'text-slate-700 dark:text-slate-200'
                             }`}
                     >
                         <span className="text-base">☀️</span>
@@ -74,8 +74,8 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({ className = '' }) => {
                     <button
                         onClick={() => handleThemeChange('dark')}
                         className={`flex items-center gap-3 w-full px-4 py-3 text-sm text-left transition-colors duration-200 hover:bg-slate-50 dark:hover:bg-slate-700 ${theme === 'dark'
-                                ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                                : 'text-slate-700 dark:text-slate-200'
+                            ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                            : 'text-slate-700 dark:text-slate-200'
                             }`}
                     >
                         <span className="text-base">🌙</span>
@@ -84,8 +84,8 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({ className = '' }) => {
                     <button
                         onClick={() => handleThemeChange('system')}
                         className={`flex items-center gap-3 w-full px-4 py-3 text-sm text-left transition-colors duration-200 hover:bg-slate-50 dark:hover:bg-slate-700 ${theme === 'system'
-                                ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                                : 'text-slate-700 dark:text-slate-200'
+                            ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                            : 'text-slate-700 dark:text-slate-200'
                             }`}
                     >
                         <span className="text-base">💻</span>

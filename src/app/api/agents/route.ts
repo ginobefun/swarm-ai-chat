@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/database/prisma'
 import type { Prisma } from '@prisma/client'
 
-// GET: 获取AI角色列表
+// GET: 获取 AI 智能体列表
 export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url)
@@ -11,7 +11,7 @@ export async function GET(request: Request) {
         const search = searchParams.get('search')
 
         // 构建查询条件
-        const where: Prisma.AIAgentWhereInput = {}
+        const where: Prisma.SwarmAIAgentWhereInput = {}
 
         if (category) {
             where.tags = { has: category }
@@ -29,11 +29,11 @@ export async function GET(request: Request) {
             ]
         }
 
-        // 只获取激活的公开角色
+        // 只获取激活的公开智能体
         where.isActive = true
         where.isPublic = true
 
-        const agents = await prisma.aIAgent.findMany({
+        const agents = await prisma.swarmAIAgent.findMany({
             where,
             include: {
                 agentSkills: {
@@ -103,11 +103,11 @@ export async function GET(request: Request) {
             count: transformedAgents.length
         })
     } catch (error) {
-        console.error('获取AI角色列表失败:', error)
+        console.error('获取 AI 智能体列表失败：', error)
         return NextResponse.json(
             {
                 success: false,
-                error: '获取AI角色列表失败',
+                error: '获取 AI 智能体列表失败',
                 details: error instanceof Error ? error.message : '未知错误'
             },
             { status: 500 }
@@ -115,7 +115,7 @@ export async function GET(request: Request) {
     }
 }
 
-// POST: 创建新AI角色
+// POST: 创建新 AI 智能体
 export async function POST(request: Request) {
     try {
         const body = await request.json()
@@ -123,7 +123,7 @@ export async function POST(request: Request) {
         // 验证必要字段
         if (!body.id || !body.name) {
             return NextResponse.json(
-                { success: false, error: '缺少必要字段：id和name' },
+                { success: false, error: '缺少必要字段：id 和 name' },
                 { status: 400 }
             )
         }
@@ -149,7 +149,7 @@ export async function POST(request: Request) {
             version: body.version || '1.0.0'
         }
 
-        const agent = await prisma.aIAgent.create({
+        const agent = await prisma.swarmAIAgent.create({
             data: agentData,
             include: {
                 agentSkills: {
@@ -170,11 +170,11 @@ export async function POST(request: Request) {
             data: agent
         }, { status: 201 })
     } catch (error) {
-        console.error('创建AI角色失败:', error)
+        console.error('创建 AI 智能体失败：', error)
         return NextResponse.json(
             {
                 success: false,
-                error: '创建AI角色失败',
+                error: '创建 AI 智能体失败',
                 details: error instanceof Error ? error.message : '未知错误'
             },
             { status: 500 }
@@ -182,7 +182,7 @@ export async function POST(request: Request) {
     }
 }
 
-// PUT: 更新AI角色
+// PUT: 更新 AI 智能体
 export async function PUT(request: Request) {
     try {
         const body = await request.json()
@@ -190,12 +190,12 @@ export async function PUT(request: Request) {
 
         if (!id) {
             return NextResponse.json(
-                { success: false, error: '缺少角色ID' },
+                { success: false, error: '缺少智能体 ID' },
                 { status: 400 }
             )
         }
 
-        const agent = await prisma.aIAgent.update({
+        const agent = await prisma.swarmAIAgent.update({
             where: { id },
             data: updates,
             include: {
@@ -217,11 +217,45 @@ export async function PUT(request: Request) {
             data: agent
         })
     } catch (error) {
-        console.error('更新AI角色失败:', error)
+        console.error('更新 AI 智能体失败：', error)
         return NextResponse.json(
             {
                 success: false,
-                error: '更新AI角色失败',
+                error: '更新 AI 智能体失败',
+                details: error instanceof Error ? error.message : '未知错误'
+            },
+            { status: 500 }
+        )
+    }
+}
+
+// DELETE: 删除 AI 智能体
+export async function DELETE(request: Request) {
+    try {
+        const { searchParams } = new URL(request.url)
+        const id = searchParams.get('id')
+
+        if (!id) {
+            return NextResponse.json(
+                { success: false, error: '缺少智能体 ID' },
+                { status: 400 }
+            )
+        }
+
+        await prisma.swarmAIAgent.delete({
+            where: { id }
+        })
+
+        return NextResponse.json({
+            success: true,
+            message: '智能体删除成功'
+        })
+    } catch (error) {
+        console.error('删除 AI 智能体失败：', error)
+        return NextResponse.json(
+            {
+                success: false,
+                error: '删除 AI 智能体失败',
                 details: error instanceof Error ? error.message : '未知错误'
             },
             { status: 500 }

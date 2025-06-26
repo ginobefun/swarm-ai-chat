@@ -1,0 +1,10 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+1、使用 TailWind CSS 和 Shadcn UI 作为默认的样式和组件库；
+2、界面上使用的文案、提示信息等用户可见的内容都需要使用 next-intl 来实现国际化；
+3、代码中添加必要的注释，注释和日志输出都使用英文，以符合多个国家开发者的阅读习惯；
+4、页面需要适配暗黑模式和响应式设计，以便更好的使用体验；
+5、参考 [design-guildlines.md](mdc:documents/design-guildlines.md) 优化页面设计；

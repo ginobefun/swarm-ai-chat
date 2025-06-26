@@ -1,5 +1,11 @@
 import { prisma } from './prisma'
-import type { Session as PrismaSession, SessionType, SessionStatus, Prisma } from '@prisma/client'
+import type {
+    SwarmChatSession,
+    SwarmChatMessage,
+    SwarmChatSessionParticipant,
+    SwarmSessionType,
+    Prisma
+} from '@prisma/client'
 
 // 定义会话类型，与前端兼容
 export interface Session {
@@ -20,7 +26,7 @@ export interface Session {
 }
 
 // 转换 Prisma 会话为前端会话格式
-function convertPrismaSessionToSession(session: PrismaSession): Session {
+function convertPrismaSessionToSession(session: SwarmChatSession): Session {
     return {
         id: session.id,
         title: session.title,
@@ -40,22 +46,22 @@ function convertPrismaSessionToSession(session: PrismaSession): Session {
 }
 
 // 获取所有会话
-export async function getAllSessions(): Promise<Session[]> {
-    try {
-        const sessions = await prisma.session.findMany({
-            orderBy: { updatedAt: 'desc' }
-        })
-        return sessions.map(convertPrismaSessionToSession)
-    } catch (error) {
-        console.error('获取会话列表失败：', error)
-        throw new Error('获取会话列表失败')
-    }
+export async function getAllSessions(): Promise<SwarmChatSession[]> {
+    return await prisma.swarmChatSession.findMany({
+        orderBy: { updatedAt: 'desc' },
+        include: {
+            primaryAgent: true,
+            _count: {
+                select: { messages: true }
+            }
+        }
+    })
 }
 
 // 根据用户 ID 获取会话
 export async function getSessionsByUserId(userId: string): Promise<Session[]> {
     try {
-        const sessions = await prisma.session.findMany({
+        const sessions = await prisma.swarmChatSession.findMany({
             where: { createdById: userId },
             orderBy: { updatedAt: 'desc' }
         })
@@ -67,83 +73,60 @@ export async function getSessionsByUserId(userId: string): Promise<Session[]> {
 }
 
 // 根据 ID 获取单个会话
-export async function getSessionById(id: string): Promise<Session | null> {
-    try {
-        const session = await prisma.session.findUnique({
-            where: { id }
-        })
-        return session ? convertPrismaSessionToSession(session) : null
-    } catch (error) {
-        console.error('获取会话详情失败：', error)
-        throw new Error('获取会话详情失败')
-    }
+export async function getSessionById(sessionId: string): Promise<SwarmChatSession | null> {
+    return await prisma.swarmChatSession.findUnique({
+        where: { id: sessionId },
+        include: {
+            primaryAgent: true,
+            messages: {
+                orderBy: { createdAt: 'asc' }
+            },
+            participants: {
+                include: {
+                    user: true,
+                    agent: true
+                }
+            }
+        }
+    })
 }
 
 // 创建会话
-export async function createSession(sessionData: {
+export async function createSession(data: {
     title?: string
     description?: string
-    type?: 'direct' | 'group' | 'workflow'
+    type?: SwarmSessionType
     createdById: string
     primaryAgentId?: string
-    configuration?: Prisma.InputJsonValue
-    isPublic?: boolean
-    isTemplate?: boolean
-}): Promise<Session> {
-    try {
-        const session = await prisma.session.create({
-            data: {
-                title: sessionData.title || '新会话',
-                description: sessionData.description,
-                type: (sessionData.type?.toUpperCase() || 'DIRECT') as SessionType,
-                createdById: sessionData.createdById,
-                primaryAgentId: sessionData.primaryAgentId,
-                configuration: sessionData.configuration || {},
-                isPublic: sessionData.isPublic || false,
-                isTemplate: sessionData.isTemplate || false
-            }
-        })
-        return convertPrismaSessionToSession(session)
-    } catch (error) {
-        console.error('创建会话失败：', error)
-        throw new Error('创建会话失败')
-    }
+}): Promise<SwarmChatSession> {
+    return await prisma.swarmChatSession.create({
+        data,
+        include: {
+            primaryAgent: true,
+            createdBy: true
+        }
+    })
 }
 
 // 更新会话
 export async function updateSession(
-    id: string,
-    updates: Partial<Pick<Session, 'title' | 'description' | 'status' | 'configuration'>>
-): Promise<Session> {
-    try {
-        const updateData: Prisma.SessionUpdateInput = {}
-
-        if (updates.title !== undefined) updateData.title = updates.title
-        if (updates.description !== undefined) updateData.description = updates.description
-        if (updates.status !== undefined) updateData.status = updates.status.toUpperCase() as SessionStatus
-        if (updates.configuration !== undefined) updateData.configuration = updates.configuration as Prisma.InputJsonValue
-
-        const session = await prisma.session.update({
-            where: { id },
-            data: updateData
-        })
-        return convertPrismaSessionToSession(session)
-    } catch (error) {
-        console.error('更新会话失败：', error)
-        throw new Error('更新会话失败')
-    }
+    sessionId: string,
+    data: Partial<Pick<SwarmChatSession, 'title' | 'description' | 'status'>>
+): Promise<SwarmChatSession> {
+    return await prisma.swarmChatSession.update({
+        where: { id: sessionId },
+        data: {
+            ...data,
+            updatedAt: new Date()
+        }
+    })
 }
 
 // 删除会话
-export async function deleteSession(id: string): Promise<void> {
-    try {
-        await prisma.session.delete({
-            where: { id }
-        })
-    } catch (error) {
-        console.error('删除会话失败：', error)
-        throw new Error('删除会话失败')
-    }
+export async function deleteSession(sessionId: string): Promise<void> {
+    await prisma.swarmChatSession.delete({
+        where: { id: sessionId }
+    })
 }
 
 // 获取会话统计信息
@@ -152,10 +135,10 @@ export async function getSessionStats(userId?: string) {
         const where = userId ? { createdById: userId } : {}
 
         const [total, active, completed, archived] = await Promise.all([
-            prisma.session.count({ where }),
-            prisma.session.count({ where: { ...where, status: 'ACTIVE' } }),
-            prisma.session.count({ where: { ...where, status: 'COMPLETED' } }),
-            prisma.session.count({ where: { ...where, status: 'ARCHIVED' } })
+            prisma.swarmChatSession.count({ where }),
+            prisma.swarmChatSession.count({ where: { ...where, status: 'ACTIVE' } }),
+            prisma.swarmChatSession.count({ where: { ...where, status: 'COMPLETED' } }),
+            prisma.swarmChatSession.count({ where: { ...where, status: 'ARCHIVED' } })
         ])
 
         return { total, active, completed, archived }
@@ -166,27 +149,100 @@ export async function getSessionStats(userId?: string) {
 }
 
 // 搜索会话
-export async function searchSessions(query: string, userId?: string): Promise<Session[]> {
-    try {
-        const where = {
-            AND: [
-                userId ? { createdById: userId } : {},
-                {
-                    OR: [
-                        { title: { contains: query, mode: 'insensitive' as const } },
-                        { description: { contains: query, mode: 'insensitive' as const } }
-                    ]
-                }
+export async function searchSessions(query: string): Promise<SwarmChatSession[]> {
+    return await prisma.swarmChatSession.findMany({
+        where: {
+            OR: [
+                { title: { contains: query, mode: 'insensitive' } },
+                { description: { contains: query, mode: 'insensitive' } }
             ]
+        },
+        orderBy: { updatedAt: 'desc' },
+        include: {
+            primaryAgent: true,
+            _count: {
+                select: { messages: true }
+            }
         }
+    })
+}
 
-        const sessions = await prisma.session.findMany({
-            where,
-            orderBy: { updatedAt: 'desc' }
-        })
-        return sessions.map(convertPrismaSessionToSession)
-    } catch (error) {
-        console.error('搜索会话失败：', error)
-        throw new Error('搜索会话失败')
-    }
+export async function addMessageToSession(data: {
+    sessionId: string
+    senderType: 'user' | 'agent' | 'system'
+    senderId: string
+    content: string
+    contentType?: 'text' | 'file' | 'image' | 'code' | 'system'
+    replyToId?: string
+    tokenCount?: number
+    processingTime?: number
+    cost?: number
+}): Promise<SwarmChatMessage> {
+    const message = await prisma.swarmChatMessage.create({
+        data: {
+            ...data,
+            senderType: data.senderType.toUpperCase() as 'USER' | 'AGENT' | 'SYSTEM',
+            contentType: (data.contentType?.toUpperCase() || 'TEXT') as 'TEXT' | 'FILE' | 'IMAGE' | 'CODE' | 'SYSTEM'
+        }
+    })
+
+    // 更新会话的消息计数和更新时间
+    await prisma.swarmChatSession.update({
+        where: { id: data.sessionId },
+        data: {
+            messageCount: { increment: 1 },
+            totalCost: { increment: data.cost || 0 },
+            updatedAt: new Date()
+        }
+    })
+
+    return message
+}
+
+export async function getSessionMessages(sessionId: string): Promise<SwarmChatMessage[]> {
+    return await prisma.swarmChatMessage.findMany({
+        where: { sessionId },
+        orderBy: { createdAt: 'asc' }
+    })
+}
+
+export async function addParticipantToSession(data: {
+    sessionId: string
+    userId?: string
+    agentId?: string
+    role?: 'owner' | 'admin' | 'participant' | 'observer'
+}): Promise<SwarmChatSessionParticipant> {
+    return await prisma.swarmChatSessionParticipant.create({
+        data: {
+            ...data,
+            role: (data.role?.toUpperCase() || 'PARTICIPANT') as 'OWNER' | 'ADMIN' | 'PARTICIPANT' | 'OBSERVER'
+        }
+    })
+}
+
+export async function removeParticipantFromSession(
+    sessionId: string,
+    userId?: string,
+    agentId?: string
+): Promise<void> {
+    await prisma.swarmChatSessionParticipant.deleteMany({
+        where: {
+            sessionId,
+            ...(userId && { userId }),
+            ...(agentId && { agentId })
+        }
+    })
+}
+
+export async function getUserSessions(userId: string): Promise<SwarmChatSession[]> {
+    return await prisma.swarmChatSession.findMany({
+        where: { createdById: userId },
+        orderBy: { updatedAt: 'desc' },
+        include: {
+            primaryAgent: true,
+            _count: {
+                select: { messages: true }
+            }
+        }
+    })
 } 

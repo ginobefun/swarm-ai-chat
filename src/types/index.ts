@@ -1,41 +1,37 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // 直接导入和复用 Prisma 生成的枚举类型
 import {
-    SessionType,
-    SessionStatus,
-    ParticipantRole,
-    SenderType,
-    ContentType,
-    MessageStatus,
-    SkillCategory,
-    Role,
-    SubscriptionStatus,
-    FeedbackType,
-    EntityType
+    SwarmSessionType,
+    SwarmSessionStatus,
+    SwarmParticipantRole,
+    SwarmSenderType,
+    SwarmContentType,
+    SwarmMessageStatus,
+    SwarmSkillCategory,
+    SwarmRole,
+    SubscriptionStatus
 } from '@prisma/client'
 
 // 导出枚举供前端使用 - 直接复用 Prisma 枚举
 export {
-    SessionType,
-    SessionStatus,
-    ParticipantRole,
-    SenderType,
-    ContentType,
-    MessageStatus,
-    SkillCategory,
-    Role,
-    SubscriptionStatus,
-    FeedbackType,
-    EntityType
+    SwarmSessionType as SessionType,
+    SwarmSessionStatus as SessionStatus,
+    SwarmParticipantRole as ParticipantRole,
+    SwarmSenderType as SenderType,
+    SwarmContentType as ContentType,
+    SwarmMessageStatus as MessageStatus,
+    SwarmSkillCategory as SkillCategory,
+    SwarmRole as Role,
+    SubscriptionStatus
 }
 
 // 导出类型（注意：Prisma 生成的枚举值实际上是映射后的小写值）
-export type SessionTypeValue = SessionType // 实际值：'direct' | 'group' | 'workflow'
-export type SessionStatusValue = SessionStatus // 实际值：'active' | 'paused' | 'completed' | 'archived'
-export type ParticipantRoleValue = ParticipantRole // 实际值：'owner' | 'admin' | 'participant' | 'observer'
-export type SenderTypeValue = SenderType // 实际值：'user' | 'agent' | 'system'
-export type ContentTypeValue = ContentType // 实际值：'text' | 'file' | 'image' | 'code' | 'system'
-export type MessageStatusValue = MessageStatus // 实际值：'sending' | 'sent' | 'delivered' | 'read' | 'failed'
+export type SessionTypeValue = SwarmSessionType // 实际值：'direct' | 'group' | 'workflow'
+export type SessionStatusValue = SwarmSessionStatus // 实际值：'active' | 'paused' | 'completed' | 'archived'
+export type ParticipantRoleValue = SwarmParticipantRole // 实际值：'owner' | 'admin' | 'participant' | 'observer'
+export type SenderTypeValue = SwarmSenderType // 实际值：'user' | 'agent' | 'system'
+export type ContentTypeValue = SwarmContentType // 实际值：'text' | 'file' | 'image' | 'code' | 'system'
+export type MessageStatusValue = SwarmMessageStatus // 实际值：'sending' | 'sent' | 'delivered' | 'read' | 'failed'
 
 // 消息类型
 export interface Message {

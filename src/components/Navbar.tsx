@@ -4,9 +4,12 @@
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import { useTranslation } from '../contexts/AppContext'
+import { useSession } from '@/components/providers/AuthProvider'
 import { ThemeToggle } from './ThemeToggle'
 import { LanguageToggle } from './LanguageToggle'
 import { SwarmLogo } from './SwarmLogo'
+import { LoginDialog } from './auth/LoginDialog'
+import UserMenu from './UserMenu'
 
 /**
  * Props interface for Navbar component
@@ -18,13 +21,6 @@ interface NavbarProps {
     isSidebarOpen?: boolean          // Current sidebar state for proper ARIA attributes
     isWorkspaceOpen?: boolean        // Current workspace state (future feature)
     onCreateNew?: () => void         // Handle create new session/chat action
-    onUserClick?: () => void         // Handle user profile/menu click
-    user?: {                         // User information for display
-        name?: string
-        email?: string
-        avatar?: string
-        isLoggedIn: boolean
-    }
 }
 
 /**
@@ -61,26 +57,25 @@ const Navbar: React.FC<NavbarProps> = ({
     onToggleSidebar,
     isSidebarOpen = false,
     onCreateNew,
-    onUserClick,
-    user = { isLoggedIn: false },
 }) => {
     const { t } = useTranslation()
+    const { data: session, isPending } = useSession()
     const [searchValue, setSearchValue] = useState('')
     const [isSearchFocused, setIsSearchFocused] = useState(false)
+    const [isLoginDialogOpen, setIsLoginDialogOpen] = useState(false)
+
+
 
     /**
-     * Get user display initial for avatar
-     * Returns first letter of name, email, or fallback
+     * 登录成功回调
      */
-    const getUserInitial = (): string => {
-        if (user.name && user.name.trim()) {
-            return user.name.trim().charAt(0).toUpperCase()
-        }
-        if (user.email && user.email.trim()) {
-            return user.email.trim().charAt(0).toUpperCase()
-        }
-        return t('navbar.userInitial')
+    const handleLoginSuccess = () => {
+        // 可以在这里执行登录成功后的操作
+        console.log('Login successful')
     }
+
+    // 计算用户状态
+    const isLoggedIn = !!session?.user
 
     /**
      * Handle search input changes with debouncing potential for future optimization
@@ -272,67 +267,58 @@ const Navbar: React.FC<NavbarProps> = ({
                     </div>
                 </div>
 
-                {/* User Profile Menu - Enhanced Mobile Touch Target */}
-                <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="relative flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-full transition-all duration-200 shadow-lg hover:shadow-xl active:shadow-md overflow-hidden group border-2 border-white/30 dark:border-slate-600/30 touch-manipulation"
-                    onClick={onUserClick}
-                    title={user.isLoggedIn ? t('navbar.userMenu') : '登录'}
-                    aria-label={user.isLoggedIn ? t('navbar.userMenuAriaLabel') : '登录或注册'}
-                    aria-haspopup="menu"
-                    style={{
-                        background: user.isLoggedIn
-                            ? 'linear-gradient(135deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%)'
-                            : 'linear-gradient(135deg, #6b7280 0%, #9ca3af 50%, #64748b 100%)'
-                    }}
-                >
-                    {user.isLoggedIn ? (
-                        // Logged in: Show user avatar or initial
-                        <>
-                            {user.avatar ? (
-                                <img
-                                    src={user.avatar}
-                                    alt={user.name || user.email || 'User Avatar'}
-                                    className="w-full h-full object-cover rounded-full"
-                                />
-                            ) : (
-                                <span className="relative z-10 text-white font-semibold text-sm sm:text-base">
-                                    {getUserInitial()}
-                                </span>
-                            )}
-                            {/* Animated Border for Logged In Users */}
-                            <motion.div
-                                animate={{ rotate: 360 }}
-                                transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-                                className="absolute inset-0 rounded-full border-2 border-white/30 dark:border-white/20"
-                            />
-                            {/* Online Status Indicator */}
-                            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 dark:bg-green-500 rounded-full border-2 border-white dark:border-slate-900 shadow-sm"></div>
-                        </>
-                    ) : (
-                        // Not logged in: Show login icon
-                        <>
-                            <svg
-                                className="w-5 h-5 sm:w-6 sm:h-6 text-white"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                                aria-hidden="true"
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                                />
-                            </svg>
-                            {/* Login Hint Indicator */}
-                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-400 dark:bg-orange-500 rounded-full border-2 border-white dark:border-slate-900 shadow-sm animate-pulse"></div>
-                        </>
-                    )}
-                </motion.button>
+                {/* User Profile Menu */}
+                {isLoggedIn ? (
+                    // 已登录用户：显示用户菜单
+                    <UserMenu />
+                ) : (
+                    // 未登录用户：显示登录按钮
+                    <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="relative flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-full transition-all duration-200 shadow-lg hover:shadow-xl active:shadow-md overflow-hidden group border-2 border-white/30 dark:border-slate-600/30 touch-manipulation"
+                        onClick={() => setIsLoginDialogOpen(true)}
+                        title="登录"
+                        aria-label="登录或注册"
+                        disabled={isPending}
+                        style={{
+                            background: 'linear-gradient(135deg, #6b7280 0%, #9ca3af 50%, #64748b 100%)'
+                        }}
+                    >
+                        {isPending ? (
+                            // Loading state
+                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : (
+                            // Not logged in: Show login icon
+                            <>
+                                <svg
+                                    className="w-5 h-5 sm:w-6 sm:h-6 text-white"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                    aria-hidden="true"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                                    />
+                                </svg>
+                                {/* Login Hint Indicator */}
+                                <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-400 dark:bg-orange-500 rounded-full border-2 border-white dark:border-slate-900 shadow-sm animate-pulse"></div>
+                            </>
+                        )}
+                    </motion.button>
+                )}
             </div>
+
+            {/* Login Dialog */}
+            <LoginDialog
+                isOpen={isLoginDialogOpen}
+                onClose={() => setIsLoginDialogOpen(false)}
+                onSuccess={handleLoginSuccess}
+            />
         </motion.nav>
     )
 }

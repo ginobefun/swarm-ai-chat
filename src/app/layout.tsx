@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google"
 import "./globals.css"
 import { LanguageProvider } from '../contexts/AppContext'
 import { ThemeProvider } from '../components/ThemeProvider'
+import { AuthProvider } from '../components/providers/AuthProvider'
 
 // Configure Google Fonts with CSS variables for optimal performance
 // Geist Sans is used for body text and UI elements
@@ -92,19 +93,6 @@ export const metadata: Metadata = {
         images: ["/og-image.png"], // Consistent with Open Graph image
     },
 
-    // Viewport configuration for responsive design
-    viewport: {
-        width: "device-width", // Use device width
-        initialScale: 1, // No initial zoom
-        maximumScale: 1, // Prevent user zoom (consider removing for accessibility)
-    },
-
-    // Theme color for browser UI (address bar, etc.)
-    themeColor: [
-        { media: "(prefers-color-scheme: light)", color: "#6366f1" }, // Light mode: Indigo-500
-        { media: "(prefers-color-scheme: dark)", color: "#1a1a1a" }, // Dark mode: Dark gray
-    ],
-
     // PWA manifest file
     manifest: "/manifest.json",
 
@@ -161,7 +149,10 @@ export default function RootLayout({
                 <ThemeProvider>
                     {/* Language provider for internationalization support */}
                     <LanguageProvider>
-                        {children}
+                        {/* Auth provider for user authentication state management */}
+                        <AuthProvider>
+                            {children}
+                        </AuthProvider>
                     </LanguageProvider>
                 </ThemeProvider>
             </body>

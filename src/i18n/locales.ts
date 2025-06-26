@@ -46,6 +46,18 @@ export interface Messages {
         discoverAgents: string
     }
 
+    // 用户菜单
+    userMenu: {
+        myProfile: string
+        settings: string
+        preferences: string
+        account: string
+        signOut: string
+        confirmSignOut: string
+        signOutMessage: string
+        signingOut: string
+    }
+
     // 侧边栏
     sidebar: {
         searchPlaceholder: string
@@ -300,6 +312,18 @@ export const locales: Record<LocaleKey, Messages> = {
             systemMode: '跟随系统',
             discoverAgents: '发现 AI 智能体',
         },
+
+        // 用户菜单
+        userMenu: {
+            myProfile: '个人资料',
+            settings: '设置',
+            preferences: '偏好设置',
+            account: '账户管理',
+            signOut: '退出登录',
+            confirmSignOut: '确认退出',
+            signOutMessage: '您确定要退出登录吗？',
+            signingOut: '正在退出...',
+        },
         sidebar: {
             searchPlaceholder: '搜索对话...',
             pinnedChats: '置顶对话',
@@ -536,6 +560,18 @@ export const locales: Record<LocaleKey, Messages> = {
             darkMode: 'Dark Mode',
             systemMode: 'System',
             discoverAgents: 'Discover AI Agents',
+        },
+
+        // User menu
+        userMenu: {
+            myProfile: 'My Profile',
+            settings: 'Settings',
+            preferences: 'Preferences',
+            account: 'Account',
+            signOut: 'Sign Out',
+            confirmSignOut: 'Confirm Sign Out',
+            signOutMessage: 'Are you sure you want to sign out?',
+            signingOut: 'Signing out...',
         },
         sidebar: {
             searchPlaceholder: 'Search chats...',

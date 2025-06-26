@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
 
         if (search) {
             // 搜索会话
-            sessions = await searchSessions(search, userId || undefined)
+            sessions = await searchSessions(search)
         } else if (userId) {
             // 获取特定用户的会话
             sessions = await getSessionsByUserId(userId)

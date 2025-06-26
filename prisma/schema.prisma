@@ -1,12 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
-  // output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -14,348 +7,314 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ============================================================================
-// 用户和权限系统
-// ============================================================================
+model SwarmUser {
+  id                      String                        @id @default(uuid()) @db.Uuid
+  userId                  String                        @unique @map("user_id")
+  username                String?                       @unique @db.VarChar(50)
+  avatarUrl               String?                       @map("avatar_url")
+  role                    SwarmRole                     @default(USER)
+  subscriptionStatus      SubscriptionStatus            @default(FREE) @map("subscription_status")
+  preferences             Json                          @default("{}")
+  createdAt               DateTime                      @default(now()) @map("created_at")
+  updatedAt               DateTime                      @default(now()) @updatedAt @map("updated_at")
+  createdAgents           SwarmAIAgent[]
+  chatSessionParticipants SwarmChatSessionParticipant[]
+  chatSessions            SwarmChatSession[]
+  user                    User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-model User {
-  id                  String   @id @default(uuid()) @db.Uuid
-  email               String   @unique @db.VarChar(255)
-  name                String?  @db.VarChar(255)
-  avatarUrl           String?  @map("avatar_url")
-  role                Role     @default(USER)
-  subscriptionStatus  SubscriptionStatus @default(FREE) @map("subscription_status")
-  preferences         Json     @default("{}")
-  createdAt           DateTime @default(now()) @map("created_at")
-  updatedAt           DateTime @default(now()) @updatedAt @map("updated_at")
-
-  // Relations
-  createdAgents       AIAgent[]
-  sessions            Session[]
-  sessionParticipants SessionParticipant[]
-  messageFeedback     MessageFeedback[]
-  usageStatistics     UsageStatistic[]
-
-  @@map("users")
+  @@map("swarm_users")
 }
 
-// ============================================================================
-// 核心业务表
-// ============================================================================
-
-model SkillTag {
-  id          String      @id @db.VarChar(50)
-  name        String      @db.VarChar(100)
-  category    SkillCategory
-  color       String      @db.VarChar(7)
+model SwarmSkillTag {
+  id          String              @id @db.VarChar(50)
+  name        String              @db.VarChar(100)
+  category    SwarmSkillCategory
+  color       String              @db.VarChar(7)
   description String?
-  isActive    Boolean     @default(true) @map("is_active")
-  sortOrder   Int         @default(0) @map("sort_order")
-  createdAt   DateTime    @default(now()) @map("created_at")
-  updatedAt   DateTime    @default(now()) @updatedAt @map("updated_at")
+  isActive    Boolean             @default(true) @map("is_active")
+  sortOrder   Int                 @default(0) @map("sort_order")
+  createdAt   DateTime            @default(now()) @map("created_at")
+  updatedAt   DateTime            @default(now()) @updatedAt @map("updated_at")
+  agentSkills SwarmAIAgentSkill[]
 
-  // Relations
-  agentSkills AgentSkill[]
-
-  @@map("skill_tags")
+  @@map("swarm_skill_tags")
 }
 
-model Tool {
-  id                  String      @id @db.VarChar(50)
-  name                String      @db.VarChar(100)
-  icon                String?     @db.VarChar(10)
+model SwarmTool {
+  id                  String             @id @db.VarChar(50)
+  name                String             @db.VarChar(100)
+  icon                String?            @db.VarChar(10)
   description         String?
-  category            String      @db.VarChar(50)
-  version             String      @default("1.0.0") @db.VarChar(20)
-  apiEndpoint         String?     @map("api_endpoint")
-  configurationSchema Json        @default("{}") @map("configuration_schema")
-  defaultConfig       Json        @default("{}") @map("default_config")
-  isActive            Boolean     @default(true) @map("is_active")
-  requiresAuth        Boolean     @default(false) @map("requires_auth")
-  costPerUse          Decimal     @default(0) @map("cost_per_use") @db.Decimal(10, 4)
-  rateLimit           Int         @default(100) @map("rate_limit")
-  createdAt           DateTime    @default(now()) @map("created_at")
-  updatedAt           DateTime    @default(now()) @updatedAt @map("updated_at")
+  category            String             @db.VarChar(50)
+  version             String             @default("1.0.0") @db.VarChar(20)
+  apiEndpoint         String?            @map("api_endpoint")
+  configurationSchema Json               @default("{}") @map("configuration_schema")
+  defaultConfig       Json               @default("{}") @map("default_config")
+  isActive            Boolean            @default(true) @map("is_active")
+  requiresAuth        Boolean            @default(false) @map("requires_auth")
+  costPerUse          Decimal            @default(0) @map("cost_per_use") @db.Decimal(10, 4)
+  rateLimit           Int                @default(100) @map("rate_limit")
+  createdAt           DateTime           @default(now()) @map("created_at")
+  updatedAt           DateTime           @default(now()) @updatedAt @map("updated_at")
+  agentTools          SwarmAIAgentTool[]
 
-  // Relations
-  agentTools          AgentTool[]
-
-  @@map("tools")
+  @@map("swarm_tools")
 }
 
-model AIAgent {
-  id                   String    @id @db.VarChar(50)
-  name                 String    @db.VarChar(100)
-  avatar               String?   @db.VarChar(10)
-  avatarStyle          String?   @map("avatar_style")
-  description          String?
-  specialty            String?   @db.VarChar(255)
-  personality          String?
-  modelPreference      String    @default("gpt-4") @map("model_preference") @db.VarChar(50)
-  systemPrompt         String?   @map("system_prompt")
-  tags                 String[]
-  capabilityLevel      Int       @default(1) @map("capability_level")
-  averageResponseTime  Int       @default(3000) @map("average_response_time")
-  costPerMessage       Decimal   @default(0) @map("cost_per_message") @db.Decimal(10, 4)
-  isActive             Boolean   @default(true) @map("is_active")
-  isPublic             Boolean   @default(true) @map("is_public")
-  isFeatured           Boolean   @default(false) @map("is_featured")
-  createdById          String?   @map("created_by") @db.Uuid
-  version              String    @default("1.0.0") @db.VarChar(20)
-  usageCount           Int       @default(0) @map("usage_count")
-  rating               Decimal   @default(0.0) @db.Decimal(3, 2)
-  createdAt            DateTime  @default(now()) @map("created_at")
-  updatedAt            DateTime  @default(now()) @updatedAt @map("updated_at")
+model SwarmAIAgent {
+  id                  String                        @id @db.VarChar(50)
+  name                String                        @db.VarChar(100)
+  avatar              String?                       @db.VarChar(10)
+  avatarStyle         String?                       @map("avatar_style")
+  description         String?
+  specialty           String?                       @db.VarChar(255)
+  personality         String?
+  modelPreference     String                        @default("gpt-4") @map("model_preference") @db.VarChar(50)
+  systemPrompt        String?                       @map("system_prompt")
+  tags                String[]
+  capabilityLevel     Int                           @default(1) @map("capability_level")
+  averageResponseTime Int                           @default(3000) @map("average_response_time")
+  costPerMessage      Decimal                       @default(0) @map("cost_per_message") @db.Decimal(10, 4)
+  isActive            Boolean                       @default(true) @map("is_active")
+  isPublic            Boolean                       @default(true) @map("is_public")
+  isFeatured          Boolean                       @default(false) @map("is_featured")
+  createdById         String?                       @map("created_by") @db.Uuid
+  version             String                        @default("1.0.0") @db.VarChar(20)
+  usageCount          Int                           @default(0) @map("usage_count")
+  rating              Decimal                       @default(0.0) @db.Decimal(3, 2)
+  createdAt           DateTime                      @default(now()) @map("created_at")
+  updatedAt           DateTime                      @default(now()) @updatedAt @map("updated_at")
+  agentSkills         SwarmAIAgentSkill[]
+  agentTools          SwarmAIAgentTool[]
+  usageExamples       SwarmAIAgentUsageExample[]
+  createdBy           SwarmUser?                    @relation(fields: [createdById], references: [id])
+  sessionParticipants SwarmChatSessionParticipant[]
+  primarySessions     SwarmChatSession[]
 
-  // Relations
-  createdBy            User?     @relation(fields: [createdById], references: [id])
-  agentSkills          AgentSkill[]
-  agentTools           AgentTool[]
-  usageExamples        UsageExample[]
-  primarySessions      Session[]
-  sessionParticipants  SessionParticipant[]
-
-  @@map("ai_agents")
+  @@map("swarm_ai_agents")
 }
 
-// ============================================================================
-// 关联表
-// ============================================================================
-
-model AgentSkill {
-  id               String     @id @default(uuid()) @db.Uuid
-  agentId          String     @map("agent_id") @db.VarChar(50)
-  skillId          String     @map("skill_id") @db.VarChar(50)
-  isPrimary        Boolean    @default(false) @map("is_primary")
-  proficiencyLevel Int        @default(3) @map("proficiency_level")
-  createdAt        DateTime   @default(now()) @map("created_at")
-
-  // Relations
-  agent            AIAgent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
-  skill            SkillTag   @relation(fields: [skillId], references: [id], onDelete: Cascade)
+model SwarmAIAgentSkill {
+  id               String        @id @default(uuid()) @db.Uuid
+  agentId          String        @map("agent_id") @db.VarChar(50)
+  skillId          String        @map("skill_id") @db.VarChar(50)
+  isPrimary        Boolean       @default(false) @map("is_primary")
+  proficiencyLevel Int           @default(3) @map("proficiency_level")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  agent            SwarmAIAgent  @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  skill            SwarmSkillTag @relation(fields: [skillId], references: [id], onDelete: Cascade)
 
   @@unique([agentId, skillId])
-  @@map("agent_skills")
+  @@map("swarm_ai_agent_skills")
 }
 
-model AgentTool {
-  id           String    @id @default(uuid()) @db.Uuid
-  agentId      String    @map("agent_id") @db.VarChar(50)
-  toolId       String    @map("tool_id") @db.VarChar(50)
-  isPrimary    Boolean   @default(false) @map("is_primary")
-  customConfig Json      @default("{}") @map("custom_config")
-  isEnabled    Boolean   @default(true) @map("is_enabled")
-  createdAt    DateTime  @default(now()) @map("created_at")
-
-  // Relations
-  agent        AIAgent   @relation(fields: [agentId], references: [id], onDelete: Cascade)
-  tool         Tool      @relation(fields: [toolId], references: [id], onDelete: Cascade)
+model SwarmAIAgentTool {
+  id           String       @id @default(uuid()) @db.Uuid
+  agentId      String       @map("agent_id") @db.VarChar(50)
+  toolId       String       @map("tool_id") @db.VarChar(50)
+  isPrimary    Boolean      @default(false) @map("is_primary")
+  customConfig Json         @default("{}") @map("custom_config")
+  isEnabled    Boolean      @default(true) @map("is_enabled")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  agent        SwarmAIAgent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  tool         SwarmTool    @relation(fields: [toolId], references: [id], onDelete: Cascade)
 
   @@unique([agentId, toolId])
-  @@map("agent_tools")
+  @@map("swarm_ai_agent_tools")
 }
 
-model UsageExample {
-  id             String      @id @default(uuid()) @db.Uuid
-  agentId        String      @map("agent_id") @db.VarChar(50)
-  title          String      @db.VarChar(255)
-  prompt         String
+model SwarmAIAgentUsageExample {
+  id              String       @id @default(uuid()) @db.Uuid
+  agentId         String       @map("agent_id") @db.VarChar(50)
+  title           String       @db.VarChar(255)
+  prompt          String
+  description     String?
+  category        String       @default("general") @db.VarChar(50)
+  difficultyLevel Int          @default(1) @map("difficulty_level")
+  expectedOutput  String?      @map("expected_output")
+  successRate     Decimal      @default(0) @map("success_rate") @db.Decimal(3, 2)
+  orderIndex      Int          @default(0) @map("order_index")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  agent           SwarmAIAgent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@map("swarm_ai_agent_usage_examples")
+}
+
+model SwarmChatSession {
+  id             String                        @id @default(uuid()) @db.Uuid
+  title          String?                       @db.VarChar(255)
   description    String?
-  category       String      @default("general") @db.VarChar(50)
-  difficultyLevel Int        @default(1) @map("difficulty_level")
-  expectedOutput String?     @map("expected_output")
-  successRate    Decimal     @default(0) @map("success_rate") @db.Decimal(3, 2)
-  orderIndex     Int         @default(0) @map("order_index")
-  createdAt      DateTime    @default(now()) @map("created_at")
+  type           SwarmSessionType              @default(DIRECT)
+  status         SwarmSessionStatus            @default(ACTIVE)
+  createdById    String                        @map("created_by") @db.Uuid
+  primaryAgentId String?                       @map("primary_agent_id") @db.VarChar(50)
+  configuration  Json                          @default("{}")
+  isPublic       Boolean                       @default(false) @map("is_public")
+  isTemplate     Boolean                       @default(false) @map("is_template")
+  messageCount   Int                           @default(0) @map("message_count")
+  totalCost      Decimal                       @default(0) @map("total_cost") @db.Decimal(10, 4)
+  createdAt      DateTime                      @default(now()) @map("created_at")
+  updatedAt      DateTime                      @default(now()) @updatedAt @map("updated_at")
+  messages       SwarmChatMessage[]
+  participants   SwarmChatSessionParticipant[]
+  createdBy      SwarmUser                     @relation(fields: [createdById], references: [id])
+  primaryAgent   SwarmAIAgent?                 @relation(fields: [primaryAgentId], references: [id])
 
-  // Relations
-  agent          AIAgent     @relation(fields: [agentId], references: [id], onDelete: Cascade)
-
-  @@map("usage_examples")
+  @@map("swarm_chat_sessions")
 }
 
-// ============================================================================
-// 会话和消息系统
-// ============================================================================
+model SwarmChatSessionParticipant {
+  id        String               @id @default(uuid()) @db.Uuid
+  sessionId String               @map("session_id") @db.Uuid
+  agentId   String?              @map("agent_id") @db.VarChar(50)
+  role      SwarmParticipantRole @default(PARTICIPANT)
+  isActive  Boolean              @default(true) @map("is_active")
+  joinedAt  DateTime             @default(now()) @map("joined_at")
+  userId    String?              @map("user_id") @db.Uuid
+  agent     SwarmAIAgent?        @relation(fields: [agentId], references: [id])
+  session   SwarmChatSession     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user      SwarmUser?           @relation(fields: [userId], references: [id])
+
+  @@map("swarm_chat_session_participants")
+}
+
+model SwarmChatMessage {
+  id              String             @id @default(uuid()) @db.Uuid
+  sessionId       String             @map("session_id") @db.Uuid
+  senderType      SwarmSenderType    @map("sender_type")
+  senderId        String             @map("sender_id") @db.VarChar(50)
+  replyToId       String?            @map("reply_to_id") @db.Uuid
+  content         String
+  contentType     SwarmContentType   @default(TEXT) @map("content_type")
+  status          SwarmMessageStatus @default(SENT)
+  metadata        Json               @default("{}")
+  tokenCount      Int                @default(0) @map("token_count")
+  processingTime  Int                @default(0) @map("processing_time")
+  confidenceScore Decimal?           @map("confidence_score") @db.Decimal(3, 2)
+  cost            Decimal            @default(0) @db.Decimal(10, 4)
+  createdAt       DateTime           @default(now()) @map("created_at")
+  replyTo         SwarmChatMessage?  @relation("MessageReplies", fields: [replyToId], references: [id])
+  replies         SwarmChatMessage[] @relation("MessageReplies")
+  session         SwarmChatSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@map("swarm_chat_messages")
+}
+
+model User {
+  id            String     @id
+  name          String?
+  email         String     @unique
+  emailVerified Boolean
+  image         String?
+  createdAt     DateTime
+  updatedAt     DateTime
+  accounts      Account[]
+  sessions      Session[]
+  swarmUser     SwarmUser?
+
+  @@map("user")
+}
 
 model Session {
-  id               String       @id @default(uuid()) @db.Uuid
-  title            String?      @db.VarChar(255)
-  description      String?
-  type             SessionType  @default(DIRECT)
-  status           SessionStatus @default(ACTIVE)
-  createdById      String       @map("created_by") @db.Uuid
-  primaryAgentId   String?      @map("primary_agent_id") @db.VarChar(50)
-  configuration    Json         @default("{}")
-  isPublic         Boolean      @default(false) @map("is_public")
-  isTemplate       Boolean      @default(false) @map("is_template")
-  messageCount     Int          @default(0) @map("message_count")
-  totalCost        Decimal      @default(0) @map("total_cost") @db.Decimal(10, 4)
-  createdAt        DateTime     @default(now()) @map("created_at")
-  updatedAt        DateTime     @default(now()) @updatedAt @map("updated_at")
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime
+  updatedAt DateTime
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Relations
-  createdBy        User         @relation(fields: [createdById], references: [id])
-  primaryAgent     AIAgent?     @relation(fields: [primaryAgentId], references: [id])
-  participants     SessionParticipant[]
-  messages         Message[]
-
-  @@map("sessions")
+  @@map("session")
 }
 
-model SessionParticipant {
-  id           String            @id @default(uuid()) @db.Uuid
-  sessionId    String            @map("session_id") @db.Uuid
-  userId       String?           @map("user_id") @db.Uuid
-  agentId      String?           @map("agent_id") @db.VarChar(50)
-  role         ParticipantRole   @default(PARTICIPANT)
-  isActive     Boolean           @default(true) @map("is_active")
-  joinedAt     DateTime          @default(now()) @map("joined_at")
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime
+  updatedAt             DateTime
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Relations
-  session      Session           @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  user         User?             @relation(fields: [userId], references: [id])
-  agent        AIAgent?          @relation(fields: [agentId], references: [id])
-
-  @@map("session_participants")
+  @@map("account")
 }
 
-model Message {
-  id               String          @id @default(uuid()) @db.Uuid
-  sessionId        String          @map("session_id") @db.Uuid
-  senderType       SenderType      @map("sender_type")
-  senderId         String          @map("sender_id") @db.VarChar(50)
-  replyToId        String?         @map("reply_to_id") @db.Uuid
-  content          String
-  contentType      ContentType     @default(TEXT) @map("content_type")
-  status           MessageStatus   @default(SENT)
-  metadata         Json            @default("{}")
-  tokenCount       Int             @default(0) @map("token_count")
-  processingTime   Int             @default(0) @map("processing_time")
-  confidenceScore  Decimal?        @map("confidence_score") @db.Decimal(3, 2)
-  cost             Decimal         @default(0) @db.Decimal(10, 4)
-  createdAt        DateTime        @default(now()) @map("created_at")
+model Verification {
+  id         String    @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime?
+  updatedAt  DateTime?
 
-  // Relations
-  session          Session         @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  replyTo          Message?        @relation("MessageReplies", fields: [replyToId], references: [id])
-  replies          Message[]       @relation("MessageReplies")
-  feedback         MessageFeedback[]
-
-  @@map("messages")
+  @@map("verification")
 }
 
-// ============================================================================
-// 反馈和统计系统
-// ============================================================================
-
-model MessageFeedback {
-  id           String            @id @default(uuid()) @db.Uuid
-  messageId    String            @map("message_id") @db.Uuid
-  userId       String            @map("user_id") @db.Uuid
-  rating       Int?
-  feedbackType FeedbackType?     @map("feedback_type")
-  comment      String?
-  createdAt    DateTime          @default(now()) @map("created_at")
-
-  // Relations
-  message      Message           @relation(fields: [messageId], references: [id], onDelete: Cascade)
-  user         User              @relation(fields: [userId], references: [id])
-
-  @@map("message_feedback")
-}
-
-model UsageStatistic {
-  id           String      @id @default(uuid()) @db.Uuid
-  entityType   EntityType  @map("entity_type")
-  entityId     String      @map("entity_id") @db.VarChar(50)
-  userId       String?     @map("user_id") @db.Uuid
-  action       String      @db.VarChar(50)
-  count        Int         @default(1)
-  metadata     Json        @default("{}")
-  createdAt    DateTime    @default(now()) @map("created_at")
-
-  // Relations
-  user         User?       @relation(fields: [userId], references: [id])
-
-  @@map("usage_statistics")
-}
-
-// ============================================================================
-// 枚举类型
-// ============================================================================
-
-enum Role {
-  ADMIN @map("admin")
-  USER @map("user")
+enum SwarmRole {
+  ADMIN      @map("admin")
+  USER       @map("user")
   ENTERPRISE @map("enterprise")
 }
 
 enum SubscriptionStatus {
-  FREE @map("free")
-  PRO @map("pro")
+  FREE       @map("free")
+  PRO        @map("pro")
   ENTERPRISE @map("enterprise")
 }
 
-enum SkillCategory {
-  CORE @map("core")
-  TOOL @map("tool")
+enum SwarmSkillCategory {
+  CORE   @map("core")
+  TOOL   @map("tool")
   DOMAIN @map("domain")
 }
 
-enum SessionType {
-  DIRECT @map("direct")
-  GROUP @map("group")
+enum SwarmSessionType {
+  DIRECT   @map("direct")
+  GROUP    @map("group")
   WORKFLOW @map("workflow")
 }
 
-enum SessionStatus {
-  ACTIVE @map("active")
-  PAUSED @map("paused")
+enum SwarmSessionStatus {
+  ACTIVE    @map("active")
+  PAUSED    @map("paused")
   COMPLETED @map("completed")
-  ARCHIVED @map("archived")
+  ARCHIVED  @map("archived")
 }
 
-enum ParticipantRole {
-  OWNER @map("owner")
-  ADMIN @map("admin")
+enum SwarmParticipantRole {
+  OWNER       @map("owner")
+  ADMIN       @map("admin")
   PARTICIPANT @map("participant")
-  OBSERVER @map("observer")
+  OBSERVER    @map("observer")
 }
 
-enum SenderType {
-  USER @map("user")
-  AGENT @map("agent")
+enum SwarmSenderType {
+  USER   @map("user")
+  AGENT  @map("agent")
   SYSTEM @map("system")
 }
 
-enum ContentType {
-  TEXT @map("text")
-  FILE @map("file")
-  IMAGE @map("image")
-  CODE @map("code")
+enum SwarmContentType {
+  TEXT   @map("text")
+  FILE   @map("file")
+  IMAGE  @map("image")
+  CODE   @map("code")
   SYSTEM @map("system")
 }
 
-enum MessageStatus {
-  SENDING @map("sending")
-  SENT @map("sent")
+enum SwarmMessageStatus {
+  SENDING   @map("sending")
+  SENT      @map("sent")
   DELIVERED @map("delivered")
-  READ @map("read")
-  FAILED @map("failed")
-}
-
-enum FeedbackType {
-  HELPFUL @map("helpful")
-  UNHELPFUL @map("unhelpful")
-  INAPPROPRIATE @map("inappropriate")
-  ACCURATE @map("accurate")
-  INACCURATE @map("inaccurate")
-}
-
-enum EntityType {
-  AGENT @map("agent")
-  TOOL @map("tool")
-  SESSION @map("session")
-  USER @map("user")
+  READ      @map("read")
+  FAILED    @map("failed")
 }

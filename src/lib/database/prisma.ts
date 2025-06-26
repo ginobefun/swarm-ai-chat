@@ -49,33 +49,5 @@ export async function isDatabaseReady() {
     }
 }
 
-// 清理所有数据（仅用于开发/测试）
-export async function clearAllData() {
-    if (process.env.NODE_ENV === 'production') {
-        throw new Error('无法在生产环境中清理数据')
-    }
-
-    try {
-        // 按依赖关系顺序删除数据
-        await prisma.messageFeedback.deleteMany()
-        await prisma.usageStatistic.deleteMany()
-        await prisma.message.deleteMany()
-        await prisma.sessionParticipant.deleteMany()
-        await prisma.session.deleteMany()
-        await prisma.usageExample.deleteMany()
-        await prisma.agentTool.deleteMany()
-        await prisma.agentSkill.deleteMany()
-        await prisma.aIAgent.deleteMany()
-        await prisma.tool.deleteMany()
-        await prisma.skillTag.deleteMany()
-        await prisma.user.deleteMany()
-
-        console.log('✅ 所有数据已清理')
-    } catch (error) {
-        console.error('❌ 清理数据时出错：', error)
-        throw error
-    }
-}
-
 // 导出 Prisma 客户端作为默认导出
 export default prisma 
