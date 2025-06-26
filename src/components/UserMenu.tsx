@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { useTranslation } from '../contexts/AppContext'
 import { useSession } from '@/components/providers/AuthProvider'
@@ -122,10 +123,13 @@ const UserMenu: React.FC<UserMenuProps> = ({ className = "" }) => {
                     ) : (
                         <>
                             {user?.image ? (
-                                <img
+                                <Image
                                     src={user.image}
                                     alt={user.name || user.email || 'User Avatar'}
                                     className="w-full h-full object-cover rounded-full"
+                                    width={48}
+                                    height={48}
+                                    unoptimized
                                 />
                             ) : (
                                 <span className="relative z-10 text-white font-semibold text-xs sm:text-sm md:text-base lg:text-lg">
@@ -162,10 +166,13 @@ const UserMenu: React.FC<UserMenuProps> = ({ className = "" }) => {
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white font-semibold">
                             {user?.image ? (
-                                <img
+                                <Image
                                     src={user.image}
                                     alt="User Avatar"
                                     className="w-full h-full object-cover rounded-full"
+                                    width={40}
+                                    height={40}
+                                    unoptimized
                                 />
                             ) : (
                                 getUserInitial()

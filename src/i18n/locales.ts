@@ -183,6 +183,8 @@ export interface Messages {
         criticalThinker: string
         aiAssistant: string
         specialist: string
+        techExpert: string
+        marketAnalyst: string
         description: {
             dataProcessing: string
             creativityInspiration: string
@@ -192,6 +194,11 @@ export interface Messages {
             techEvaluator: string
             dataAnalyst: string
             creativeMaster: string
+            requirementAnalysis: string
+            creativeDesign: string
+            dataAnalysis: string
+            techImplementation: string
+            marketInsight: string
         }
     }
 
@@ -219,6 +226,8 @@ export interface Messages {
     welcome: {
         title: string
         subtitle: string
+        mainTitle: string
+        mainSubtitle: string
         createNewSession: string
         exploreAgents: string
         quickStartLabel: string
@@ -276,6 +285,10 @@ export interface Messages {
         agentsSelected: string
         searchAgents: string
         noAgentsFound: string
+        noAgentsAvailable: string
+        contactAdmin: string
+        tryDifferentSearch: string
+        clearSearch: string
 
         // 会话操作
         rename: string
@@ -324,12 +337,28 @@ export interface Messages {
         titleRequired: string
         agentRequired: string
         createError: string
+        dialogSubtitle: string
+        titleHelper: string
+        descriptionHelper: string
 
         // 其他
         optional: string
         autoGenerate: string
         describePurpose: string
         creating: string
+        loadingSessions: string
+        welcomeToSwarm: string
+        multiAgentChat: string
+        multiAgentDesc: string
+        smartWorkflows: string
+        workflowDesc: string
+        sessionManager: string
+        sessionDesc: string
+        loginToGetStarted: string
+        loginViaNavbar: string
+        createFirstSession: string
+        loginToUnlock: string
+        freeToUse: string
     }
 }
 
@@ -367,7 +396,7 @@ export const locales: Record<LocaleKey, Messages> = {
             emailLabel: '邮箱地址',
             emailPlaceholder: '邮箱地址',
             usernameLabel: '用户名',
-            usernamePlaceholder: '用户名（可选，英文、数字、下划线，6-20字符）',
+            usernamePlaceholder: '用户名（可选，英文、数字、下划线，6-20 字符）',
             nameLabel: '姓名',
             namePlaceholder: '姓名',
             passwordLabel: '密码',
@@ -412,7 +441,7 @@ export const locales: Record<LocaleKey, Messages> = {
 
             // Log messages
             checkingUsername: '检查用户名时出错：',
-            settingUsername: '用户名已设置为:',
+            settingUsername: '用户名已设置为：',
         },
         navbar: {
             logo: 'SwarmAI',
@@ -599,6 +628,10 @@ export const locales: Record<LocaleKey, Messages> = {
             agentsSelected: '个已选择',
             searchAgents: '搜索 AI 角色...',
             noAgentsFound: '未找到匹配的 AI 角色',
+            noAgentsAvailable: '暂无 AI 角色',
+            contactAdmin: '请联系管理员添加 AI 角色',
+            tryDifferentSearch: '请尝试其他搜索词',
+            clearSearch: '清除搜索',
 
             // 会话操作
             rename: '重命名',
@@ -647,12 +680,28 @@ export const locales: Record<LocaleKey, Messages> = {
             titleRequired: '会话标题是必需的',
             agentRequired: '至少需要选择一个 AI 角色',
             createError: '创建会话失败',
+            dialogSubtitle: '配置您的AI团队协作',
+            titleHelper: '为您的AI协作会话选择一个描述性名称',
+            descriptionHelper: '添加上下文以帮助AI智能体理解您的目标',
 
             // 其他
             optional: '可选',
             autoGenerate: '不填写将自动生成',
             describePurpose: '描述这个会话的目的或用途',
             creating: '创建中...',
+            loadingSessions: '正在加载会话...',
+            welcomeToSwarm: '欢迎使用 SwarmAI.chat',
+            multiAgentChat: '多智能体对话',
+            multiAgentDesc: '与多个 AI 智能体同时对话',
+            smartWorkflows: '智能工作流',
+            workflowDesc: '自动化复杂任务处理',
+            sessionManager: '会话管理',
+            sessionDesc: '保存和管理您的对话历史',
+            loginToGetStarted: '登录后即可开始使用',
+            loginViaNavbar: '请点击右上角登录按钮',
+            createFirstSession: '创建您的第一个会话开始对话',
+            loginToUnlock: '登录解锁所有功能',
+            freeToUse: '完全免费使用',
         },
     },
     'en': {
@@ -920,6 +969,10 @@ export const locales: Record<LocaleKey, Messages> = {
             agentsSelected: ' selected',
             searchAgents: 'Search AI agents...',
             noAgentsFound: 'No matching AI agents found',
+            noAgentsAvailable: 'No AI agents available',
+            contactAdmin: 'Please contact administrator to add AI agents',
+            tryDifferentSearch: 'Try a different search term',
+            clearSearch: 'Clear search',
 
             // Session operations
             rename: 'Rename',
@@ -968,12 +1021,28 @@ export const locales: Record<LocaleKey, Messages> = {
             titleRequired: 'Session title is required',
             agentRequired: 'At least one AI agent must be selected',
             createError: 'Failed to create session',
+            dialogSubtitle: 'Configure your AI team collaboration',
+            titleHelper: 'Choose a descriptive name for your AI collaboration session',
+            descriptionHelper: 'Add context to help AI agents understand your goals',
 
             // Others
             optional: 'Optional',
             autoGenerate: 'Will auto-generate if not provided',
             describePurpose: 'Describe the purpose of this session',
             creating: 'Creating...',
+            loadingSessions: 'Loading sessions...',
+            welcomeToSwarm: 'Welcome to SwarmAI.chat',
+            multiAgentChat: 'Multi-Agent Chat',
+            multiAgentDesc: 'Chat with multiple AI agents simultaneously',
+            smartWorkflows: 'Smart Workflows',
+            workflowDesc: 'Automate complex task processing',
+            sessionManager: 'Session Manager',
+            sessionDesc: 'Save and manage your conversation history',
+            loginToGetStarted: 'Please login to get started',
+            loginViaNavbar: 'Click the login button in the top right corner',
+            createFirstSession: 'Create your first session to start chatting',
+            loginToUnlock: 'Login to unlock all features',
+            freeToUse: 'Fully free to use',
         },
     },
 } 

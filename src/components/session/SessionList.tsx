@@ -1,8 +1,12 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Session, SessionFilter, SessionAction, AIAgent, CreateSessionRequest } from '@/types'
+import { Session, SessionAction, AIAgent, CreateSessionRequest } from '@/types'
 import { useTranslation } from '@/contexts/AppContext'
+import { useSession } from '@/components/providers/AuthProvider'
+import { LoginDialog } from '@/components/auth/LoginDialog'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 import SessionItem from './SessionItem'
 import SessionContextMenu from './SessionContextMenu'
 import CreateSessionDialog from './CreateSessionDialog'
@@ -21,12 +25,15 @@ interface SessionListProps {
     onSelectSession: (sessionId: string) => void                          // Callback when a session is selected
     onUpdateSession: (sessionId: string, updates: Partial<Session>) => Promise<void> // Callback to update session
     onDeleteSession: (sessionId: string) => Promise<void>                 // Callback to delete session
+    onCreateSession: (sessionData: CreateSessionRequest) => Promise<void>  // Callback to create session
 }
 
 /**
  * SessionList component - Sidebar session management interface
  * 
  * Features:
+ * - User authentication state awareness
+ * - Beautiful login guidance for unauthenticated users
  * - Session grouping (pinned, recent, by AI agent)
  * - Search and filtering capabilities
  * - Context menu operations (rename, pin, delete, duplicate)
@@ -37,9 +44,8 @@ interface SessionListProps {
  * - Error handling and loading states
  * 
  * Layout:
- * - Header: Search input and filter controls
- * - Body: Grouped session lists with scroll
- * - Dialogs: Create, confirm, and rename modals
+ * - Unauthenticated: Login guidance interface
+ * - Authenticated: Session management interface
  * 
  * @param props - SessionListProps containing session data and handlers
  * @returns JSX element representing the session list sidebar
@@ -52,14 +58,21 @@ const SessionList: React.FC<SessionListProps> = (props) => {
         error,
         onSelectSession,
         onUpdateSession,
-        onDeleteSession
+        onDeleteSession,
+        onCreateSession
     } = props
 
     const { t } = useTranslation()
 
-    // Local state for search and filtering
+    // Get user authentication state
+    const { data: sessionData, isPending: authPending } = useSession()
+    const user = sessionData?.user
+
+    // Login dialog state
+    const [isLoginDialogOpen, setIsLoginDialogOpen] = useState(false)
+
+    // Local state for search
     const [searchQuery, setSearchQuery] = useState('')
-    const [filter, setFilter] = useState<SessionFilter>({ type: 'all' })
 
     // Organized session groups for different display sections
     const [sessionGroups, setSessionGroups] = useState<{
@@ -104,43 +117,66 @@ const SessionList: React.FC<SessionListProps> = (props) => {
         session: null as Session | null
     })
 
-    /**
-     * Fetch available AI agents from the API
-     * Updates the create dialog with available agents for session creation
-     * TODO: Add error handling and retry mechanism
-     */
-    const fetchAgents = async () => {
-        try {
-            const response = await fetch('/api/agents')
-            if (response.ok) {
-                const data = await response.json()
-                if (data.success) {
-                    setCreateDialog(prev => ({ ...prev, availableAgents: data.agents }))
-                }
-            }
-        } catch (error) {
-            console.error('Error fetching agents:', error)
-            // TODO: Show user-friendly error notification
-        }
-    }
-
-    // Load AI agents on component mount
+    // Load AI agents when user authentication state changes
     useEffect(() => {
-        fetchAgents()
-    }, [])
+        /**
+         * Fetch available AI agents from the API
+         * Updates the create dialog with available agents for session creation
+         * Only fetches if user is authenticated
+         */
+        const fetchAgents = async () => {
+            try {
+                if (!user?.id) {
+                    console.log('User not authenticated, skipping agent fetch')
+                    return
+                }
+
+                const response = await fetch('/api/agents')
+                if (response.ok) {
+                    const data = await response.json()
+                    if (data.success) {
+                        setCreateDialog(prev => ({ ...prev, availableAgents: data.data }))
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching agents:', error)
+                // TODO: Show user-friendly error notification
+            }
+        }
+
+        if (!authPending && user?.id) {
+            fetchAgents()
+        }
+    }, [user?.id, authPending])
 
     /**
      * Process and group sessions for organized display
      * Groups sessions by: pinned status, recency, and associated AI agents
-     * Updates whenever the sessions array changes
+     * Filters sessions based on search query
+     * Updates whenever the sessions array or search query changes
      */
     useEffect(() => {
-        const pinned = sessions.filter(s => s.isPinned)
-        const recent = sessions.filter(s => !s.isPinned)
+        // Filter sessions based on search query
+        const filteredSessions = sessions.filter(session => {
+            if (!searchQuery.trim()) return true
+
+            const query = searchQuery.toLowerCase()
+            return (
+                session.title?.toLowerCase().includes(query) ||
+                session.description?.toLowerCase().includes(query) ||
+                session.participants.some(p =>
+                    p.name.toLowerCase().includes(query) ||
+                    p.type.toLowerCase().includes(query)
+                )
+            )
+        })
+
+        const pinned = filteredSessions.filter(s => s.isPinned)
+        const recent = filteredSessions.filter(s => !s.isPinned)
         const byAgent: Record<string, Session[]> = {}
 
         // Group sessions by primary AI agent
-        sessions.forEach(session => {
+        filteredSessions.forEach(session => {
             if (session.primaryAgentId) {
                 if (!byAgent[session.primaryAgentId]) {
                     byAgent[session.primaryAgentId] = []
@@ -150,7 +186,7 @@ const SessionList: React.FC<SessionListProps> = (props) => {
         })
 
         setSessionGroups({ pinned, recent, byAgent })
-    }, [sessions])
+    }, [sessions, searchQuery])
 
     /**
      * Handle context menu display for session operations
@@ -271,7 +307,7 @@ const SessionList: React.FC<SessionListProps> = (props) => {
             .filter(p => p.type === 'agent')
             .map(p => p.id)
 
-        await createSession({
+        await onCreateSession({
             title: `${session.title} ${t('session.copy')}`,
             type: session.type,
             agentIds,
@@ -279,28 +315,7 @@ const SessionList: React.FC<SessionListProps> = (props) => {
         })
     }
 
-    /**
-     * Create a new session via API call
-     * Sends session creation request to backend
-     * TODO: Move to a dedicated API service layer
-     * 
-     * @param request - Session creation request data
-     * @returns Promise resolving to created session data
-     */
-    const createSession = async (request: CreateSessionRequest) => {
-        const response = await fetch('/api/sessions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(request)
-        })
 
-        if (!response.ok) {
-            const error = await response.json()
-            throw new Error(error.message || 'Failed to create session')
-        }
-
-        return await response.json()
-    }
 
     /**
      * Render a session group with header and session items
@@ -345,8 +360,83 @@ const SessionList: React.FC<SessionListProps> = (props) => {
         )
     }
 
-    // Loading state rendering
-    if (isLoading) {
+    /**
+     * Handle successful login
+     * Closes the login dialog and refreshes the session state
+     */
+    const handleLoginSuccess = () => {
+        setIsLoginDialogOpen(false)
+        // The session will be automatically refreshed by the AuthProvider
+    }
+
+    /**
+     * Render login guidance interface for unauthenticated users
+     * Beautiful and engaging interface that encourages user to log in
+     */
+    const renderLoginGuidance = () => (
+        <div className="flex flex-col h-full bg-white dark:bg-slate-900">
+            <div className="flex flex-col items-center justify-center flex-1 p-8 text-center">
+                {/* Welcome title without logo */}
+                <div className="mb-8">
+                    <h2 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent dark:from-indigo-400 dark:to-purple-400 mb-2">
+                        {t('session.welcomeToSwarm')}
+                    </h2>
+                    <p className="text-slate-600 dark:text-slate-400 text-sm">
+                        {t('session.loginToUnlock')}
+                    </p>
+                </div>
+
+                {/* Feature highlights */}
+                <div className="space-y-4 mb-8 max-w-sm">
+                    <div className="flex items-center gap-3 text-left">
+                        <div className="w-8 h-8 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg flex items-center justify-center">
+                            <span className="text-indigo-600 dark:text-indigo-400">🤖</span>
+                        </div>
+                        <div>
+                            <h3 className="font-medium text-slate-900 dark:text-slate-100">{t('session.multiAgentChat')}</h3>
+                            <p className="text-sm text-slate-600 dark:text-slate-400">{t('session.multiAgentDesc')}</p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 text-left">
+                        <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/50 rounded-lg flex items-center justify-center">
+                            <span className="text-purple-600 dark:text-purple-400">⚡</span>
+                        </div>
+                        <div>
+                            <h3 className="font-medium text-slate-900 dark:text-slate-100">{t('session.smartWorkflows')}</h3>
+                            <p className="text-sm text-slate-600 dark:text-slate-400">{t('session.workflowDesc')}</p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 text-left">
+                        <div className="w-8 h-8 bg-pink-100 dark:bg-pink-900/50 rounded-lg flex items-center justify-center">
+                            <span className="text-pink-600 dark:text-pink-400">💾</span>
+                        </div>
+                        <div>
+                            <h3 className="font-medium text-slate-900 dark:text-slate-100">{t('session.sessionManager')}</h3>
+                            <p className="text-sm text-slate-600 dark:text-slate-400">{t('session.sessionDesc')}</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Login button */}
+                <div className="space-y-3">
+                    <button
+                        onClick={() => setIsLoginDialogOpen(true)}
+                        className="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
+                    >
+                        {t('session.loginToGetStarted')}
+                    </button>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                        {t('session.freeToUse')}
+                    </p>
+                </div>
+            </div>
+        </div>
+    )
+
+    // Show loading state when authentication is pending
+    if (authPending) {
         return (
             <div className="flex flex-col h-full bg-white dark:bg-slate-900">
                 <div
@@ -364,7 +454,40 @@ const SessionList: React.FC<SessionListProps> = (props) => {
         )
     }
 
-    // Error state rendering
+    // Show login guidance for unauthenticated users
+    if (!user?.id) {
+        return (
+            <>
+                {renderLoginGuidance()}
+                <LoginDialog
+                    isOpen={isLoginDialogOpen}
+                    onClose={() => setIsLoginDialogOpen(false)}
+                    onSuccess={handleLoginSuccess}
+                />
+            </>
+        )
+    }
+
+    // Loading state rendering for authenticated users
+    if (isLoading) {
+        return (
+            <div className="flex flex-col h-full bg-white dark:bg-slate-900">
+                <div
+                    className="flex flex-col items-center justify-center p-10 text-center text-slate-600 dark:text-slate-400"
+                    role="status"
+                    aria-live="polite"
+                >
+                    <div
+                        className="w-8 h-8 border-3 border-slate-300 border-t-indigo-600 rounded-full animate-spin mb-3 dark:border-slate-600 dark:border-t-indigo-400"
+                        aria-hidden="true"
+                    ></div>
+                    <p>{t('session.loadingSessions')}</p>
+                </div>
+            </div>
+        )
+    }
+
+    // Error state rendering for authenticated users
     if (error) {
         return (
             <div className="flex flex-col h-full bg-white dark:bg-slate-900">
@@ -373,9 +496,10 @@ const SessionList: React.FC<SessionListProps> = (props) => {
                     role="alert"
                     aria-live="assertive"
                 >
-                    <p>{t('common.error')}: {error}</p>
+                    <span className="text-4xl mb-3 opacity-50" aria-hidden="true">⚠️</span>
+                    <p className="mb-2">{t('common.error')}: {error}</p>
                     <button
-                        onClick={fetchAgents}
+                        onClick={() => window.location.reload()}
                         className="mt-3 px-4 py-2 bg-indigo-600 text-white border-none rounded-lg cursor-pointer hover:bg-indigo-700 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
                         aria-label="Retry loading sessions"
                     >
@@ -390,43 +514,30 @@ const SessionList: React.FC<SessionListProps> = (props) => {
         <>
             <div className="flex flex-col h-full bg-white dark:bg-slate-900">
                 {/* 
-                    Search and Filter Controls
-                    Provides session filtering and new session creation
+                    Search and Create Controls
+                    Provides session search and new session creation
                 */}
                 <div className="p-4 border-b border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800">
-                    <div className="mb-3">
-                        <input
+                    <div className="flex gap-2 items-center">
+                        <Input
                             type="search"
                             placeholder={t('session.searchSessions')}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full p-2.5 border border-slate-300 rounded-lg text-sm bg-white text-slate-900 placeholder-slate-500 transition-all focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100 dark:placeholder-slate-400"
+                            className="flex-1"
                             aria-label="Search sessions by title or content"
                             autoComplete="off"
                             spellCheck="false"
                         />
-                    </div>
 
-                    <div className="flex gap-2 items-center">
-                        <select
-                            value={filter.type || 'all'}
-                            onChange={(e) => setFilter(prev => ({ ...prev, type: e.target.value as SessionFilter['type'] }))}
-                            className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
-                            aria-label="Filter sessions by type"
-                        >
-                            <option value="all">{t('session.allSessions') || 'All Sessions'}</option>
-                            <option value="direct">{t('session.directChat') || 'Direct Chat'}</option>
-                            <option value="group">{t('session.groupChat')}</option>
-                            <option value="workflow">{t('session.workflowChat') || 'Workflow'}</option>
-                        </select>
-
-                        <button
-                            className="px-3 py-2 bg-indigo-600 text-white border-none rounded-lg text-sm cursor-pointer whitespace-nowrap transition-all hover:bg-indigo-700 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800"
+                        <Button
+                            size="lg"
+                            className="h-10 px-6 text-base font-semibold bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:-translate-y-0.5"
                             onClick={() => setCreateDialog(prev => ({ ...prev, isOpen: true }))}
                             aria-label="Create a new session"
                         >
                             <span aria-hidden="true">➕</span> {t('session.createSession')}
-                        </button>
+                        </Button>
                     </div>
                 </div>
 
@@ -435,7 +546,7 @@ const SessionList: React.FC<SessionListProps> = (props) => {
                     Organized into groups with scroll capability
                 */}
                 <div
-                    className="flex-1 overflow-y-auto p-3"
+                    className="flex-1 overflow-y-auto p-4"
                     role="main"
                     aria-label="Session list"
                 >
@@ -472,14 +583,8 @@ const SessionList: React.FC<SessionListProps> = (props) => {
                             role="status"
                         >
                             <span className="text-5xl mb-3 opacity-50" aria-hidden="true">💬</span>
-                            <p>{t('session.noSessions') || 'No sessions yet'}</p>
-                            <button
-                                className="mt-3 px-5 py-2.5 bg-indigo-600 text-white border-none rounded-lg cursor-pointer transition-all hover:bg-indigo-700 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
-                                onClick={() => setCreateDialog(prev => ({ ...prev, isOpen: true }))}
-                                aria-label="Create your first session"
-                            >
-                                {t('session.createNewSession')}
-                            </button>
+                            <p className="mb-2">{t('session.noSessions') || 'No sessions yet'}</p>
+                            <p className="text-sm">{t('session.createFirstSession')}</p>
                         </div>
                     )}
                 </div>
@@ -500,7 +605,7 @@ const SessionList: React.FC<SessionListProps> = (props) => {
             <CreateSessionDialog
                 isOpen={createDialog.isOpen}
                 onClose={() => setCreateDialog(prev => ({ ...prev, isOpen: false }))}
-                onCreateSession={createSession}
+                onCreateSession={onCreateSession}
                 availableAgents={createDialog.availableAgents}
             />
 

@@ -3,47 +3,15 @@ import type {
     SwarmChatSession,
     SwarmChatMessage,
     SwarmChatSessionParticipant,
-    SwarmSessionType,
-    Prisma
+    SwarmSessionType
 } from '@prisma/client'
+import type { Session as FrontendSession } from '@/types'
+import { convertPrismaSessionToSession } from '@/utils/transformers'
 
-// 定义会话类型，与前端兼容
-export interface Session {
-    id: string
-    title?: string | null
-    description?: string | null
-    type: 'direct' | 'group' | 'workflow'
-    status: 'active' | 'paused' | 'completed' | 'archived'
-    createdById: string
-    primaryAgentId?: string | null
-    configuration: Prisma.JsonValue
-    isPublic: boolean
-    isTemplate: boolean
-    messageCount: number
-    totalCost: number
-    createdAt: Date
-    updatedAt: Date
-}
+// 使用前端的 Session 类型，保持一致性
+export type { FrontendSession as Session }
 
-// 转换 Prisma 会话为前端会话格式
-function convertPrismaSessionToSession(session: SwarmChatSession): Session {
-    return {
-        id: session.id,
-        title: session.title,
-        description: session.description,
-        type: session.type.toLowerCase() as 'direct' | 'group' | 'workflow',
-        status: session.status.toLowerCase() as 'active' | 'paused' | 'completed' | 'archived',
-        createdById: session.createdById,
-        primaryAgentId: session.primaryAgentId,
-        configuration: session.configuration,
-        isPublic: session.isPublic,
-        isTemplate: session.isTemplate,
-        messageCount: session.messageCount,
-        totalCost: Number(session.totalCost),
-        createdAt: session.createdAt,
-        updatedAt: session.updatedAt
-    }
-}
+// 转换函数现在从 transformers.ts 导入
 
 // 获取所有会话
 export async function getAllSessions(): Promise<SwarmChatSession[]> {
@@ -59,11 +27,20 @@ export async function getAllSessions(): Promise<SwarmChatSession[]> {
 }
 
 // 根据用户 ID 获取会话
-export async function getSessionsByUserId(userId: string): Promise<Session[]> {
+export async function getSessionsByUserId(userId: string): Promise<FrontendSession[]> {
     try {
         const sessions = await prisma.swarmChatSession.findMany({
             where: { createdById: userId },
-            orderBy: { updatedAt: 'desc' }
+            orderBy: { updatedAt: 'desc' },
+            include: {
+                primaryAgent: true,
+                participants: {
+                    include: {
+                        user: true,
+                        agent: true
+                    }
+                }
+            }
         })
         return sessions.map(convertPrismaSessionToSession)
     } catch (error) {
@@ -118,6 +95,16 @@ export async function updateSession(
         data: {
             ...data,
             updatedAt: new Date()
+        },
+        include: {
+            primaryAgent: true,
+            createdBy: true,
+            participants: {
+                include: {
+                    user: true,
+                    agent: true
+                }
+            }
         }
     })
 }

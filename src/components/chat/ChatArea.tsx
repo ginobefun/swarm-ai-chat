@@ -125,7 +125,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                                 <span className="text-3xl">🤖</span>
                             </motion.div>
 
-                            {/* 围绕的 AI 智能体 - 使用Grid布局 */}
+                            {/* 围绕的 AI 智能体 - 使用 Grid 布局 */}
                             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 max-w-2xl">
                                 {aiAgents.map((agent, index) => (
                                     <motion.div
@@ -202,6 +202,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                             <Button
                                 size="lg"
                                 className="h-14 px-8 text-lg font-semibold bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200"
+                                onClick={() => {
+                                    // TODO: Integrate with SessionList create session functionality
+                                    console.log('Create new session clicked')
+                                }}
                             >
                                 <Plus className="w-5 h-5 mr-2" />
                                 {t('welcome.createNewSession')}
@@ -213,7 +217,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                             <Button
                                 size="lg"
                                 variant="outline"
-                                className="h-14 px-8 text-lg font-medium border-2 hover:bg-gray-50 dark:hover:bg-gray-800"
+                                className="!h-14 px-8 text-lg font-medium border-2 hover:bg-gray-50 dark:hover:bg-gray-800"
+                                onClick={() => {
+                                    // TODO: Navigate to agent discovery page
+                                    console.log('Explore agents clicked')
+                                }}
                             >
                                 <Brain className="w-5 h-5 mr-2" />
                                 {t('welcome.exploreAgents')}

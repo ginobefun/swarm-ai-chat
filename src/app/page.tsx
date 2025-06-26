@@ -27,6 +27,7 @@ export default function Home() {
         currentSession,  // Currently selected session
         isLoading,      // Loading state for session operations
         error,          // Error state for session operations
+        createSession,  // Function to create sessions
         selectSession,  // Function to select a session
         updateSession,  // Function to update session properties
         deleteSession   // Function to delete sessions
@@ -110,7 +111,8 @@ export default function Home() {
                 isWorkspaceOpen={isWorkspaceOpen}
             />
 
-            <div className="flex flex-1 overflow-hidden">
+            {/* Main content area with proper top spacing to avoid navbar overlap */}
+            <div className="flex flex-1 overflow-hidden pt-14 sm:pt-16">
                 {/* 
                     Session List Sidebar
                     
@@ -122,9 +124,9 @@ export default function Home() {
                     - Proper ARIA labels and focus management
                     - Keyboard navigation support
                 */}
-                <div className={`w-[320px] min-w-[280px] max-w-[360px] border-r border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex flex-col md:relative md:translate-x-0 md:shadow-none transition-transform duration-300 ${isSidebarOpen
-                    ? 'fixed top-[60px] left-0 h-[calc(100vh-60px)] z-50 translate-x-0 shadow-2xl'
-                    : 'fixed top-[60px] left-0 h-[calc(100vh-60px)] z-50 -translate-x-full shadow-2xl md:relative md:top-0 md:h-full md:z-auto'
+                <div className={`w-[320px] min-w-[280px] max-w-[360px] border-r border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex flex-col transition-transform duration-300 ${isSidebarOpen
+                    ? 'fixed top-0 left-0 h-full z-50 translate-x-0 shadow-2xl md:relative md:h-full md:z-auto md:shadow-none'
+                    : 'fixed top-0 left-0 h-full z-50 -translate-x-full shadow-2xl md:relative md:h-full md:z-auto md:translate-x-0 md:shadow-none'
                     }`}>
                     <SessionList
                         sessions={sessions}
@@ -134,6 +136,7 @@ export default function Home() {
                         onSelectSession={handleSelectSession}
                         onUpdateSession={updateSession}
                         onDeleteSession={deleteSession}
+                        onCreateSession={createSession}
                     />
                 </div>
 

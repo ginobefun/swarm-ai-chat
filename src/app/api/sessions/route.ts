@@ -1,19 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@/lib/auth'
 import {
-    createSession,
+    // createSession,
     updateSession,
     deleteSession,
     searchSessions,
-    getSessionsByUserId,
-    getAllSessions
+    getSessionsByUserId
     // addAgentToSession,
     // removeAgentFromSession
 } from '@/lib/database/sessions-prisma'
 import { isDatabaseConfigured } from '@/lib/database/connection'
+import { prisma } from '@/lib/database/prisma'
 
 export async function GET(request: NextRequest) {
     try {
-        // 检查数据库是否配置
+        // Check database configuration
         if (!isDatabaseConfigured()) {
             return NextResponse.json({
                 success: false,
@@ -21,21 +22,49 @@ export async function GET(request: NextRequest) {
             }, { status: 500 })
         }
 
+        // Verify user authentication
+        const session = await auth.api.getSession({
+            headers: request.headers
+        })
+
+        // If user is not authenticated, return empty sessions
+        if (!session?.user?.id) {
+            return NextResponse.json({
+                success: true,
+                data: [],
+                count: 0,
+                message: 'User not authenticated'
+            })
+        }
+
+        // 获取对应的 SwarmUser
+        const swarmUser = await prisma.swarmUser.findUnique({
+            where: { userId: session.user.id }
+        })
+
+        if (!swarmUser) {
+            // 如果没有 SwarmUser 记录，返回空结果
+            return NextResponse.json({
+                success: true,
+                data: [],
+                count: 0,
+                message: 'No SwarmUser record found'
+            })
+        }
+
         const { searchParams } = new URL(request.url)
-        const userId = searchParams.get('userId')
         const search = searchParams.get('search')
 
         let sessions
 
         if (search) {
-            // 搜索会话
+            // Search sessions for the authenticated user only
             sessions = await searchSessions(search)
-        } else if (userId) {
-            // 获取特定用户的会话
-            sessions = await getSessionsByUserId(userId)
+            // Filter to only show user's sessions (using SwarmUser ID)
+            sessions = sessions.filter(s => s.createdById === swarmUser.id)
         } else {
-            // 获取所有会话
-            sessions = await getAllSessions()
+            // Get sessions for the authenticated user only (using SwarmUser ID)
+            sessions = await getSessionsByUserId(swarmUser.id)
         }
 
         return NextResponse.json({
@@ -44,12 +73,12 @@ export async function GET(request: NextRequest) {
             count: sessions.length
         })
     } catch (error) {
-        console.error('获取会话列表失败：', error)
+        console.error('Failed to fetch sessions:', error)
         return NextResponse.json(
             {
                 success: false,
-                error: '获取会话列表失败',
-                details: error instanceof Error ? error.message : '未知错误'
+                error: 'Failed to fetch sessions',
+                details: error instanceof Error ? error.message : 'Unknown error'
             },
             { status: 500 }
         )
@@ -58,7 +87,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     try {
-        // 检查数据库是否配置
+        // Check database configuration
         if (!isDatabaseConfigured()) {
             return NextResponse.json({
                 success: false,
@@ -66,40 +95,109 @@ export async function POST(request: NextRequest) {
             }, { status: 500 })
         }
 
-        const body = await request.json()
+        // Verify user authentication
+        const session = await auth.api.getSession({
+            headers: request.headers
+        })
 
-        // 验证必要字段
-        if (!body.createdById) {
-            return NextResponse.json(
-                { success: false, error: '缺少必要字段：createdById' },
-                { status: 400 }
-            )
+        if (!session?.user?.id) {
+            return NextResponse.json({
+                success: false,
+                error: 'User not authenticated'
+            }, { status: 401 })
         }
+
+        // 确保 SwarmUser 记录存在，并获取 SwarmUser ID
+        const swarmUser = await prisma.swarmUser.upsert({
+            where: { userId: session.user.id },
+            update: {},
+            create: {
+                userId: session.user.id,
+                role: 'USER',
+                subscriptionStatus: 'FREE',
+                preferences: {}
+            }
+        })
+
+        const body = await request.json()
+        console.log('Creating session with data:', body)
+
+        // 处理智能体选择逻辑
+        const agentIds = body.agentIds || []
+        const primaryAgentId = body.primaryAgentId || (agentIds.length > 0 ? agentIds[0] : undefined)
 
         const sessionData = {
-            title: body.title || '新会话',
+            title: body.title || 'New Session',
             description: body.description,
-            type: body.type || 'direct',
-            createdById: body.createdById,
-            primaryAgentId: body.primaryAgentId,
-            configuration: body.configuration || {},
-            isPublic: body.isPublic || false,
-            isTemplate: body.isTemplate || false
+            type: body.type || (agentIds.length <= 1 ? 'DIRECT' : 'GROUP'),
+            createdById: swarmUser.id, // Use SwarmUser ID, not User ID
+            primaryAgentId: primaryAgentId
         }
 
-        const session = await createSession(sessionData)
+        // 使用事务创建会话和参与者记录
+        const result = await prisma.$transaction(async (tx) => {
+            // 创建会话
+            const newSession = await tx.swarmChatSession.create({
+                data: sessionData,
+                include: {
+                    primaryAgent: true,
+                    createdBy: true
+                }
+            })
+
+            // 创建用户参与者记录
+            await tx.swarmChatSessionParticipant.create({
+                data: {
+                    sessionId: newSession.id,
+                    userId: swarmUser.id,
+                    role: 'OWNER',
+                    isActive: true
+                }
+            })
+
+            // 创建智能体参与者记录
+            if (agentIds.length > 0) {
+                const participantData = agentIds.map((agentId: string) => ({
+                    sessionId: newSession.id,
+                    agentId: agentId,
+                    role: agentId === primaryAgentId ? 'ADMIN' : 'PARTICIPANT',
+                    isActive: true
+                }))
+
+                await tx.swarmChatSessionParticipant.createMany({
+                    data: participantData
+                })
+            }
+
+            // 返回完整的会话信息，包含参与者
+            return await tx.swarmChatSession.findUnique({
+                where: { id: newSession.id },
+                include: {
+                    primaryAgent: true,
+                    createdBy: true,
+                    participants: {
+                        include: {
+                            user: true,
+                            agent: true
+                        }
+                    }
+                }
+            })
+        })
+
+        console.log('Session created successfully:', result?.id)
 
         return NextResponse.json({
             success: true,
-            data: session
+            data: result
         }, { status: 201 })
     } catch (error) {
-        console.error('创建会话失败：', error)
+        console.error('Failed to create session:', error)
         return NextResponse.json(
             {
                 success: false,
-                error: '创建会话失败',
-                details: error instanceof Error ? error.message : '未知错误'
+                error: 'Failed to create session',
+                details: error instanceof Error ? error.message : 'Unknown error'
             },
             { status: 500 }
         )
@@ -108,7 +206,7 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
     try {
-        // 检查数据库是否配置
+        // Check database configuration
         if (!isDatabaseConfigured()) {
             return NextResponse.json({
                 success: false,
@@ -116,29 +214,47 @@ export async function PUT(request: NextRequest) {
             }, { status: 500 })
         }
 
+        // Verify user authentication
+        const session = await auth.api.getSession({
+            headers: request.headers
+        })
+
+        if (!session?.user?.id) {
+            return NextResponse.json({
+                success: false,
+                error: 'User not authenticated'
+            }, { status: 401 })
+        }
+
         const body = await request.json()
         const { id, ...updates } = body
 
         if (!id) {
             return NextResponse.json(
-                { success: false, error: '缺少会话 ID' },
+                { success: false, error: 'Session ID is required' },
                 { status: 400 }
             )
         }
 
-        const session = await updateSession(id, updates)
+        // TODO: Add ownership verification to ensure user can only update their own sessions
+        // const existingSession = await getSessionById(id)
+        // if (existingSession.createdById !== session.user.id) {
+        //     return NextResponse.json({ success: false, error: 'Access denied' }, { status: 403 })
+        // }
+
+        const updatedSession = await updateSession(id, updates)
 
         return NextResponse.json({
             success: true,
-            data: session
+            data: updatedSession
         })
     } catch (error) {
-        console.error('更新会话失败：', error)
+        console.error('Failed to update session:', error)
         return NextResponse.json(
             {
                 success: false,
-                error: '更新会话失败',
-                details: error instanceof Error ? error.message : '未知错误'
+                error: 'Failed to update session',
+                details: error instanceof Error ? error.message : 'Unknown error'
             },
             { status: 500 }
         )
@@ -147,7 +263,7 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
     try {
-        // 检查数据库是否配置
+        // Check database configuration
         if (!isDatabaseConfigured()) {
             return NextResponse.json({
                 success: false,
@@ -155,29 +271,47 @@ export async function DELETE(request: NextRequest) {
             }, { status: 500 })
         }
 
+        // Verify user authentication
+        const session = await auth.api.getSession({
+            headers: request.headers
+        })
+
+        if (!session?.user?.id) {
+            return NextResponse.json({
+                success: false,
+                error: 'User not authenticated'
+            }, { status: 401 })
+        }
+
         const { searchParams } = new URL(request.url)
         const id = searchParams.get('id')
 
         if (!id) {
             return NextResponse.json(
-                { success: false, error: '缺少会话 ID' },
+                { success: false, error: 'Session ID is required' },
                 { status: 400 }
             )
         }
+
+        // TODO: Add ownership verification to ensure user can only delete their own sessions
+        // const existingSession = await getSessionById(id)
+        // if (existingSession.createdById !== session.user.id) {
+        //     return NextResponse.json({ success: false, error: 'Access denied' }, { status: 403 })
+        // }
 
         await deleteSession(id)
 
         return NextResponse.json({
             success: true,
-            message: '会话删除成功'
+            message: 'Session deleted successfully'
         })
     } catch (error) {
-        console.error('删除会话失败：', error)
+        console.error('Failed to delete session:', error)
         return NextResponse.json(
             {
                 success: false,
-                error: '删除会话失败',
-                details: error instanceof Error ? error.message : '未知错误'
+                error: 'Failed to delete session',
+                details: error instanceof Error ? error.message : 'Unknown error'
             },
             { status: 500 }
         )

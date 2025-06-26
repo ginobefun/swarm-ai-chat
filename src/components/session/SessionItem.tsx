@@ -53,11 +53,11 @@ const SessionItem: React.FC<SessionItemProps> = ({
      */
     const getSessionTypeIcon = () => {
         switch (session.type) {
-            case 'direct':
+            case 'DIRECT':
                 return '👤'    // Single person for direct chats
-            case 'group':
+            case 'GROUP':
                 return '👥'    // Multiple people for group chats
-            case 'workflow':
+            case 'WORKFLOW':
                 return '⚙️'     // Gear for workflow sessions
             default:
                 return '💬'    // Generic chat bubble fallback
@@ -260,7 +260,7 @@ const SessionItem: React.FC<SessionItemProps> = ({
             {/* Right Side Indicators */}
             <div className="flex flex-col items-center gap-1 flex-shrink-0">
                 {/* Group session participant count badge */}
-                {session.type === 'group' && (
+                {session.type === 'GROUP' && (
                     <div
                         className="bg-indigo-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-xs font-semibold"
                         aria-label={`${session.participants.filter((p: SessionParticipant) => p.type === 'agent').length} participants`}

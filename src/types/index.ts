@@ -53,13 +53,13 @@ export interface SessionParticipant {
     avatarStyle?: string
 }
 
-// 会话类型 (统一与数据库模型一致，兼容前端需求)
+// 会话类型 (统一与数据库模型一致，使用大写枚举)
 export interface Session {
     id: string
     title?: string | null
     description?: string | null
-    type: 'direct' | 'group' | 'workflow'
-    status?: 'active' | 'paused' | 'completed' | 'archived'
+    type: 'DIRECT' | 'GROUP' | 'WORKFLOW'
+    status?: 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'ARCHIVED'
     createdById: string
     primaryAgentId?: string | null
     configuration?: any
@@ -82,8 +82,8 @@ export interface Session {
 
 // 会话过滤选项
 export interface SessionFilter {
-    type?: 'all' | 'direct' | 'group' | 'workflow'
-    status?: 'active' | 'paused' | 'completed' | 'archived'
+    type?: 'all' | 'DIRECT' | 'GROUP' | 'WORKFLOW'
+    status?: 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'ARCHIVED'
     pinned?: boolean
     agentId?: string
     searchQuery?: string
@@ -174,7 +174,7 @@ export interface AgentDetailProps {
 // 创建会话请求类型
 export interface CreateSessionRequest {
     title?: string
-    type?: 'direct' | 'group' | 'workflow'
+    type?: 'DIRECT' | 'GROUP' | 'WORKFLOW'
     description?: string
     createdById?: string
     primaryAgentId?: string
@@ -185,7 +185,7 @@ export interface CreateSessionRequest {
 export interface UpdateSessionRequest {
     title?: string
     description?: string
-    status?: 'active' | 'paused' | 'completed' | 'archived'
+    status?: 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'ARCHIVED'
     isPinned?: boolean
     isArchived?: boolean
 }

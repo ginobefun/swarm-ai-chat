@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useTheme } from 'next-themes'
 import { useTranslation } from '../contexts/AppContext'
 
@@ -12,6 +12,12 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({ className = '' }) => {
     const { t } = useTranslation()
     const { theme, setTheme } = useTheme()
     const [isOpen, setIsOpen] = useState(false)
+    const [mounted, setMounted] = useState(false)
+
+    // Only render after hydration to prevent mismatch
+    useEffect(() => {
+        setMounted(true)
+    }, [])
 
     // 切换主题
     const handleThemeChange = (newTheme: string) => {
@@ -45,6 +51,23 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({ className = '' }) => {
             default:
                 return t('navbar.systemMode')
         }
+    }
+
+    // Prevent hydration mismatch by not rendering until mounted
+    if (!mounted) {
+        return (
+            <div className="relative inline-block">
+                <button
+                    className={`flex items-center gap-2 px-3 py-2 text-slate-700 cursor-pointer text-sm font-medium transition-all duration-200 hover:border-indigo-500 dark:text-slate-200 ${className}`}
+                    title={t('navbar.theme')}
+                    disabled
+                >
+                    <span className="text-base">💻</span>
+                    <span className="font-medium hidden md:inline">{t('navbar.systemMode')}</span>
+                    <span className="text-xs text-slate-400">▼</span>
+                </button>
+            </div>
+        )
     }
 
     return (

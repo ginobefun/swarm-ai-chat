@@ -99,7 +99,7 @@ const SessionContextMenu: React.FC<SessionContextMenuProps> = ({
                             {session.title}
                         </div>
                         <div className="text-xs text-slate-600 dark:text-slate-400 uppercase font-medium">
-                            {session.type === 'group' ? t('session.groupChat') : t('session.singleChat')}
+                            {session.type === 'GROUP' ? t('session.groupChat') : t('session.singleChat')}
                         </div>
                     </div>
                 </div>
@@ -120,8 +120,8 @@ const SessionContextMenu: React.FC<SessionContextMenuProps> = ({
                                 key={item.key}
                                 onClick={item.action}
                                 className={`w-full flex items-center gap-3 px-4 py-2 border-none bg-none cursor-pointer transition-all duration-150 text-sm text-left hover:bg-slate-50 dark:hover:bg-slate-800 ${item.danger
-                                        ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20'
-                                        : 'text-slate-900 dark:text-slate-100'
+                                    ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20'
+                                    : 'text-slate-900 dark:text-slate-100'
                                     }`}
                             >
                                 <span className="text-base flex-shrink-0 w-5 text-center">
