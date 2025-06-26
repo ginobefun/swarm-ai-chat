@@ -107,7 +107,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ className = "" }) => {
                 <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className={`relative flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-full transition-all duration-200 shadow-lg hover:shadow-xl active:shadow-md overflow-hidden group border-2 border-white/30 dark:border-slate-600/30 touch-manipulation ${className}`}
+                    className={`relative flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 lg:w-12 lg:h-12 rounded-full transition-all duration-200 shadow-lg hover:shadow-xl active:shadow-md overflow-hidden group border-2 border-white/30 dark:border-slate-600/30 touch-manipulation ${className}`}
                     disabled={isPending || isSigningOut}
                     style={{
                         background: 'linear-gradient(135deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%)'
@@ -128,7 +128,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ className = "" }) => {
                                     className="w-full h-full object-cover rounded-full"
                                 />
                             ) : (
-                                <span className="relative z-10 text-white font-semibold text-sm sm:text-base">
+                                <span className="relative z-10 text-white font-semibold text-xs sm:text-sm md:text-base lg:text-lg">
                                     {getUserInitial()}
                                 </span>
                             )}
@@ -152,7 +152,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ className = "" }) => {
             </DropdownMenuTrigger>
 
             <DropdownMenuContent
-                className="w-64 p-2 bg-white/95 backdrop-blur-xl border border-gray-200/80 shadow-2xl dark:bg-slate-900/95 dark:border-slate-700/50 dark:shadow-slate-900/50"
+                className="w-56 sm:w-64 p-2 bg-white/95 backdrop-blur-xl border border-gray-200/80 shadow-2xl dark:bg-slate-900/95 dark:border-slate-700/50 dark:shadow-slate-900/50"
                 align="end"
                 sideOffset={8}
                 forceMount
@@ -189,25 +189,25 @@ const UserMenu: React.FC<UserMenuProps> = ({ className = "" }) => {
                 {/* 菜单项 */}
                 <DropdownMenuItem
                     onClick={handleProfile}
-                    className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-gray-100/80 dark:hover:bg-slate-700/80 rounded-md transition-colors"
+                    className="flex items-center gap-3 px-3 py-3 sm:py-2 cursor-pointer hover:bg-gray-100/80 dark:hover:bg-slate-700/80 rounded-md transition-colors touch-manipulation"
                 >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
                     <span>{t('userMenu.myProfile')}</span>
-                    <span className="ml-auto text-xs text-gray-400 dark:text-gray-500">即将推出</span>
+                    <span className="ml-auto text-xs text-gray-400 dark:text-gray-500">{t('common.comingSoon')}</span>
                 </DropdownMenuItem>
 
                 <DropdownMenuItem
                     onClick={handleSettings}
-                    className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-gray-100/80 dark:hover:bg-slate-700/80 rounded-md transition-colors"
+                    className="flex items-center gap-3 px-3 py-3 sm:py-2 cursor-pointer hover:bg-gray-100/80 dark:hover:bg-slate-700/80 rounded-md transition-colors touch-manipulation"
                 >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
                     <span>{t('userMenu.settings')}</span>
-                    <span className="ml-auto text-xs text-gray-400 dark:text-gray-500">即将推出</span>
+                    <span className="ml-auto text-xs text-gray-400 dark:text-gray-500">{t('common.comingSoon')}</span>
                 </DropdownMenuItem>
 
                 <DropdownMenuSeparator />
@@ -216,13 +216,13 @@ const UserMenu: React.FC<UserMenuProps> = ({ className = "" }) => {
                 <DropdownMenuItem
                     onClick={handleSignOut}
                     disabled={isSigningOut}
-                    className="flex items-center gap-3 px-3 py-2 cursor-pointer text-red-600 dark:text-red-400 hover:bg-red-50/80 dark:hover:bg-red-900/20 focus:text-red-700 dark:focus:text-red-300 rounded-md transition-colors"
+                    className="flex items-center gap-3 px-3 py-3 sm:py-2 cursor-pointer text-red-600 dark:text-red-400 hover:bg-red-50/80 dark:hover:bg-red-900/20 focus:text-red-700 dark:focus:text-red-300 rounded-md transition-colors touch-manipulation"
                     variant="destructive"
                 >
                     {isSigningOut ? (
                         <div className="w-4 h-4 border-2 border-red-500/30 border-t-red-500 rounded-full animate-spin" />
                     ) : (
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                         </svg>
                     )}

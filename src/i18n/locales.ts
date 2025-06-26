@@ -18,6 +18,69 @@ export interface Messages {
         retry: string
         creating: string
         optional: string
+        comingSoon: string
+    }
+
+    // 认证系统
+    auth: {
+        // 登录/注册标题
+        loginTitle: string
+        registerTitle: string
+
+        // 社交登录
+        loginWithGoogle: string
+        loginWithGithub: string
+
+        // 表单字段
+        emailLabel: string
+        emailPlaceholder: string
+        usernameLabel: string
+        usernamePlaceholder: string
+        nameLabel: string
+        namePlaceholder: string
+        passwordLabel: string
+        passwordPlaceholder: string
+
+        // 按钮状态
+        signingIn: string
+        signingUp: string
+        signIn: string
+        signUp: string
+
+        // 切换模式
+        noAccount: string
+        hasAccount: string
+        createAccount: string
+        signInNow: string
+
+        // 分隔符
+        orContinueWith: string
+
+        // 错误信息
+        checkUsernameError: string
+        usernameUnavailable: string
+        networkError: string
+        usernameInUse: string
+        usernameFormatError: string
+        signInError: string
+        emailAlreadyExists: string
+        signUpError: string
+        usernameFormatInvalid: string
+        operationFailed: string
+        socialLoginError: string
+
+        // 成功信息
+        usernameSet: string
+        usernameSetError: string
+
+        // 用户名验证
+        usernameOptional: string
+        usernameAutoGenerate: string
+        usernameRules: string
+
+        // 日志信息
+        checkingUsername: string
+        settingUsername: string
     }
 
     // 导航栏
@@ -287,6 +350,69 @@ export const locales: Record<LocaleKey, Messages> = {
             retry: '重试',
             creating: '创建中...',
             optional: '可选',
+            comingSoon: '即将推出',
+        },
+
+        // Authentication system
+        auth: {
+            // Login/Register titles
+            loginTitle: '登录 SwarmAI',
+            registerTitle: '注册 SwarmAI',
+
+            // Social login
+            loginWithGoogle: '使用 Google 登录',
+            loginWithGithub: '使用 GitHub 登录',
+
+            // Form fields
+            emailLabel: '邮箱地址',
+            emailPlaceholder: '邮箱地址',
+            usernameLabel: '用户名',
+            usernamePlaceholder: '用户名（可选，英文、数字、下划线，6-20字符）',
+            nameLabel: '姓名',
+            namePlaceholder: '姓名',
+            passwordLabel: '密码',
+            passwordPlaceholder: '密码',
+
+            // Button states
+            signingIn: '登录中...',
+            signingUp: '注册中...',
+            signIn: '登录',
+            signUp: '注册',
+
+            // Mode switching
+            noAccount: '还没有账号？',
+            hasAccount: '已有账号？',
+            createAccount: '立即注册',
+            signInNow: '立即登录',
+
+            // Separator
+            orContinueWith: '或',
+
+            // Error messages
+            checkUsernameError: '检查用户名时出错',
+            usernameUnavailable: '用户名不可用',
+            networkError: '网络错误，请检查网络连接',
+            usernameInUse: '用户名已被使用，请尝试其他用户名',
+            usernameFormatError: '用户名只能包含英文、数字和下划线，长度 6-20 个字符',
+            signInError: '登录失败，请检查邮箱和密码',
+            emailAlreadyExists: '该邮箱已被注册',
+            signUpError: '注册失败，请检查信息后重试',
+            usernameFormatInvalid: '用户名格式不正确',
+            operationFailed: '操作失败，请稍后重试',
+            socialLoginError: '登录失败，请稍后重试',
+
+            // Success messages
+            usernameSet: '用户名已设置为',
+            usernameSetError: '设置用户名失败',
+
+            // Username validation
+            usernameOptional: '用户名现在是可选的',
+            usernameAutoGenerate: '如果没有提供用户名，自动生成',
+            usernameRules: '用户名只能包含英文、数字和下划线，长度 3-20 个字符',
+
+            // Log messages
+            checkingUsername: '检查用户名时出错：',
+            settingUsername: '用户名已设置为:',
         },
         navbar: {
             logo: 'SwarmAI',
@@ -379,6 +505,8 @@ export const locales: Record<LocaleKey, Messages> = {
             criticalThinker: '批判思维者',
             aiAssistant: 'AI 助手',
             specialist: '专家',
+            techExpert: '技术专家',
+            marketAnalyst: '市场分析师',
             description: {
                 dataProcessing: '擅长数据处理和可视化',
                 creativityInspiration: '激发创意灵感',
@@ -388,6 +516,11 @@ export const locales: Record<LocaleKey, Messages> = {
                 techEvaluator: '评估技术方案和架构设计',
                 dataAnalyst: '擅长数据分析和可视化报告',
                 creativeMaster: '激发创意灵感，提供创新思路',
+                requirementAnalysis: '需求分析',
+                creativeDesign: '创意设计',
+                dataAnalysis: '数据分析',
+                techImplementation: '技术实现',
+                marketInsight: '市场洞察',
             },
         },
         messages: {
@@ -409,6 +542,8 @@ export const locales: Record<LocaleKey, Messages> = {
         welcome: {
             title: '欢迎使用 SwarmAI.chat',
             subtitle: '多智能体协作平台，让 AI 团队为您服务',
+            mainTitle: '多智能体协作平台，让 AI 团队 为您服务',
+            mainSubtitle: '将不同专业的 AI 智能体组成团队，协同完成复杂任务',
             createNewSession: '创建新会话',
             exploreAgents: '探索 AI 智能体',
             quickStartLabel: '快速上手',
@@ -536,6 +671,69 @@ export const locales: Record<LocaleKey, Messages> = {
             retry: 'Retry',
             creating: 'Creating...',
             optional: 'Optional',
+            comingSoon: 'Coming Soon',
+        },
+
+        // Authentication system
+        auth: {
+            // Login/Register titles
+            loginTitle: 'Sign in to SwarmAI',
+            registerTitle: 'Sign up for SwarmAI',
+
+            // Social login
+            loginWithGoogle: 'Continue with Google',
+            loginWithGithub: 'Continue with GitHub',
+
+            // Form fields
+            emailLabel: 'Email',
+            emailPlaceholder: 'Email address',
+            usernameLabel: 'Username',
+            usernamePlaceholder: 'Username (optional, alphanumeric and underscore, 6-20 chars)',
+            nameLabel: 'Name',
+            namePlaceholder: 'Full name',
+            passwordLabel: 'Password',
+            passwordPlaceholder: 'Password',
+
+            // Button states
+            signingIn: 'Signing in...',
+            signingUp: 'Signing up...',
+            signIn: 'Sign In',
+            signUp: 'Sign Up',
+
+            // Mode switching
+            noAccount: "Don't have an account?",
+            hasAccount: 'Already have an account?',
+            createAccount: 'Sign up now',
+            signInNow: 'Sign in now',
+
+            // Separator
+            orContinueWith: 'or',
+
+            // Error messages
+            checkUsernameError: 'Error checking username',
+            usernameUnavailable: 'Username not available',
+            networkError: 'Network error, please check your connection',
+            usernameInUse: 'Username already taken, please try another one',
+            usernameFormatError: 'Username can only contain letters, numbers and underscores, 6-20 characters',
+            signInError: 'Sign in failed, please check your email and password',
+            emailAlreadyExists: 'This email is already registered',
+            signUpError: 'Sign up failed, please check your information and try again',
+            usernameFormatInvalid: 'Username format is invalid',
+            operationFailed: 'Operation failed, please try again later',
+            socialLoginError: 'Login failed, please try again later',
+
+            // Success messages
+            usernameSet: 'Username set to',
+            usernameSetError: 'Failed to set username',
+
+            // Username validation
+            usernameOptional: 'Username is now optional',
+            usernameAutoGenerate: 'Auto-generate if no username provided',
+            usernameRules: 'Username can only contain letters, numbers and underscores, 3-20 characters',
+
+            // Log messages
+            checkingUsername: 'Error checking username:',
+            settingUsername: 'Username set to:',
         },
         navbar: {
             logo: 'SwarmAI',
@@ -628,6 +826,8 @@ export const locales: Record<LocaleKey, Messages> = {
             criticalThinker: 'Critical Thinker',
             aiAssistant: 'AI Assistant',
             specialist: 'Specialist',
+            techExpert: 'Tech Expert',
+            marketAnalyst: 'Market Analyst',
             description: {
                 dataProcessing: 'Expert in data processing and visualization',
                 creativityInspiration: 'Inspiring creativity and innovation',
@@ -637,6 +837,11 @@ export const locales: Record<LocaleKey, Messages> = {
                 techEvaluator: 'Evaluate technical solutions and architecture design',
                 dataAnalyst: 'Expert in data analysis and visualization reports',
                 creativeMaster: 'Inspire creative ideas and provide innovative solutions',
+                requirementAnalysis: 'Requirement Analysis',
+                creativeDesign: 'Creative Design',
+                dataAnalysis: 'Data Analysis',
+                techImplementation: 'Tech Implementation',
+                marketInsight: 'Market Insight',
             },
         },
         messages: {
@@ -658,6 +863,8 @@ export const locales: Record<LocaleKey, Messages> = {
         welcome: {
             title: 'Welcome to SwarmAI.chat',
             subtitle: 'Multi-agent collaboration platform where AI teams work for you',
+            mainTitle: 'Multi-agent collaboration platform where AI teams work for you',
+            mainSubtitle: 'Assemble AI agents from different specialties into teams to tackle complex tasks collaboratively',
             createNewSession: 'Create New Session',
             exploreAgents: 'Explore AI Agents',
             quickStartLabel: 'Quick Start',

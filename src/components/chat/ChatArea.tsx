@@ -40,7 +40,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         }
     }
 
-    // AI 智能体展示数据
+    // AI agent display data
     const aiAgents = [
         {
             id: 1,
@@ -49,7 +49,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             color: "from-blue-400 to-blue-600",
             position: { x: -120, y: -80 },
             delay: 0,
-            specialty: "需求分析"
+            specialty: t('agents.description.requirementAnalysis')
         },
         {
             id: 2,
@@ -58,7 +58,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             color: "from-purple-400 to-purple-600",
             position: { x: 120, y: -80 },
             delay: 0.2,
-            specialty: "创意设计"
+            specialty: t('agents.description.creativeDesign')
         },
         {
             id: 3,
@@ -67,25 +67,25 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             color: "from-emerald-400 to-emerald-600",
             position: { x: -150, y: 60 },
             delay: 0.4,
-            specialty: "数据分析"
+            specialty: t('agents.description.dataAnalysis')
         },
         {
             id: 4,
-            name: "技术专家",
+            name: t('agents.techExpert'),
             icon: Code,
             color: "from-orange-400 to-orange-600",
             position: { x: 0, y: 100 },
             delay: 0.6,
-            specialty: "技术实现"
+            specialty: t('agents.description.techImplementation')
         },
         {
             id: 5,
-            name: "市场分析师",
+            name: t('agents.marketAnalyst'),
             icon: TrendingUp,
             color: "from-pink-400 to-pink-600",
             position: { x: 150, y: 60 },
             delay: 0.8,
-            specialty: "市场洞察"
+            specialty: t('agents.description.marketInsight')
         }
     ]
 
@@ -175,7 +175,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                         </div>
                     </motion.div>
 
-                    {/* 🎯 核心价值文案 */}
+                    {/* Core value proposition */}
                     <motion.div
                         className="text-center mb-12 max-w-2xl"
                         initial={{ opacity: 0, y: 20 }}
@@ -183,15 +183,15 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                         transition={{ delay: 0.3, duration: 0.8 }}
                     >
                         <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-                            多智能体协作平台，让 <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">AI 团队</span> 为您服务
+                            {t('welcome.mainTitle').split('AI 团队')[0]} <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">AI 团队</span> {t('welcome.mainTitle').split('AI 团队')[1]}
                         </h1>
 
                         <p className="text-xl text-gray-600 dark:text-gray-300 leading-relaxed">
-                            将不同专业的 AI 智能体组成团队，协同完成复杂任务
+                            {t('welcome.mainSubtitle')}
                         </p>
                     </motion.div>
 
-                    {/* 🚀 行动按钮区域 */}
+                    {/* Action buttons area */}
                     <motion.div
                         className="flex flex-col sm:flex-row gap-4 mb-16"
                         initial={{ opacity: 0, y: 30 }}
@@ -204,7 +204,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                                 className="h-14 px-8 text-lg font-semibold bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200"
                             >
                                 <Plus className="w-5 h-5 mr-2" />
-                                创建新会话
+                                {t('welcome.createNewSession')}
                                 <ArrowRight className="w-5 h-5 ml-2" />
                             </Button>
                         </motion.div>
@@ -216,12 +216,12 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                                 className="h-14 px-8 text-lg font-medium border-2 hover:bg-gray-50 dark:hover:bg-gray-800"
                             >
                                 <Brain className="w-5 h-5 mr-2" />
-                                探索 AI 智能体
+                                {t('welcome.exploreAgents')}
                             </Button>
                         </motion.div>
                     </motion.div>
 
-                    {/* 💡 核心特性展示 */}
+                    {/* Core features showcase */}
                     <motion.div
                         className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl w-full"
                         initial={{ opacity: 0 }}
@@ -231,20 +231,20 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                         {[
                             {
                                 icon: Users,
-                                title: "多智能体协作",
-                                description: "多个 AI 并行工作，提供多角度解决方案",
+                                title: t('welcome.features.multiAgent.title'),
+                                description: t('welcome.features.multiAgent.description'),
                                 color: "from-blue-500 to-indigo-600"
                             },
                             {
                                 icon: Target,
-                                title: "专业角色扮演",
-                                description: "每个 AI 都有专业背景和独特能力",
+                                title: t('welcome.features.professionalRoles.title'),
+                                description: t('welcome.features.professionalRoles.description'),
                                 color: "from-purple-500 to-pink-600"
                             },
                             {
                                 icon: Zap,
-                                title: "结构化输出",
-                                description: "智能整理对话，生成专业文档",
+                                title: t('welcome.features.structuredOutput.title'),
+                                description: t('welcome.features.structuredOutput.description'),
                                 color: "from-emerald-500 to-teal-600"
                             }
                         ].map((feature, index) => (
@@ -273,7 +273,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                     </motion.div>
                 </div>
 
-                {/* 自定义 CSS 动画 */}
+                {/* Custom CSS animations */}
                 <style jsx>{`
                     @keyframes blob {
                         0% {
@@ -305,7 +305,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
     return (
         <main className="flex flex-col flex-1 bg-background">
-            {/* 对话头部 */}
+            {/* Chat header */}
             <div className="flex items-center justify-between px-6 py-4 border-b bg-card shadow-sm">
                 <div className="flex items-center gap-4">
                     <div className="flex -space-x-2">

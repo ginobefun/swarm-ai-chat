@@ -67,14 +67,14 @@ const Navbar: React.FC<NavbarProps> = ({
 
 
     /**
-     * 登录成功回调
+     * Login success callback
      */
     const handleLoginSuccess = () => {
-        // 可以在这里执行登录成功后的操作
+        // Handle post-login operations here
         console.log('Login successful')
     }
 
-    // 计算用户状态
+    // Calculate user authentication status
     const isLoggedIn = !!session?.user
 
     /**
@@ -269,17 +269,17 @@ const Navbar: React.FC<NavbarProps> = ({
 
                 {/* User Profile Menu */}
                 {isLoggedIn ? (
-                    // 已登录用户：显示用户菜单
+                    // Logged in user: Show user menu
                     <UserMenu />
                 ) : (
-                    // 未登录用户：显示登录按钮
+                    // Not logged in: Show login button
                     <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         className="relative flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-full transition-all duration-200 shadow-lg hover:shadow-xl active:shadow-md overflow-hidden group border-2 border-white/30 dark:border-slate-600/30 touch-manipulation"
                         onClick={() => setIsLoginDialogOpen(true)}
-                        title="登录"
-                        aria-label="登录或注册"
+                        title={t('auth.signIn')}
+                        aria-label={t('auth.signIn')}
                         disabled={isPending}
                         style={{
                             background: 'linear-gradient(135deg, #6b7280 0%, #9ca3af 50%, #64748b 100%)'
