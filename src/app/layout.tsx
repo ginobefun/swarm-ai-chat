@@ -23,7 +23,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
     // Dynamic title configuration with template support
     title: {
-        default: "SwarmAI.chat - AI Collaboration Platform", // English default for international users
+        default: "SwarmAI - AI Collaboration Platform", // English default for international users
         template: "%s | SwarmAI.chat" // Template for other pages
     },
     // Detailed description for better SEO ranking
@@ -121,15 +121,6 @@ export const metadata: Metadata = {
         apple: [
             { url: "/apple-touch-icon.svg", sizes: "180x180", type: "image/svg+xml" },
         ],
-    },
-
-    // Search engine verification codes (should be configured in production)
-    verification: {
-        google: "verification_code_here", // TODO: Replace with actual Google verification code
-        yandex: "verification_code_here", // TODO: Replace with actual Yandex verification code
-        other: {
-            "msvalidate.01": "verification_code_here", // TODO: Replace with actual Bing verification code
-        },
     },
 
     // Additional metadata for categorization

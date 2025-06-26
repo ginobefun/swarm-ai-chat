@@ -43,12 +43,19 @@ interface NavbarProps {
  * 7. Accessibility - ARIA labels, keyboard navigation, semantic HTML
  * 8. Responsive Design - Adapts to different screen sizes
  * 
+ * Mobile Optimizations:
+ * - Logo completely hidden on mobile for space efficiency
+ * - Search functionality hidden on mobile
+ * - Compact control layout with optimized touch targets
+ * - Enhanced dark mode adaptation
+ * 
  * Features:
- * - Global search with keyboard shortcuts (⌘/Ctrl+K)
- * - Theme and language switching
+ * - Global search with keyboard shortcuts (⌘/Ctrl+K) - Desktop only
+ * - Theme and language switching - Mobile optimized
  * - User profile menu with login state handling
  * - Mobile-responsive sidebar toggle
  * - Smooth animations and hover effects
+ * - Enhanced dark mode support with improved contrast
  */
 const Navbar: React.FC<NavbarProps> = ({
     onToggleSidebar,
@@ -105,7 +112,7 @@ const Navbar: React.FC<NavbarProps> = ({
             switch (e.key) {
                 case 'k':
                     e.preventDefault()
-                    // Focus search input for quick access
+                    // Focus search input for quick access (desktop only)
                     const searchInput = document.querySelector('#global-search') as HTMLInputElement
                     searchInput?.focus()
                     break
@@ -128,18 +135,18 @@ const Navbar: React.FC<NavbarProps> = ({
             initial={{ y: -10, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.3, ease: "easeOut" }}
-            className="fixed top-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-xl border-b border-gray-100 z-[1000] flex items-center justify-between px-4 sm:px-6 dark:bg-slate-900/80 dark:border-slate-800"
+            className="fixed top-0 left-0 right-0 h-14 sm:h-16 bg-white/95 backdrop-blur-xl border-b border-gray-200/80 z-[1000] flex items-center justify-between px-3 sm:px-4 lg:px-6 shadow-sm dark:bg-slate-900/95 dark:border-slate-700/50 dark:shadow-slate-900/20"
             role="navigation"
             aria-label={t('navbar.mainNavigation')}
             onKeyDown={handleKeyDown}
         >
-            {/* Left Section: Mobile Toggle + Brand Logo */}
-            <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0">
-                {/* Mobile Sidebar Toggle - Only visible on mobile/tablet */}
+            {/* Left Section: Mobile Toggle + Brand Logo (Desktop Only) */}
+            <div className="flex items-center gap-2 sm:gap-3 lg:gap-4 flex-shrink-0">
+                {/* Mobile Sidebar Toggle - Only visible on small screens */}
                 <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className="flex items-center justify-center w-9 h-9 rounded-xl bg-gray-50 hover:bg-gray-100 text-gray-600 hover:text-gray-900 transition-all duration-200 lg:hidden dark:bg-slate-800/50 dark:hover:bg-slate-700 dark:text-slate-400 dark:hover:text-slate-100 border border-gray-200/50 dark:border-slate-700/50"
+                    className="flex lg:hidden items-center justify-center w-10 h-10 sm:w-10 sm:h-10 rounded-xl bg-gray-100/90 hover:bg-gray-200/90 active:bg-gray-300/90 text-gray-700 hover:text-gray-900 transition-all duration-200 dark:bg-slate-800/90 dark:hover:bg-slate-700/90 dark:active:bg-slate-600/90 dark:text-slate-300 dark:hover:text-slate-100 border border-gray-300/60 dark:border-slate-600/40 shadow-sm hover:shadow-md touch-manipulation"
                     onClick={onToggleSidebar}
                     title={t('navbar.toggleSidebar')}
                     aria-label={t('navbar.toggleSidebar')}
@@ -151,7 +158,7 @@ const Navbar: React.FC<NavbarProps> = ({
                         transition={{ duration: 0.2 }}
                     >
                         <svg
-                            className="w-4 h-4"
+                            className="w-5 h-5"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -162,10 +169,10 @@ const Navbar: React.FC<NavbarProps> = ({
                     </motion.div>
                 </motion.button>
 
-                {/* Brand Logo and Text */}
+                {/* Brand Logo and Text - Hidden on Mobile for Space Optimization */}
                 <motion.div
                     whileHover={{ scale: 1.02 }}
-                    className="flex items-center gap-2 sm:gap-3 flex-shrink-0 group cursor-pointer"
+                    className="hidden md:flex items-center gap-3 flex-shrink-0 group cursor-pointer"
                     role="banner"
                     onClick={() => window.location.href = '/'}
                     tabIndex={0}
@@ -178,27 +185,27 @@ const Navbar: React.FC<NavbarProps> = ({
                 >
                     <SwarmLogo size="md" showPulse={true} />
 
-                    {/* Brand Text with Responsive Typography */}
+                    {/* Brand Text - Shown from medium screens up */}
                     <div className="flex flex-col">
-                        <div className="text-base sm:text-lg font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent dark:from-indigo-400 dark:via-purple-400 dark:to-pink-400">
+                        <div className="text-base lg:text-lg font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent dark:from-indigo-400 dark:via-purple-400 dark:to-pink-400">
                             {t('navbar.brandName')}
                         </div>
-                        <div className="text-xs text-gray-500 dark:text-slate-400 font-medium hidden sm:block">
+                        <div className="text-xs text-gray-500 dark:text-slate-400 font-medium hidden lg:block">
                             {t('navbar.brandTagline')}
                         </div>
                     </div>
                 </motion.div>
             </div>
 
-            {/* Center Section: Global Search */}
+            {/* Center Section: Global Search - Desktop Only */}
             <motion.form
                 onSubmit={handleSearchSubmit}
-                className="flex-1 max-w-sm mx-2 sm:mx-4"
+                className="hidden lg:flex flex-1 max-w-sm mx-4"
                 role="search"
                 aria-label={t('navbar.globalSearch')}
                 layout
             >
-                <div className="relative group">
+                <div className="relative group w-full">
                     <motion.div
                         animate={{
                             scale: isSearchFocused ? 1.02 : 1,
@@ -216,7 +223,7 @@ const Navbar: React.FC<NavbarProps> = ({
                                 transition={{ duration: 0.2 }}
                             >
                                 <svg
-                                    className="w-4 h-4 text-gray-400 group-hover:text-indigo-500 transition-colors"
+                                    className="w-4 h-4 text-gray-400 group-hover:text-indigo-500 transition-colors dark:text-slate-500 dark:group-hover:text-indigo-400"
                                     fill="none"
                                     stroke="currentColor"
                                     viewBox="0 0 24 24"
@@ -231,7 +238,7 @@ const Navbar: React.FC<NavbarProps> = ({
                         <input
                             id="global-search"
                             type="search"
-                            className="w-full h-10 bg-gray-50/80 rounded-xl border-0 pl-10 pr-12 sm:pr-16 text-sm text-gray-900 placeholder-gray-500 outline-none transition-all duration-300 focus:bg-white focus:shadow-lg focus:ring-2 focus:ring-indigo-500/20 dark:bg-slate-800/50 dark:text-slate-100 dark:placeholder-slate-400 dark:focus:bg-slate-700/80 dark:focus:ring-indigo-400/20"
+                            className="w-full h-10 bg-gray-50/90 rounded-xl border-0 pl-10 pr-16 text-sm text-gray-900 placeholder-gray-500 outline-none transition-all duration-300 focus:bg-white focus:shadow-lg focus:ring-2 focus:ring-indigo-500/20 dark:bg-slate-800/90 dark:text-slate-100 dark:placeholder-slate-400 dark:focus:bg-slate-700/90 dark:focus:ring-indigo-400/20"
                             placeholder={t('navbar.searchPlaceholder')}
                             value={searchValue}
                             onChange={handleSearchChange}
@@ -242,30 +249,34 @@ const Navbar: React.FC<NavbarProps> = ({
                             spellCheck="false"
                         />
 
-                        {/* Keyboard Shortcut Hint - Hidden on mobile */}
+                        {/* Keyboard Shortcut Hint */}
                         <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                            <div className="hidden lg:flex items-center gap-1 text-xs text-gray-400 dark:text-slate-500">
-                                <kbd className="px-1.5 py-0.5 bg-gray-200 dark:bg-slate-700 rounded text-xs font-mono">⌘</kbd>
-                                <kbd className="px-1.5 py-0.5 bg-gray-200 dark:bg-slate-700 rounded text-xs font-mono">K</kbd>
+                            <div className="hidden xl:flex items-center gap-1 text-xs text-gray-400 dark:text-slate-500">
+                                <kbd className="px-1.5 py-0.5 bg-gray-200/80 dark:bg-slate-700/80 rounded text-xs font-mono">⌘</kbd>
+                                <kbd className="px-1.5 py-0.5 bg-gray-200/80 dark:bg-slate-700/80 rounded text-xs font-mono">K</kbd>
                             </div>
                         </div>
                     </motion.div>
                 </div>
             </motion.form>
 
-            {/* Right Section: Action Controls */}
-            <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0 min-w-fit">
-                {/* Theme and Language Controls Container */}
-                <div className="flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-2 rounded-xl bg-gray-50/50 dark:bg-slate-800/30 border border-gray-200/50 dark:border-slate-700/50">
-                    <LanguageToggle />
-                    <ThemeToggle />
+            {/* Right Section: Action Controls - Mobile Optimized */}
+            <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0 min-w-fit">
+                {/* Theme and Language Controls - Clean Mobile Layout */}
+                <div className="flex items-center gap-1 sm:gap-2">
+                    <div className="scale-90 sm:scale-100">
+                        <LanguageToggle />
+                    </div>
+                    <div className="scale-90 sm:scale-100">
+                        <ThemeToggle />
+                    </div>
                 </div>
 
-                {/* User Profile Menu with Login State Handling */}
+                {/* User Profile Menu - Enhanced Mobile Touch Target */}
                 <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className="relative flex items-center justify-center w-9 h-9 rounded-full transition-all duration-200 shadow-lg hover:shadow-xl overflow-hidden group"
+                    className="relative flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-full transition-all duration-200 shadow-lg hover:shadow-xl active:shadow-md overflow-hidden group border-2 border-white/30 dark:border-slate-600/30 touch-manipulation"
                     onClick={onUserClick}
                     title={user.isLoggedIn ? t('navbar.userMenu') : '登录'}
                     aria-label={user.isLoggedIn ? t('navbar.userMenuAriaLabel') : '登录或注册'}
@@ -273,7 +284,7 @@ const Navbar: React.FC<NavbarProps> = ({
                     style={{
                         background: user.isLoggedIn
                             ? 'linear-gradient(135deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%)'
-                            : 'linear-gradient(135deg, #6b7280 0%, #9ca3af 100%)'
+                            : 'linear-gradient(135deg, #6b7280 0%, #9ca3af 50%, #64748b 100%)'
                     }}
                 >
                     {user.isLoggedIn ? (
@@ -286,7 +297,7 @@ const Navbar: React.FC<NavbarProps> = ({
                                     className="w-full h-full object-cover rounded-full"
                                 />
                             ) : (
-                                <span className="relative z-10 text-white font-semibold text-sm">
+                                <span className="relative z-10 text-white font-semibold text-sm sm:text-base">
                                     {getUserInitial()}
                                 </span>
                             )}
@@ -294,25 +305,31 @@ const Navbar: React.FC<NavbarProps> = ({
                             <motion.div
                                 animate={{ rotate: 360 }}
                                 transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-                                className="absolute inset-0 rounded-full border-2 border-white/30"
+                                className="absolute inset-0 rounded-full border-2 border-white/30 dark:border-white/20"
                             />
+                            {/* Online Status Indicator */}
+                            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 dark:bg-green-500 rounded-full border-2 border-white dark:border-slate-900 shadow-sm"></div>
                         </>
                     ) : (
                         // Not logged in: Show login icon
-                        <svg
-                            className="w-5 h-5 text-white"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                            aria-hidden="true"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                            />
-                        </svg>
+                        <>
+                            <svg
+                                className="w-5 h-5 sm:w-6 sm:h-6 text-white"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                                aria-hidden="true"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                                />
+                            </svg>
+                            {/* Login Hint Indicator */}
+                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-400 dark:bg-orange-500 rounded-full border-2 border-white dark:border-slate-900 shadow-sm animate-pulse"></div>
+                        </>
                     )}
                 </motion.button>
             </div>
