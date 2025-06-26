@@ -168,13 +168,24 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({
     // Render modal using React Portal to ensure it's positioned relative to viewport
     return createPortal(
         <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-xl flex items-center justify-center z-[1000] p-4 sm:p-6"
+            className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-xl p-4 sm:p-6 overflow-hidden"
             onClick={handleBackdropClick}
             onKeyDown={handleKeyDown}
             role="dialog"
             aria-modal="true"
             aria-labelledby="create-session-title"
             aria-describedby="create-session-description"
+            style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                zIndex: 9999,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+            }}
         >
             <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 rounded-2xl shadow-2xl shadow-black/20 dark:shadow-black/40 max-w-2xl w-full max-h-[90vh] overflow-hidden transform transition-all duration-300 ease-out">
 

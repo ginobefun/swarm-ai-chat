@@ -19,6 +19,9 @@ export interface Messages {
         creating: string
         optional: string
         comingSoon: string
+        minute: string
+        hour: string
+        day: string
     }
 
     // 认证系统
@@ -297,11 +300,14 @@ export interface Messages {
         archive: string
         duplicate: string
         export: string
+        untitled: string
+        pinned: string
         confirmDelete: string
         confirmDeleteMessage: string
         operationFailed: string
         retryLater: string
         copy: string
+        delete: string
 
         // 会话类型
         allSessions: string
@@ -317,6 +323,7 @@ export interface Messages {
         agentsCount: string
         unknownTime: string
         unknownAgent: string
+        justNow: string
 
         // 会话分组
         pinnedSessions: string
@@ -380,6 +387,9 @@ export const locales: Record<LocaleKey, Messages> = {
             creating: '创建中...',
             optional: '可选',
             comingSoon: '即将推出',
+            minute: '分钟前',
+            hour: '小时前',
+            day: '天前',
         },
 
         // Authentication system
@@ -640,11 +650,14 @@ export const locales: Record<LocaleKey, Messages> = {
             archive: '归档',
             duplicate: '复制会话',
             export: '导出',
+            untitled: '未命名会话',
+            pinned: '已置顶',
             confirmDelete: '确定要删除这个会话吗？',
             confirmDeleteMessage: '此操作不可撤销。',
             operationFailed: '操作失败',
             retryLater: '请稍后重试',
             copy: '副本',
+            delete: '删除',
 
             // 会话类型
             allSessions: '全部会话',
@@ -680,9 +693,9 @@ export const locales: Record<LocaleKey, Messages> = {
             titleRequired: '会话标题是必需的',
             agentRequired: '至少需要选择一个 AI 角色',
             createError: '创建会话失败',
-            dialogSubtitle: '配置您的AI团队协作',
-            titleHelper: '为您的AI协作会话选择一个描述性名称',
-            descriptionHelper: '添加上下文以帮助AI智能体理解您的目标',
+            dialogSubtitle: '配置您的 AI 团队协作',
+            titleHelper: '为您的 AI 协作会话选择一个描述性名称',
+            descriptionHelper: '添加上下文以帮助 AI 智能体理解您的目标',
 
             // 其他
             optional: '可选',
@@ -702,6 +715,7 @@ export const locales: Record<LocaleKey, Messages> = {
             createFirstSession: '创建您的第一个会话开始对话',
             loginToUnlock: '登录解锁所有功能',
             freeToUse: '完全免费使用',
+            justNow: '刚刚',
         },
     },
     'en': {
@@ -721,6 +735,9 @@ export const locales: Record<LocaleKey, Messages> = {
             creating: 'Creating...',
             optional: 'Optional',
             comingSoon: 'Coming Soon',
+            minute: 'm ago',
+            hour: 'h ago',
+            day: 'd ago',
         },
 
         // Authentication system
@@ -981,11 +998,14 @@ export const locales: Record<LocaleKey, Messages> = {
             archive: 'Archive',
             duplicate: 'Duplicate',
             export: 'Export',
+            untitled: 'Untitled Session',
+            pinned: 'Pinned',
             confirmDelete: 'Are you sure to delete this session?',
             confirmDeleteMessage: 'This action cannot be undone.',
             operationFailed: 'Operation failed',
             retryLater: 'Please try again later',
             copy: '(Copy)',
+            delete: 'Delete',
 
             // Session types
             allSessions: 'All Sessions',
@@ -1043,6 +1063,7 @@ export const locales: Record<LocaleKey, Messages> = {
             createFirstSession: 'Create your first session to start chatting',
             loginToUnlock: 'Login to unlock all features',
             freeToUse: 'Fully free to use',
+            justNow: 'Just now',
         },
     },
 } 

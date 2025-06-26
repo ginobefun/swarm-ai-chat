@@ -165,14 +165,27 @@ const InlineRenameInput: React.FC<InlineRenameInputProps> = ({
 
     return (
         <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[1000] p-5"
+            className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm p-4 overflow-hidden"
             onClick={handleOverlayClick}
             role="dialog"
             aria-modal="true"
             aria-labelledby="rename-dialog-title"
             aria-describedby="rename-dialog-description"
+            style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                zIndex: 9999,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+            }}
         >
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl max-w-[480px] w-full overflow-hidden animate-dialog-slide-in">
+            <div
+                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl w-full max-w-[480px] overflow-hidden animate-dialog-slide-in"
+            >
 
                 {/* Dialog Header */}
                 <div className="px-6 pt-5 pb-4 border-b border-slate-200 dark:border-slate-700">

@@ -61,6 +61,9 @@ module.exports = {
         "slide-in-from-right": "slide-in-from-right 0.3s ease-out",
         "slide-in-from-top": "slide-in-from-top 0.3s ease-out",
         "slide-in-from-bottom": "slide-in-from-bottom 0.3s ease-out",
+        "menu-slide-in": "menu-slide-in 0.15s ease-out",
+        "dialog-slide-in": "dialog-slide-in 0.2s ease-out",
+        "dialog-slide-out": "dialog-slide-out 0.15s ease-in",
         "typing-indicator": "typing-indicator 1.4s infinite",
         "pulse-soft": "pulse-soft 2s ease-in-out infinite",
       },
@@ -96,6 +99,36 @@ module.exports = {
         "slide-in-from-bottom": {
           "0%": { transform: "translateY(100%)", opacity: "0" },
           "100%": { transform: "translateY(0)", opacity: "1" },
+        },
+        "menu-slide-in": {
+          "0%": { 
+            transform: "scale(0.95) translateY(-8px)", 
+            opacity: "0" 
+          },
+          "100%": { 
+            transform: "scale(1) translateY(0)", 
+            opacity: "1" 
+          },
+        },
+        "dialog-slide-in": {
+          "0%": { 
+            transform: "scale(0.95)", 
+            opacity: "0" 
+          },
+          "100%": { 
+            transform: "scale(1)", 
+            opacity: "1" 
+          },
+        },
+        "dialog-slide-out": {
+          "0%": { 
+            transform: "scale(1)", 
+            opacity: "1" 
+          },
+          "100%": { 
+            transform: "scale(0.95)", 
+            opacity: "0" 
+          },
         },
         "typing-indicator": {
           "0%, 60%, 100%": {

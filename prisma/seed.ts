@@ -27,7 +27,7 @@ async function main() {
                 color: '#8B5CF6',
                 description: '进行逻辑分析和推理的能力',
                 sortOrder: 2
-            }
+        }
         }),
         prisma.swarmSkillTag.create({
             data: {
@@ -41,10 +41,10 @@ async function main() {
         }),
         prisma.swarmSkillTag.create({
             data: {
-                id: 'analysis',
-                name: '数据分析',
+            id: 'analysis',
+            name: '数据分析',
                 category: 'CORE',
-                color: '#10B981',
+            color: '#10B981',
                 description: '分析和解释数据的能力',
                 sortOrder: 4
             }
@@ -120,7 +120,7 @@ async function main() {
             data: {
                 id: 'web-search-engine',
                 name: '网络搜索引擎',
-                icon: '🔍',
+            icon: '🔍',
                 description: '实时搜索网络信息',
                 category: 'search',
                 version: '1.0.0',
@@ -132,9 +132,9 @@ async function main() {
             data: {
                 id: 'code-interpreter',
                 name: '代码解释器',
-                icon: '💻',
+            icon: '💻',
                 description: '执行和分析代码',
-                category: 'development',
+            category: 'development',
                 version: '1.0.0',
                 costPerUse: 0.02,
                 rateLimit: 50
@@ -228,7 +228,7 @@ async function main() {
                 personality: '富有想象力、表达力强、善于启发',
                 systemPrompt: '你是一位富有创意的作家，擅长各种文体的写作，能够根据用户需求创作高质量的文本内容。',
                 tags: ['写作', '创意', '文案'],
-                capabilityLevel: 4,
+            capabilityLevel: 4,
                 averageResponseTime: 2500,
                 costPerMessage: 0.015,
                 isFeatured: true,
@@ -246,7 +246,7 @@ async function main() {
                 personality: '逻辑性强、注重细节、善于发现模式',
                 systemPrompt: '你是一位专业的数据科学家，精通数据分析、统计学和机器学习，能够从数据中提取有价值的洞察。',
                 tags: ['数据', '分析', '统计'],
-                capabilityLevel: 5,
+            capabilityLevel: 5,
                 averageResponseTime: 3500,
                 costPerMessage: 0.025,
                 usageCount: 45,
@@ -263,7 +263,7 @@ async function main() {
                 personality: '耐心、善于启发、循循善诱',
                 systemPrompt: '你是一位经验丰富的教育工作者，擅长用简单易懂的方式解释复杂概念，帮助学生更好地理解和掌握知识。',
                 tags: ['教育', '辅导', '学习'],
-                capabilityLevel: 4,
+            capabilityLevel: 4,
                 averageResponseTime: 2200,
                 costPerMessage: 0.012,
                 usageCount: 67,
@@ -416,7 +416,7 @@ async function main() {
                 agentId: 'data-scientist',
                 toolId: 'file-reader',
                 isPrimary: true
-            }
+                }
         }),
         // 教育导师的工具
         prisma.swarmAIAgentTool.create({
@@ -467,7 +467,7 @@ async function main() {
                 prompt: '为我们的AI助手产品写一段吸引人的介绍文案',
                 description: '创作产品营销文案',
                 category: 'marketing',
-                difficultyLevel: 2,
+            difficultyLevel: 2,
                 expectedOutput: '富有创意且具有说服力的产品文案',
                 successRate: 0.88,
                 orderIndex: 1
@@ -495,7 +495,7 @@ async function main() {
                 prompt: '请用简单的方式解释微积分的基本概念',
                 description: '解释复杂的数学概念',
                 category: 'education',
-                difficultyLevel: 3,
+            difficultyLevel: 3,
                 expectedOutput: '清晰易懂的概念解释和实例',
                 successRate: 0.94,
                 orderIndex: 1

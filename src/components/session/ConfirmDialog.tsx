@@ -98,15 +98,28 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
 
     return (
         <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[1000] p-5"
+            className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm p-4 overflow-hidden"
             onClick={handleOverlayClick}
             onKeyDown={handleKeyDown}
             role="dialog"
             aria-modal="true"
             aria-labelledby="confirm-dialog-title"
             aria-describedby="confirm-dialog-message"
+            style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                zIndex: 9999,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+            }}
         >
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl max-w-[480px] w-full overflow-hidden animate-dialog-slide-in">
+            <div
+                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl w-full max-w-[480px] overflow-hidden animate-dialog-slide-in"
+            >
 
                 {/* Dialog Header */}
                 <div className="px-6 pt-5 pb-4 border-b border-slate-200 dark:border-slate-700">
@@ -146,8 +159,8 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
                         onClick={onConfirm}
                         disabled={isLoading}
                         className={`px-4 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all duration-150 border border-transparent text-white flex items-center gap-1.5 ${confirmVariant === 'danger'
-                                ? 'bg-red-600 hover:bg-red-700 focus:ring-red-500'
-                                : 'bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500'
+                            ? 'bg-red-600 hover:bg-red-700 focus:ring-red-500'
+                            : 'bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500'
                             } hover:-translate-y-px hover:shadow-md disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-slate-900`}
                         aria-label={`Confirm ${title.toLowerCase()}`}
                         autoFocus={confirmVariant === 'primary'} // Focus confirm for normal actions

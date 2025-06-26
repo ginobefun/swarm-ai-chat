@@ -275,7 +275,7 @@ const Navbar: React.FC<NavbarProps> = ({
                     <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        className="relative flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-full transition-all duration-200 shadow-lg hover:shadow-xl active:shadow-md overflow-hidden group border-2 border-white/30 dark:border-slate-600/30 touch-manipulation"
+                        className="relative flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full transition-all duration-200 shadow-lg hover:shadow-xl active:shadow-md overflow-hidden group border-2 border-white/30 dark:border-slate-600/30 touch-manipulation"
                         onClick={() => setIsLoginDialogOpen(true)}
                         title={t('auth.signIn')}
                         aria-label={t('auth.signIn')}
@@ -291,7 +291,7 @@ const Navbar: React.FC<NavbarProps> = ({
                             // Not logged in: Show login icon
                             <>
                                 <svg
-                                    className="w-5 h-5 sm:w-6 sm:h-6 text-white"
+                                    className="w-4 h-4 sm:w-5 sm:h-5 text-white"
                                     fill="none"
                                     stroke="currentColor"
                                     viewBox="0 0 24 24"

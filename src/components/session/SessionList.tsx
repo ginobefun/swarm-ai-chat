@@ -247,6 +247,10 @@ const SessionList: React.FC<SessionListProps> = (props) => {
                     await duplicateSession(session)
                     break
 
+                case 'export':
+                    await exportSession(session)
+                    break
+
                 default:
                     console.warn('Unknown session action:', action)
             }
@@ -315,6 +319,60 @@ const SessionList: React.FC<SessionListProps> = (props) => {
         })
     }
 
+    /**
+     * Export session data to file
+     * Creates downloadable JSON file with session details and metadata
+     * 
+     * @param session - Session to export
+     */
+    const exportSession = async (session: Session) => {
+        try {
+            // Prepare session export data
+            const exportData = {
+                session: {
+                    id: session.id,
+                    title: session.title,
+                    description: session.description,
+                    type: session.type,
+                    status: session.status,
+                    messageCount: session.messageCount,
+                    totalCost: session.totalCost,
+                    createdAt: session.createdAt,
+                    updatedAt: session.updatedAt,
+                    participants: session.participants.map(p => ({
+                        id: p.id,
+                        type: p.type,
+                        name: p.name
+                    }))
+                },
+                metadata: {
+                    exportedAt: new Date().toISOString(),
+                    exportedBy: 'SwarmAI.chat',
+                    version: '1.0'
+                }
+            }
+
+            // Create and download file
+            const fileName = `session-${session.title?.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'untitled'}-${new Date().toISOString().split('T')[0]}.json`
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
+            const url = URL.createObjectURL(blob)
+
+            const link = document.createElement('a')
+            link.href = url
+            link.download = fileName
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+            URL.revokeObjectURL(url)
+
+            console.log('Session exported successfully:', fileName)
+        } catch (error) {
+            console.error('Error exporting session:', error)
+            // TODO: Replace alert with toast notification system
+            alert(t('session.operationFailed') + ', ' + t('session.retryLater'))
+        }
+    }
+
 
 
     /**
@@ -330,7 +388,7 @@ const SessionList: React.FC<SessionListProps> = (props) => {
         if (sessions.length === 0) return null
 
         return (
-            <div className="mb-5" role="group" aria-labelledby={`group-${title.toLowerCase().replace(' ', '-')}`}>
+            <div key={title} className="mb-5" role="group" aria-labelledby={`group-${title.toLowerCase().replace(' ', '-')}`}>
                 <div
                     id={`group-${title.toLowerCase().replace(' ', '-')}`}
                     className="flex items-center gap-2 px-3 py-2 mb-2 bg-slate-100 rounded-lg text-sm font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400"

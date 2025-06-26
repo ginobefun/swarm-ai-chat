@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import {
-    // createSession,
     updateSession,
-    deleteSession,
     searchSessions,
-    getSessionsByUserId
+    getSessionsByUserId,
+    getSessionById
     // addAgentToSession,
     // removeAgentFromSession
 } from '@/lib/database/sessions-prisma'
@@ -236,11 +235,33 @@ export async function PUT(request: NextRequest) {
             )
         }
 
-        // TODO: Add ownership verification to ensure user can only update their own sessions
-        // const existingSession = await getSessionById(id)
-        // if (existingSession.createdById !== session.user.id) {
-        //     return NextResponse.json({ success: false, error: 'Access denied' }, { status: 403 })
-        // }
+        // 确保 SwarmUser 记录存在
+        const swarmUser = await prisma.swarmUser.findUnique({
+            where: { userId: session.user.id }
+        })
+
+        if (!swarmUser) {
+            return NextResponse.json({
+                success: false,
+                error: 'User profile not found'
+            }, { status: 404 })
+        }
+
+        // 验证会话所有权 - 用户只能更新自己创建的会话
+        const existingSession = await getSessionById(id)
+        if (!existingSession) {
+            return NextResponse.json({
+                success: false,
+                error: 'Session not found'
+            }, { status: 404 })
+        }
+
+        if (existingSession.createdById !== swarmUser.id) {
+            return NextResponse.json({
+                success: false,
+                error: 'Access denied - You can only update your own sessions'
+            }, { status: 403 })
+        }
 
         const updatedSession = await updateSession(id, updates)
 
@@ -293,13 +314,53 @@ export async function DELETE(request: NextRequest) {
             )
         }
 
-        // TODO: Add ownership verification to ensure user can only delete their own sessions
-        // const existingSession = await getSessionById(id)
-        // if (existingSession.createdById !== session.user.id) {
-        //     return NextResponse.json({ success: false, error: 'Access denied' }, { status: 403 })
-        // }
+        // 确保 SwarmUser 记录存在
+        const swarmUser = await prisma.swarmUser.findUnique({
+            where: { userId: session.user.id }
+        })
 
-        await deleteSession(id)
+        if (!swarmUser) {
+            return NextResponse.json({
+                success: false,
+                error: 'User profile not found'
+            }, { status: 404 })
+        }
+
+        // 验证会话所有权 - 用户只能删除自己创建的会话
+        const existingSession = await getSessionById(id)
+        if (!existingSession) {
+            return NextResponse.json({
+                success: false,
+                error: 'Session not found'
+            }, { status: 404 })
+        }
+
+        if (existingSession.createdById !== swarmUser.id) {
+            return NextResponse.json({
+                success: false,
+                error: 'Access denied - You can only delete your own sessions'
+            }, { status: 403 })
+        }
+
+        // 使用事务删除会话及其相关数据
+        await prisma.$transaction(async (tx) => {
+            // 删除会话参与者记录
+            await tx.swarmChatSessionParticipant.deleteMany({
+                where: { sessionId: id }
+            })
+
+            // 删除会话消息记录（如果有的话）
+            await tx.swarmChatMessage.deleteMany({
+                where: { sessionId: id }
+            })
+
+            // 删除会话本身
+            await tx.swarmChatSession.delete({
+                where: { id }
+            })
+        })
+
+        console.log('Session deleted successfully:', id)
 
         return NextResponse.json({
             success: true,

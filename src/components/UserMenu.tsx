@@ -108,7 +108,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ className = "" }) => {
                 <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className={`relative flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 lg:w-12 lg:h-12 rounded-full transition-all duration-200 shadow-lg hover:shadow-xl active:shadow-md overflow-hidden group border-2 border-white/30 dark:border-slate-600/30 touch-manipulation ${className}`}
+                    className={`relative flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full transition-all duration-200 shadow-lg hover:shadow-xl active:shadow-md overflow-hidden group border-2 border-white/30 dark:border-slate-600/30 touch-manipulation ${className}`}
                     disabled={isPending || isSigningOut}
                     style={{
                         background: 'linear-gradient(135deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%)'
@@ -132,7 +132,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ className = "" }) => {
                                     unoptimized
                                 />
                             ) : (
-                                <span className="relative z-10 text-white font-semibold text-xs sm:text-sm md:text-base lg:text-lg">
+                                <span className="relative z-10 text-white font-semibold text-xs sm:text-sm">
                                     {getUserInitial()}
                                 </span>
                             )}

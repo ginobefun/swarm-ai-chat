@@ -24,23 +24,14 @@ export type SessionWithIncludes = SwarmChatSession & {
 export function convertPrismaSessionToSession(session: SessionWithIncludes): FrontendSession {
     // 转换参与者数据
     const participants: SessionParticipant[] = []
+    const addedAgentIds = new Set<string>()
 
-    // 如果有主要智能体，添加到参与者列表
-    if (session.primaryAgent) {
-        participants.push({
-            id: session.primaryAgent.id,
-            type: 'agent',
-            name: session.primaryAgent.name,
-            avatar: session.primaryAgent.avatar || `bg-gradient-to-br from-indigo-500 to-purple-600`,
-            avatarStyle: session.primaryAgent.avatarStyle || undefined
-        })
-    }
-
-    // 添加其他参与者（如果存在）
+    // 添加participants中的所有参与者（优先使用这个数据，因为它包含了完整的参与者信息）
     if (session.participants) {
         session.participants.forEach((p) => {
-            // 添加智能体参与者（排除已添加的主要智能体）
-            if (p.agent && p.agent.id !== session.primaryAgentId) {
+            // 添加智能体参与者
+            if (p.agent) {
+                addedAgentIds.add(p.agent.id)
                 participants.push({
                     id: p.agent.id,
                     type: 'agent',
@@ -59,6 +50,17 @@ export function convertPrismaSessionToSession(session: SessionWithIncludes): Fro
                     avatarStyle: undefined
                 })
             }
+        })
+    }
+
+    // 如果主要智能体不在participants中，添加它（向后兼容）
+    if (session.primaryAgent && !addedAgentIds.has(session.primaryAgent.id)) {
+        participants.push({
+            id: session.primaryAgent.id,
+            type: 'agent',
+            name: session.primaryAgent.name,
+            avatar: session.primaryAgent.avatar || `bg-gradient-to-br from-indigo-500 to-purple-600`,
+            avatarStyle: session.primaryAgent.avatarStyle || undefined
         })
     }
 

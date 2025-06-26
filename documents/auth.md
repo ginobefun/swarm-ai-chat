@@ -506,7 +506,7 @@ A: 确保启用了 `accountLinking` 功能，检查 Account 表数据
 - [Better Auth 官方文档](https://www.better-auth.com/docs)
 - [Better Auth CLI 使用指南](https://www.better-auth.com/docs/cli)
 - [Google OAuth 设置指南](https://developers.google.com/identity/protocols/oauth2)
-- [GitHub OAuth 设置指南](https://docs.github.com/en/developers/apps/building-oauth-apps)
+- [GitHub OAuth 设置指南](https://docs.github.com/en/developers/apps/building-oauth-apps) 
 - [Prisma 文档](https://www.prisma.io/docs/)
 - [SwarmAI 架构设计文档](./swarm-architecture-redesign.md)
 

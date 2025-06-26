@@ -80,7 +80,7 @@ export function useSessionManager(): UseSessionManagerReturn {
 
         // Only load sessions when auth state is resolved
         if (!isPending) {
-            loadSessions()
+        loadSessions()
         }
     }, [user?.id, isPending])
 
@@ -114,8 +114,8 @@ export function useSessionManager(): UseSessionManagerReturn {
             if (data.success) {
                 // 转换 Prisma 会话数据为前端格式
                 const newSession = convertPrismaSessionToSession(data.data)
-                setSessions(prev => [newSession, ...prev])
-                setCurrentSession(newSession)
+            setSessions(prev => [newSession, ...prev])
+            setCurrentSession(newSession)
                 console.log('Session created successfully:', newSession.id)
             } else {
                 throw new Error(data.error || 'Failed to create session')
@@ -164,11 +164,11 @@ export function useSessionManager(): UseSessionManagerReturn {
 
             if (data.success) {
                 const updatedSession = convertPrismaSessionToSession(data.data)
-                setSessions(prev => prev.map(session =>
+            setSessions(prev => prev.map(session =>
                     session.id === sessionId ? updatedSession : session
-                ))
+            ))
 
-                if (currentSession?.id === sessionId) {
+            if (currentSession?.id === sessionId) {
                     setCurrentSession(updatedSession)
                 }
                 console.log('Session updated successfully:', sessionId)
@@ -206,11 +206,11 @@ export function useSessionManager(): UseSessionManagerReturn {
             const data = await response.json()
 
             if (data.success) {
-                setSessions(prev => prev.filter(session => session.id !== sessionId))
+            setSessions(prev => prev.filter(session => session.id !== sessionId))
 
-                if (currentSession?.id === sessionId) {
-                    setCurrentSession(null)
-                }
+            if (currentSession?.id === sessionId) {
+                setCurrentSession(null)
+            }
                 console.log('Session deleted successfully:', sessionId)
             } else {
                 throw new Error(data.error || 'Failed to delete session')
