@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 'use client'
 
 import React, { useState } from 'react'
@@ -13,69 +14,109 @@ import { SwarmLogo } from './SwarmLogo'
  */
 interface NavbarProps {
     onToggleSidebar?: () => void      // Toggle mobile sidebar visibility
-    onToggleWorkspace?: () => void    // Toggle workspace panel visibility (currently unused)
-    isSidebarOpen?: boolean          // Current sidebar state (currently unused)
-    isWorkspaceOpen?: boolean        // Current workspace state (currently unused)
+    onToggleWorkspace?: () => void    // Toggle workspace panel visibility (future feature)
+    isSidebarOpen?: boolean          // Current sidebar state for proper ARIA attributes
+    isWorkspaceOpen?: boolean        // Current workspace state (future feature)
     onCreateNew?: () => void         // Handle create new session/chat action
-    onNotificationClick?: () => void // Handle notification bell click
     onUserClick?: () => void         // Handle user profile/menu click
+    user?: {                         // User information for display
+        name?: string
+        email?: string
+        avatar?: string
+        isLoggedIn: boolean
+    }
 }
 
 /**
- * SwarmAI Navbar - 现代化多智能体协作平台导航栏
+ * SwarmAI Navigation Bar
  * 
- * 设计原则：
- * 1. 视觉层次清晰 - 品牌标识、搜索、主要操作按钮分层设计
- * 2. 以用户为中心 - 快速访问最重要的功能（创建、搜索、发现）
- * 3. 一致性 - 统一的设计语言和交互模式
- * 4. 反馈 - 丰富的微交互和状态反馈
- * 5. 现代化美学 - 渐变、阴影、动画等现代设计元素
- * 6. 呼吸感 - 合适的间距和留白
+ * A modern, responsive navigation component for the multi-agent collaboration platform.
+ * Implements design principles from design-guidelines.md:
+ * 
+ * Design Principles Applied:
+ * 1. Clear Visual Hierarchy - Brand, search, and actions are properly structured
+ * 2. User-Centered Design - Quick access to core functions (create, search, discover)
+ * 3. Consistency - Unified design language and interaction patterns
+ * 4. Feedback - Rich micro-interactions and state feedback
+ * 5. Modern Aesthetics - Gradients, shadows, animations
+ * 6. Breathing Room - Appropriate spacing and whitespace
+ * 7. Accessibility - ARIA labels, keyboard navigation, semantic HTML
+ * 8. Responsive Design - Adapts to different screen sizes
+ * 
+ * Features:
+ * - Global search with keyboard shortcuts (⌘/Ctrl+K)
+ * - Theme and language switching
+ * - User profile menu with login state handling
+ * - Mobile-responsive sidebar toggle
+ * - Smooth animations and hover effects
  */
 const Navbar: React.FC<NavbarProps> = ({
     onToggleSidebar,
-    isSidebarOpen,
+    isSidebarOpen = false,
     onCreateNew,
-    onNotificationClick,
-    onUserClick
+    onUserClick,
+    user = { isLoggedIn: false },
 }) => {
     const { t } = useTranslation()
     const [searchValue, setSearchValue] = useState('')
     const [isSearchFocused, setIsSearchFocused] = useState(false)
 
     /**
-     * Handle search input changes with enhanced UX
+     * Get user display initial for avatar
+     * Returns first letter of name, email, or fallback
+     */
+    const getUserInitial = (): string => {
+        if (user.name && user.name.trim()) {
+            return user.name.trim().charAt(0).toUpperCase()
+        }
+        if (user.email && user.email.trim()) {
+            return user.email.trim().charAt(0).toUpperCase()
+        }
+        return t('navbar.userInitial')
+    }
+
+    /**
+     * Handle search input changes with debouncing potential for future optimization
      */
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSearchValue(e.target.value)
+        // TODO: Implement debounced search API call
     }
 
     /**
      * Handle search form submission
+     * Implements global search functionality as specified in PRD
      */
     const handleSearchSubmit = (e: React.FormEvent) => {
         e.preventDefault()
-        console.log('Search query:', searchValue)
+        if (searchValue.trim()) {
+            console.log('Search query:', searchValue)
+            // TODO: Implement actual search functionality
+            // Should search across: conversations, AI agents, files (as per PRD)
+        }
     }
 
     /**
      * Enhanced keyboard navigation with modern shortcuts
+     * Provides power-user efficiency as mentioned in design guidelines
      */
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.metaKey || e.ctrlKey) {
             switch (e.key) {
                 case 'k':
                     e.preventDefault()
-                    // Focus search input
+                    // Focus search input for quick access
                     const searchInput = document.querySelector('#global-search') as HTMLInputElement
                     searchInput?.focus()
                     break
                 case 'n':
                     e.preventDefault()
+                    // Quick new session creation
                     onCreateNew?.()
                     break
                 case 'b':
                     e.preventDefault()
+                    // Toggle sidebar for navigation
                     onToggleSidebar?.()
                     break
             }
@@ -87,60 +128,74 @@ const Navbar: React.FC<NavbarProps> = ({
             initial={{ y: -10, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.3, ease: "easeOut" }}
-            className="fixed top-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-xl border-b border-gray-100 z-[1000] flex items-center justify-between px-6 dark:bg-slate-900/80 dark:border-slate-800"
+            className="fixed top-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-xl border-b border-gray-100 z-[1000] flex items-center justify-between px-4 sm:px-6 dark:bg-slate-900/80 dark:border-slate-800"
             role="navigation"
-            aria-label="主导航"
+            aria-label={t('navbar.mainNavigation')}
             onKeyDown={handleKeyDown}
         >
             {/* Left Section: Mobile Toggle + Brand Logo */}
-            <div className="flex items-center gap-4 flex-shrink-0">
-                {/* Mobile Sidebar Toggle with Enhanced Animation */}
+            <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0">
+                {/* Mobile Sidebar Toggle - Only visible on mobile/tablet */}
                 <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     className="flex items-center justify-center w-9 h-9 rounded-xl bg-gray-50 hover:bg-gray-100 text-gray-600 hover:text-gray-900 transition-all duration-200 lg:hidden dark:bg-slate-800/50 dark:hover:bg-slate-700 dark:text-slate-400 dark:hover:text-slate-100 border border-gray-200/50 dark:border-slate-700/50"
                     onClick={onToggleSidebar}
-                    title={t('navbar.menu')}
-                    aria-label="切换侧边栏导航"
+                    title={t('navbar.toggleSidebar')}
+                    aria-label={t('navbar.toggleSidebar')}
                     aria-expanded={isSidebarOpen}
+                    aria-controls="main-sidebar"
                 >
                     <motion.div
                         animate={isSidebarOpen ? { rotate: 90 } : { rotate: 0 }}
                         transition={{ duration: 0.2 }}
                     >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                        >
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                         </svg>
                     </motion.div>
                 </motion.button>
 
-                {/* Enhanced Brand Logo with Gradient and Animation */}
+                {/* Brand Logo and Text */}
                 <motion.div
                     whileHover={{ scale: 1.02 }}
-                    className="flex items-center gap-3 flex-shrink-0 group cursor-pointer"
+                    className="flex items-center gap-2 sm:gap-3 flex-shrink-0 group cursor-pointer"
                     role="banner"
+                    onClick={() => window.location.href = '/'}
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault()
+                            window.location.href = '/'
+                        }
+                    }}
                 >
-                    {/* SwarmAI Logo */}
-                    <SwarmLogo size="md" />
+                    <SwarmLogo size="md" showPulse={true} />
 
-                    {/* Brand Text with Gradient */}
+                    {/* Brand Text with Responsive Typography */}
                     <div className="flex flex-col">
-                        <div className="text-lg font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent dark:from-indigo-400 dark:via-purple-400 dark:to-pink-400">
-                            SwarmAI
+                        <div className="text-base sm:text-lg font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent dark:from-indigo-400 dark:via-purple-400 dark:to-pink-400">
+                            {t('navbar.brandName')}
                         </div>
                         <div className="text-xs text-gray-500 dark:text-slate-400 font-medium hidden sm:block">
-                            多智能体协作
+                            {t('navbar.brandTagline')}
                         </div>
                     </div>
                 </motion.div>
             </div>
 
-            {/* Enhanced Global Search with Modern Design */}
+            {/* Center Section: Global Search */}
             <motion.form
                 onSubmit={handleSearchSubmit}
-                className="flex-1 max-w-sm mx-4"
+                className="flex-1 max-w-sm mx-2 sm:mx-4"
                 role="search"
-                aria-label="全局搜索"
+                aria-label={t('navbar.globalSearch')}
                 layout
             >
                 <div className="relative group">
@@ -160,28 +215,34 @@ const Navbar: React.FC<NavbarProps> = ({
                                 animate={isSearchFocused ? { scale: 1.1, rotate: 5 } : { scale: 1, rotate: 0 }}
                                 transition={{ duration: 0.2 }}
                             >
-                                <svg className="w-4 h-4 text-gray-400 group-hover:text-indigo-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg
+                                    className="w-4 h-4 text-gray-400 group-hover:text-indigo-500 transition-colors"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                    aria-hidden="true"
+                                >
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                 </svg>
                             </motion.div>
                         </div>
 
-                        {/* Enhanced Search Input */}
+                        {/* Search Input Field */}
                         <input
                             id="global-search"
                             type="search"
-                            className="w-full h-10 bg-gray-50/80 rounded-xl border-0 pl-10 pr-16 text-sm text-gray-900 placeholder-gray-500 outline-none transition-all duration-300 focus:bg-white focus:shadow-lg focus:ring-2 focus:ring-indigo-500/20 dark:bg-slate-800/50 dark:text-slate-100 dark:placeholder-slate-400 dark:focus:bg-slate-700/80 dark:focus:ring-indigo-400/20"
+                            className="w-full h-10 bg-gray-50/80 rounded-xl border-0 pl-10 pr-12 sm:pr-16 text-sm text-gray-900 placeholder-gray-500 outline-none transition-all duration-300 focus:bg-white focus:shadow-lg focus:ring-2 focus:ring-indigo-500/20 dark:bg-slate-800/50 dark:text-slate-100 dark:placeholder-slate-400 dark:focus:bg-slate-700/80 dark:focus:ring-indigo-400/20"
                             placeholder={t('navbar.searchPlaceholder')}
                             value={searchValue}
                             onChange={handleSearchChange}
                             onFocus={() => setIsSearchFocused(true)}
                             onBlur={() => setIsSearchFocused(false)}
-                            aria-label="搜索对话、智能体和文件"
+                            aria-label={t('navbar.searchAriaLabel')}
                             autoComplete="off"
                             spellCheck="false"
                         />
 
-                        {/* Search Shortcut Hint */}
+                        {/* Keyboard Shortcut Hint - Hidden on mobile */}
                         <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                             <div className="hidden lg:flex items-center gap-1 text-xs text-gray-400 dark:text-slate-500">
                                 <kbd className="px-1.5 py-0.5 bg-gray-200 dark:bg-slate-700 rounded text-xs font-mono">⌘</kbd>
@@ -192,53 +253,67 @@ const Navbar: React.FC<NavbarProps> = ({
                 </div>
             </motion.form>
 
-            {/* Right Action Controls with Enhanced Design */}
-            <div className="flex items-center gap-4 flex-shrink-0 min-w-fit">
-
-                {/* Theme and Language Controls */}
-                <div className="flex items-center gap-4 px-3 py-2 rounded-xl bg-gray-50/50 dark:bg-slate-800/30 border border-gray-200/50 dark:border-slate-700/50">
+            {/* Right Section: Action Controls */}
+            <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0 min-w-fit">
+                {/* Theme and Language Controls Container */}
+                <div className="flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-2 rounded-xl bg-gray-50/50 dark:bg-slate-800/30 border border-gray-200/50 dark:border-slate-700/50">
                     <LanguageToggle />
                     <ThemeToggle />
                 </div>
 
-                {/* Notifications with Badge */}
+                {/* User Profile Menu with Login State Handling */}
                 <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-gray-50 hover:bg-gray-100 text-gray-600 hover:text-gray-900 transition-all duration-200 dark:bg-slate-800/50 dark:hover:bg-slate-700 dark:text-slate-400 dark:hover:text-slate-100 border border-gray-200/50 dark:border-slate-700/50"
-                    onClick={onNotificationClick}
-                    title={t('navbar.notifications')}
-                    aria-label="查看通知"
-                >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19H6.5A2.5 2.5 0 014 16.5v-9A2.5 2.5 0 016.5 5h9A2.5 2.5 0 0118 7.5V11" />
-                    </svg>
-                    {/* Notification badge */}
-                    <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-red-500 to-pink-500 rounded-full border-2 border-white dark:border-slate-900"
-                    />
-                </motion.button>
-
-                {/* Enhanced User Profile Menu */}
-                <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="relative flex items-center justify-center w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-700 text-white font-semibold text-sm transition-all duration-200 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 overflow-hidden group"
+                    className="relative flex items-center justify-center w-9 h-9 rounded-full transition-all duration-200 shadow-lg hover:shadow-xl overflow-hidden group"
                     onClick={onUserClick}
-                    title={t('navbar.userMenu')}
-                    aria-label="用户菜单和账户设置"
+                    title={user.isLoggedIn ? t('navbar.userMenu') : '登录'}
+                    aria-label={user.isLoggedIn ? t('navbar.userMenuAriaLabel') : '登录或注册'}
                     aria-haspopup="menu"
+                    style={{
+                        background: user.isLoggedIn
+                            ? 'linear-gradient(135deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%)'
+                            : 'linear-gradient(135deg, #6b7280 0%, #9ca3af 100%)'
+                    }}
                 >
-                    <span className="relative z-10">U</span>
-                    {/* Animated border */}
-                    <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-                        className="absolute inset-0 rounded-full border-2 border-white/30"
-                    />
+                    {user.isLoggedIn ? (
+                        // Logged in: Show user avatar or initial
+                        <>
+                            {user.avatar ? (
+                                <img
+                                    src={user.avatar}
+                                    alt={user.name || user.email || 'User Avatar'}
+                                    className="w-full h-full object-cover rounded-full"
+                                />
+                            ) : (
+                                <span className="relative z-10 text-white font-semibold text-sm">
+                                    {getUserInitial()}
+                                </span>
+                            )}
+                            {/* Animated Border for Logged In Users */}
+                            <motion.div
+                                animate={{ rotate: 360 }}
+                                transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+                                className="absolute inset-0 rounded-full border-2 border-white/30"
+                            />
+                        </>
+                    ) : (
+                        // Not logged in: Show login icon
+                        <svg
+                            className="w-5 h-5 text-white"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                            />
+                        </svg>
+                    )}
                 </motion.button>
             </div>
         </motion.nav>

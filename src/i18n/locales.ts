@@ -23,11 +23,20 @@ export interface Messages {
     // 导航栏
     navbar: {
         logo: string
+        brandName: string
+        brandTagline: string
         searchPlaceholder: string
+        searchAriaLabel: string
+        globalSearch: string
+        mainNavigation: string
+        toggleSidebar: string
         publish: string
         notifications: string
+        unreadNotifications: string
         createNew: string
         userMenu: string
+        userMenuAriaLabel: string
+        userInitial: string
         menu: string
         language: string
         theme: string
@@ -269,11 +278,20 @@ export const locales: Record<LocaleKey, Messages> = {
         },
         navbar: {
             logo: 'SwarmAI',
+            brandName: 'SwarmAI',
+            brandTagline: '多智能体协作',
             searchPlaceholder: '搜索对话、角色、文件...',
+            searchAriaLabel: '搜索对话、智能体和文件',
+            globalSearch: '全局搜索',
+            mainNavigation: '主导航',
+            toggleSidebar: '切换侧边栏导航',
             publish: '发布',
             notifications: '通知',
+            unreadNotifications: '未读通知',
             createNew: '新建',
             userMenu: '用户菜单',
+            userMenuAriaLabel: '用户菜单和账户设置',
+            userInitial: 'U',
             menu: '菜单',
             language: '语言',
             theme: '主题',
@@ -497,11 +515,20 @@ export const locales: Record<LocaleKey, Messages> = {
         },
         navbar: {
             logo: 'SwarmAI',
+            brandName: 'SwarmAI',
+            brandTagline: 'Multi-Agent Collaboration',
             searchPlaceholder: 'Search chats, agents, files...',
+            searchAriaLabel: 'Search conversations, AI agents and files',
+            globalSearch: 'Global Search',
+            mainNavigation: 'Main Navigation',
+            toggleSidebar: 'Toggle sidebar navigation',
             publish: 'Publish',
             notifications: 'Notifications',
+            unreadNotifications: 'Unread notifications',
             createNew: 'Create New',
             userMenu: 'User Menu',
+            userMenuAriaLabel: 'User menu and account settings',
+            userInitial: 'U',
             menu: 'Menu',
             language: 'Language',
             theme: 'Theme',

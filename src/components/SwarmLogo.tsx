@@ -11,13 +11,21 @@ interface SwarmLogoProps {
 }
 
 /**
- * SwarmAI Logo - 多智能体协作标识
+ * SwarmAI Logo Component
  * 
- * 设计理念：
- * - 中心圆点代表 AI 核心
- * - 四个小圆点代表智能体节点
- * - 连接线显示协作关系
- * - 旋转动画体现动态协作
+ * A dynamic logo representing multi-agent collaboration for the SwarmAI platform.
+ * 
+ * Design Concept:
+ * - Central core represents the AI hub
+ * - Four orbiting nodes represent individual AI agents
+ * - Connection lines show collaborative relationships
+ * - Rotation animation demonstrates dynamic teamwork
+ * 
+ * Features:
+ * - Responsive sizing (sm, md, lg)
+ * - Optional pulse animation effect
+ * - Smooth hover interactions
+ * - Accessible click handling
  */
 export const SwarmLogo: React.FC<SwarmLogoProps> = ({
     size = 'md',
@@ -25,7 +33,7 @@ export const SwarmLogo: React.FC<SwarmLogoProps> = ({
     showPulse = true,
     onClick
 }) => {
-    // 根据尺寸设置对应的样式
+    // Size configuration for different use cases
     const sizeConfig = {
         sm: {
             container: 'w-8 h-8',
@@ -64,40 +72,48 @@ export const SwarmLogo: React.FC<SwarmLogoProps> = ({
                 onClick={onClick}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+                role={onClick ? "button" : undefined}
+                tabIndex={onClick ? 0 : undefined}
+                onKeyDown={onClick ? (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        onClick()
+                    }
+                } : undefined}
             >
-                {/* 中心 AI 核心 */}
+                {/* Central AI Core */}
                 <motion.div
                     animate={{ scale: [1, 1.1, 1] }}
                     transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                     className={`${config.core} bg-white rounded-full opacity-90 relative z-10`}
                 />
 
-                {/* 四个智能体节点 */}
+                {/* Orbiting AI Agent Nodes */}
                 <motion.div
                     animate={{ rotate: 360 }}
                     transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
                     className="absolute inset-0"
                 >
-                    {/* 右侧智能体 */}
+                    {/* Right Agent */}
                     <div className={`absolute ${config.agent} bg-indigo-200 rounded-full top-1/2 right-1 -translate-y-1/2`} />
-                    {/* 左侧智能体 */}
+                    {/* Left Agent */}
                     <div className={`absolute ${config.agent} bg-indigo-200 rounded-full top-1/2 left-1 -translate-y-1/2`} />
-                    {/* 上方智能体 */}
+                    {/* Top Agent */}
                     <div className={`absolute ${config.agent} bg-indigo-200 rounded-full top-1 left-1/2 -translate-x-1/2`} />
-                    {/* 下方智能体 */}
+                    {/* Bottom Agent */}
                     <div className={`absolute ${config.agent} bg-indigo-200 rounded-full bottom-1 left-1/2 -translate-x-1/2`} />
                 </motion.div>
 
-                {/* 连接线效果 */}
+                {/* Connection Lines - Representing Collaboration */}
                 <div className="absolute inset-0 opacity-70">
-                    {/* 水平连接线 */}
+                    {/* Horizontal Connection */}
                     <div className={`absolute top-1/2 left-2 right-2 ${config.lineWidth} bg-white/60 -translate-y-1/2`} />
-                    {/* 垂直连接线 */}
+                    {/* Vertical Connection */}
                     <div className={`absolute left-1/2 top-2 bottom-2 ${config.lineWidth} bg-white/60 -translate-x-1/2`} />
                 </div>
             </motion.div>
 
-            {/* 动态光环效果 */}
+            {/* Pulse Ring Effect - Optional visual enhancement */}
             {showPulse && (
                 <motion.div
                     animate={{
