@@ -151,6 +151,8 @@ model SwarmChatSession {
   configuration  Json                          @default("{}")
   isPublic       Boolean                       @default(false) @map("is_public")
   isTemplate     Boolean                       @default(false) @map("is_template")
+  isPinned       Boolean                       @default(false) @map("is_pinned")
+  isArchived     Boolean                       @default(false) @map("is_archived")
   messageCount   Int                           @default(0) @map("message_count")
   totalCost      Decimal                       @default(0) @map("total_cost") @db.Decimal(10, 4)
   createdAt      DateTime                      @default(now()) @map("created_at")

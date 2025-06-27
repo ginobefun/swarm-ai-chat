@@ -80,8 +80,8 @@ export function convertPrismaSessionToSession(session: SessionWithIncludes): Fro
         createdAt: session.createdAt,
         updatedAt: session.updatedAt,
         participants: participants,
-        isPinned: false, // 默认值，后续可从数据库添加
-        isArchived: session.status === 'ARCHIVED'
+        isPinned: session.isPinned || false, // 从数据库读取置顶状态
+        isArchived: session.isArchived || session.status === 'ARCHIVED'
     }
 }
 

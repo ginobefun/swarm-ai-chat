@@ -225,8 +225,11 @@ const SessionList: React.FC<SessionListProps> = (props) => {
                     break
 
                 case 'pin':
+                    await onUpdateSession(session.id, { isPinned: true })
+                    break
+
                 case 'unpin':
-                    await onUpdateSession(session.id, { isPinned: action === 'pin' })
+                    await onUpdateSession(session.id, { isPinned: false })
                     break
 
                 case 'archive':
@@ -384,13 +387,16 @@ const SessionList: React.FC<SessionListProps> = (props) => {
      * @param sessions - Array of sessions in this group
      * @returns JSX element for the session group or null if empty
      */
-    const renderSessionGroup = (title: string, icon: string, sessions: Session[]) => {
+    const renderSessionGroup = (title: string, icon: string, sessions: Session[], groupKey?: string) => {
         if (sessions.length === 0) return null
 
+        const uniqueKey = groupKey || title
+        const groupId = `group-${uniqueKey.toLowerCase().replace(/[^a-z0-9]/g, '-')}`
+
         return (
-            <div key={title} className="mb-5" role="group" aria-labelledby={`group-${title.toLowerCase().replace(' ', '-')}`}>
+            <div key={uniqueKey} className="mb-5" role="group" aria-labelledby={groupId}>
                 <div
-                    id={`group-${title.toLowerCase().replace(' ', '-')}`}
+                    id={groupId}
                     className="flex items-center gap-2 px-3 py-2 mb-2 bg-slate-100 rounded-lg text-sm font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400"
                 >
                     <span className="text-sm" aria-hidden="true">{icon}</span>
@@ -628,7 +634,8 @@ const SessionList: React.FC<SessionListProps> = (props) => {
                                 return renderSessionGroup(
                                     agentName,
                                     '🤖',
-                                    agentSessions
+                                    agentSessions,
+                                    `agent-${agentId}` // 使用 agentId 作为唯一 key
                                 )
                             })}
                         </div>

@@ -88,7 +88,7 @@ export async function createSession(data: {
 // 更新会话
 export async function updateSession(
     sessionId: string,
-    data: Partial<Pick<SwarmChatSession, 'title' | 'description' | 'status'>>
+    data: Partial<Pick<SwarmChatSession, 'title' | 'description' | 'status' | 'isPinned' | 'isArchived'>>
 ): Promise<SwarmChatSession> {
     return await prisma.swarmChatSession.update({
         where: { id: sessionId },

@@ -142,7 +142,7 @@ const SessionContextMenu: React.FC<SessionContextMenuProps> = ({
             key: 'pin',
             icon: session.isPinned ? '📌' : '📌',
             label: session.isPinned ? (t('session.unpin') || 'Unpin') : (t('session.pin') || 'Pin'),
-            action: () => handleAction('pin'),
+            action: () => handleAction(session.isPinned ? 'unpin' : 'pin'),
             shortcut: 'Ctrl+P'
         },
         {

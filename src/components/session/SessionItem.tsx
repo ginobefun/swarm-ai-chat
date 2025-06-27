@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { Session, SessionParticipant } from '@/types'
+import { Session } from '@/types'
 import { useTranslation } from '@/contexts/AppContext'
 import { formatTimeAgo } from '@/utils'
 
@@ -45,91 +45,7 @@ const SessionItem: React.FC<SessionItemProps> = ({
 }) => {
     const { t } = useTranslation()
 
-    /**
-     * Get appropriate emoji icon for session type
-     * Provides visual differentiation between session types
-     * 
-     * @returns Emoji string representing session type
-     */
-    const getSessionTypeIcon = () => {
-        switch (session.type) {
-            case 'DIRECT':
-                return '👤'    // Single person for direct chats
-            case 'GROUP':
-                return '👥'    // Multiple people for group chats
-            case 'WORKFLOW':
-                return '⚙️'     // Gear for workflow sessions
-            default:
-                return '💬'    // Generic chat bubble fallback
-        }
-    }
 
-    /**
-     * Render avatar section based on session participants
-     * Shows different layouts for single vs multiple AI agents
-     * 
-     * @returns JSX element for the avatar display area
-     */
-    const renderAvatar = () => {
-        const agents = session.participants.filter((p: SessionParticipant) => p.type === 'agent')
-
-        // No agents - show generic chat icon
-        if (agents.length === 0) {
-            return (
-                <div
-                    className="w-12 h-12 rounded-lg flex items-center justify-center text-xl font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700"
-                    aria-label="Generic chat session"
-                >
-                    💬
-                </div>
-            )
-        }
-
-        // Single agent - show individual avatar
-        if (agents.length === 1) {
-            const agent = agents[0]
-            return (
-                <div
-                    className="w-12 h-12 rounded-lg flex items-center justify-center text-xl font-medium text-white bg-gradient-to-br from-indigo-600 to-indigo-700"
-                    style={agent.avatar ? { background: agent.avatar } : undefined}
-                    aria-label={`Chat with ${agent.name}`}
-                >
-                    {agent.name.charAt(0).toUpperCase()}
-                </div>
-            )
-        }
-
-        // Multiple agents - show overlapping avatars
-        return (
-            <div
-                className="relative w-12 h-12 bg-transparent"
-                aria-label={`Group chat with ${agents.length} AI agents`}
-            >
-                {agents.slice(0, 3).map((agent: SessionParticipant, index: number) => (
-                    <div
-                        key={agent.id}
-                        className={`absolute w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium text-white border-2 border-white dark:border-slate-900 bg-gradient-to-br from-indigo-600 to-indigo-700 ${index === 0 ? 'top-0 left-0' :
-                            index === 1 ? 'top-2 left-4' :
-                                'top-4 left-8'
-                            }`}
-                        style={agent.avatar ? { background: agent.avatar } : undefined}
-                        title={agent.name}
-                    >
-                        {index < 2 ? agent.name.charAt(0).toUpperCase() : `+${agents.length - 2}`}
-                    </div>
-                ))}
-                {/* Overflow indicator for 4+ agents */}
-                {agents.length > 3 && (
-                    <div
-                        className="absolute top-4 left-8 w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium bg-slate-600 dark:bg-slate-500 text-white border-2 border-white dark:border-slate-900"
-                        title={`${agents.length - 2} more agents`}
-                    >
-                        +{agents.length - 2}
-                    </div>
-                )}
-            </div>
-        )
-    }
 
     /**
      * Render last message preview with sender information
@@ -160,8 +76,8 @@ const SessionItem: React.FC<SessionItemProps> = ({
 
     return (
         <div
-            className={`flex items-center gap-3 p-3 md:p-4 rounded-lg cursor-pointer transition-all duration-150 border border-transparent relative hover:bg-slate-50 dark:hover:bg-slate-800 hover:-translate-y-px focus-within:outline-none focus-within:ring-2 focus-within:ring-indigo-500 focus-within:ring-offset-2 dark:focus-within:ring-offset-slate-900 ${isActive
-                ? 'bg-indigo-50 dark:bg-indigo-950/50 border-indigo-600 shadow-lg shadow-indigo-600/10'
+            className={`flex flex-col gap-1 p-3 rounded-lg cursor-pointer transition-all duration-150 border border-transparent relative hover:bg-slate-50 dark:hover:bg-slate-800 focus-within:outline-none focus-within:ring-2 focus-within:ring-indigo-500 focus-within:ring-offset-2 dark:focus-within:ring-offset-slate-900 ${isActive
+                ? 'bg-indigo-50 dark:bg-indigo-950/50 border-indigo-600 shadow-sm'
                 : ''
                 } ${session.isPinned
                     ? 'bg-yellow-50/50 dark:bg-yellow-950/20 border-yellow-200/50 dark:border-yellow-800/50'
@@ -190,88 +106,39 @@ const SessionItem: React.FC<SessionItemProps> = ({
                 }
             }}
         >
-            {/* Avatar Section with Pin Indicator */}
-            <div className="relative flex-shrink-0">
-                {renderAvatar()}
-                {/* Pin indicator overlay */}
-                {session.isPinned && (
-                    <div
-                        className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-500 rounded-full flex items-center justify-center text-xs border-2 border-white dark:border-slate-900"
-                        aria-label="Pinned session"
-                        title="This session is pinned"
-                    >
-                        📌
-                    </div>
-                )}
-            </div>
-
-            {/* Main Content Section */}
-            <div className="flex-1 min-w-0 flex flex-col gap-1">
-                {/* Header Row: Title, Type Icon, and Timestamp */}
-                <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <span
-                            className="text-sm opacity-70 flex-shrink-0"
-                            aria-label={`Session type: ${session.type}`}
-                            title={`${session.type.charAt(0).toUpperCase() + session.type.slice(1)} session`}
-                        >
-                            {getSessionTypeIcon()}
-                        </span>
-                        <h3
-                            className="font-medium text-slate-900 dark:text-slate-100 whitespace-nowrap overflow-hidden text-ellipsis"
-                            title={session.title || 'Untitled Session'}
-                        >
-                            {session.title || 'Untitled Session'}
-                        </h3>
-                    </div>
-                    <span
-                        className="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap flex-shrink-0"
-                        title={`Last updated: ${new Date(session.updatedAt).toLocaleString()}`}
-                    >
-                        {formatTimeAgo(session.updatedAt, t)}
-                    </span>
-                </div>
-
-                {/* Last Message Preview */}
-                <div
-                    className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed line-clamp-2 overflow-hidden"
-                    title={session.lastMessage?.content || 'No messages'}
+            {/* Row 1: Title, Pin indicator, and Time */}
+            <div className="flex items-center justify-between gap-2">
+                <h3
+                    className="font-medium text-slate-900 dark:text-slate-100 whitespace-nowrap overflow-hidden text-ellipsis flex-1 text-sm"
+                    title={session.title || 'Untitled Session'}
                 >
-                    {renderLastMessage()}
-                </div>
-
-                {/* Session Metadata (hidden on mobile for space) */}
-                <div className="hidden md:flex items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-500">
+                    {session.title || 'Untitled Session'}
+                </h3>
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                    {session.isPinned && (
+                        <span
+                            className="text-yellow-500 text-xs"
+                            aria-label="Pinned session"
+                            title="This session is pinned"
+                        >
+                            📌
+                        </span>
+                    )}
                     <span
-                        className="flex-1 whitespace-nowrap overflow-hidden text-ellipsis"
-                        title={`${session.participants.filter((p: SessionParticipant) => p.type === 'agent').length} AI agents in this session`}
+                        className="text-xs text-slate-500 dark:text-slate-400"
+                        title={`Created: ${new Date(session.createdAt).toLocaleString()}`}
                     >
-                        👥 {session.participants.filter((p: SessionParticipant) => p.type === 'agent').length} {t('session.agentsCount')}
-                    </span>
-                    <span
-                        className="flex-shrink-0"
-                        title={`${session.messageCount} messages in this session`}
-                    >
-                        💬 {session.messageCount} {t('session.messagesCount')}
+                        {formatTimeAgo(session.createdAt, t)}
                     </span>
                 </div>
             </div>
 
-            {/* Right Side Indicators */}
-            <div className="flex flex-col items-center gap-1 flex-shrink-0">
-                {/* Group session participant count badge */}
-                {session.type === 'GROUP' && (
-                    <div
-                        className="bg-indigo-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-xs font-semibold"
-                        aria-label={`${session.participants.filter((p: SessionParticipant) => p.type === 'agent').length} participants`}
-                        title={`${session.participants.filter((p: SessionParticipant) => p.type === 'agent').length} AI agents`}
-                    >
-                        {session.participants.filter((p: SessionParticipant) => p.type === 'agent').length}
-                    </div>
-                )}
-
-                {/* TODO: Unread message indicator for future feature */}
-                {/* Future: Add unreadCount property to Session type when implemented */}
+            {/* Row 2: Last Message Preview */}
+            <div
+                className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed line-clamp-1 overflow-hidden"
+                title={session.lastMessage?.content || 'No messages'}
+            >
+                {renderLastMessage()}
             </div>
         </div>
     )

@@ -1,13 +1,14 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import MessageList from './MessageList'
 import MessageInput from './MessageInput'
 import { Session, Message } from '@/types'
 import { useTranslation } from '@/contexts/AppContext'
+import { useSession } from '@/components/providers/AuthProvider'
 import { Button } from '@/components/ui/button'
-import { useChat } from 'ai/react'
+import { useChat } from '@ai-sdk/react'
 import {
     Plus,
     Settings
@@ -44,18 +45,44 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     onSessionUpdate
 }) => {
     const { t } = useTranslation()
-    
-    // State for current user (in real app, get from auth context)
-    const [currentUserId] = useState('user-123') // TODO: Get from auth context
-    
+
+    // Get user authentication state
+    const { data: sessionData } = useSession()
+    const user = sessionData?.user
+    const currentUserId = user?.id
+
+    // Get agent information functions - moved to top to avoid hoisting issues
+    const getAgentName = useCallback((agentId: string): string => {
+        const agentNames: Record<string, string> = {
+            'gemini-flash': 'Gemini Flash',
+            'article-summarizer': '文章摘要师',
+            'critical-thinker': '批判性思考者',
+            'creative-writer': '创意作家',
+            'data-scientist': '数据科学家',
+            'code-expert': '代码专家'
+        }
+        return agentNames[agentId] || 'AI Assistant'
+    }, [])
+
+    const getAgentAvatar = useCallback((agentId: string): string => {
+        const agentAvatars: Record<string, string> = {
+            'gemini-flash': '⚡',
+            'article-summarizer': '📝',
+            'critical-thinker': '🤔',
+            'creative-writer': '✍️',
+            'data-scientist': '📊',
+            'code-expert': '💻'
+        }
+        return agentAvatars[agentId] || '🤖'
+    }, [])
+
     // Vercel AI useChat hook for handling streaming responses
     const {
         messages,
-        handleInputChange,
-        handleSubmit,
         isLoading,
         error,
-        setMessages
+        setMessages,
+        append
     } = useChat({
         api: '/api/chat',
         body: {
@@ -64,10 +91,15 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             agentId: session?.primaryAgentId || 'gemini-flash'
         },
         onError: (error) => {
-            console.error('Chat error:', error)
+            console.error('🔴 Frontend Chat error:', error)
+            console.error('🔴 Error details:', {
+                name: error.name,
+                message: error.message,
+                stack: error.stack
+            })
         },
         onFinish: (message) => {
-            console.log('AI response finished:', message)
+            console.log('✅ Frontend - AI response finished:', message)
             // Update session message count
             if (session && onSessionUpdate) {
                 onSessionUpdate(session.id, {
@@ -85,21 +117,24 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             try {
                 const response = await fetch(`/api/sessions/${session.id}/messages`)
                 if (response.ok) {
-                    const sessionMessages = await response.json()
-                    
+                    const responseData = await response.json()
+
+                    // Handle both direct array response and wrapped response
+                    const sessionMessages = responseData.data || responseData
+
                     // Convert SwarmChatMessage format to AI SDK format
-                    const formattedMessages = sessionMessages.map((msg: { 
-                        id: string; 
-                        senderType: string; 
-                        content: string; 
-                        createdAt: string 
+                    const formattedMessages = sessionMessages.map((msg: {
+                        id: string
+                        senderType: string
+                        content: string
+                        createdAt: string
                     }) => ({
                         id: msg.id,
                         role: msg.senderType === 'user' ? 'user' : 'assistant',
                         content: msg.content,
                         createdAt: new Date(msg.createdAt)
                     }))
-                    
+
                     setMessages(formattedMessages)
                 }
             } catch (error) {
@@ -112,21 +147,15 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
     // Handle manual message sending (from MessageInput component)
     const handleSendMessage = async (message: string) => {
-        if (!session) return
+        if (!session || !message.trim() || !currentUserId) return
 
-        // The useChat hook will handle the API call automatically
-        const syntheticEvent = {
-            preventDefault: () => {},
-        } as React.FormEvent<HTMLFormElement>
-
-        // Set the input and submit
-        handleInputChange({ target: { value: message } } as React.ChangeEvent<HTMLInputElement>)
-        
-        // Use a slight delay to ensure input is set
-        setTimeout(() => {
-            handleSubmit(syntheticEvent)
-        }, 10)
+        // Use append to add the user message and trigger AI response
+        await append({
+            role: 'user',
+            content: message
+        })
     }
+
 
     // Convert AI SDK messages to our Message format for display
     const displayMessages: Message[] = messages.map((msg) => ({
@@ -139,28 +168,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         avatarStyle: undefined
     }))
 
-    // Get agent information
-    const getAgentName = (agentId: string): string => {
-        const agentNames: Record<string, string> = {
-            'gemini-flash': 'Gemini Flash',
-            'article-summarizer': '文章摘要师',
-            'critical-thinker': '批判性思考者',
-            'creative-writer': '创意作家',
-            'data-scientist': '数据科学家'
-        }
-        return agentNames[agentId] || 'AI Assistant'
-    }
-
-    const getAgentAvatar = (agentId: string): string => {
-        const agentAvatars: Record<string, string> = {
-            'gemini-flash': '⚡',
-            'article-summarizer': '📝',
-            'critical-thinker': '🤔',
-            'creative-writer': '✍️',
-            'data-scientist': '📊'
-        }
-        return agentAvatars[agentId] || '🤖'
-    }
 
     // ChatArea should only render when there's an active session
     if (!session) {
@@ -245,8 +252,12 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                     avatar: p.avatar || '🤖',
                     type: 'agent' as const
                 }))}
-                disabled={isLoading}
-                placeholder={isLoading ? 'AI is thinking...' : 'Type your message...'}
+                disabled={isLoading || !currentUserId}
+                placeholder={
+                    !currentUserId ? 'Please login to send messages...' :
+                        isLoading ? 'AI is thinking...' :
+                            'Type your message...'
+                }
             />
         </main>
     )
