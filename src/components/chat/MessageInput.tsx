@@ -120,73 +120,108 @@ const MessageInput: React.FC<MessageInputProps> = ({
     }, [inputValue])
 
     return (
-        <div className="border-t border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
-            <div className="relative max-w-4xl mx-auto">
-                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 flex items-center gap-1 z-10">
-                    <button
-                        className="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-md transition-colors duration-150"
-                        onClick={handleMentionButtonClick}
-                        title={t('chat.mention')}
-                    >
-                        @
-                    </button>
-                    <button
-                        className="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-md transition-colors duration-150"
-                        title={t('chat.attachment')}
-                    >
-                        📎
-                    </button>
-                    <button
-                        className="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-md transition-colors duration-150"
-                        title={t('chat.commands')}
-                    >
-                        /
-                    </button>
+        <div className="p-3 sm:p-4 bg-white dark:bg-slate-800">
+            <div className="relative">
+                {/* Input Container - Responsive */}
+                <div className="flex items-end gap-2 sm:gap-3">
+                    {/* Toolbar buttons - Responsive */}
+                    <div className="flex items-center gap-1 pb-2">
+                        <button
+                            className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-all duration-150 text-sm font-medium"
+                            onClick={handleMentionButtonClick}
+                            title={t('chat.mention')}
+                            disabled={disabled}
+                        >
+                            @
+                        </button>
+                        <button
+                            className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-all duration-150 hidden sm:flex"
+                            title={t('chat.attachment')}
+                            disabled={disabled}
+                        >
+                            📎
+                        </button>
+                        <button
+                            className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-all duration-150 hidden sm:flex"
+                            title={t('chat.commands')}
+                            disabled={disabled}
+                        >
+                            /
+                        </button>
+                    </div>
+
+                    {/* Input Area */}
+                    <div className="flex-1 relative">
+                        <textarea
+                            ref={textareaRef}
+                            className="w-full bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-2xl px-4 py-3 pr-12 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400 resize-none outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all duration-200 min-h-[44px] max-h-40"
+                            placeholder={placeholder || t('chat.inputPlaceholder')}
+                            value={inputValue}
+                            onChange={handleInputChange}
+                            onKeyDown={handleKeyDown}
+                            disabled={disabled}
+                            rows={1}
+                        />
+
+                        {/* Send Button */}
+                        <button
+                            className="absolute right-2 bottom-2 w-8 h-8 flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 dark:disabled:bg-slate-600 text-white rounded-full transition-all duration-150 disabled:cursor-not-allowed shadow-sm disabled:shadow-none"
+                            onClick={handleSendMessage}
+                            disabled={!inputValue.trim() || disabled}
+                            title={t('chat.send')}
+                        >
+                            <svg
+                                className="w-4 h-4"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                            >
+                                <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
 
-                <textarea
-                    ref={textareaRef}
-                    className="w-full bg-gray-100 dark:bg-slate-800 border-0 rounded-2xl pl-28 pr-12 py-4 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 resize-none outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200 min-h-[52px] max-h-32"
-                    placeholder={placeholder || t('chat.inputPlaceholder')}
-                    value={inputValue}
-                    onChange={handleInputChange}
-                    onKeyDown={handleKeyDown}
-                    disabled={disabled}
-                    rows={1}
-                />
-
-                <button
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 w-8 h-8 flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 dark:disabled:bg-gray-600 text-white rounded-full transition-colors duration-150 disabled:cursor-not-allowed"
-                    onClick={handleSendMessage}
-                    disabled={!inputValue.trim() || disabled}
-                    title={t('chat.send')}
-                >
-                    ➤
-                </button>
-
-                {/* @提及弹窗 */}
+                {/* @提及弹窗 - Responsive */}
                 {showMentionPopup && (
                     <div
                         ref={mentionPopupRef}
-                        className="absolute bottom-full left-3 mb-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-lg max-h-60 overflow-y-auto min-w-64 animate-menu-slide-in z-20"
+                        className="absolute bottom-full left-8 sm:left-12 mb-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl shadow-xl max-h-60 overflow-y-auto min-w-56 sm:min-w-64 z-50 backdrop-blur-sm"
+                        style={{
+                            animation: 'slideUpFade 0.2s ease-out forwards'
+                        }}
                     >
-                        {filteredMentions.map((mention) => (
-                            <div
-                                key={mention.id}
-                                className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer transition-colors duration-150 text-sm first:rounded-t-lg last:rounded-b-lg"
-                                onClick={() => handleMentionSelect(mention)}
-                            >
-                                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-xs text-white">
-                                    {mention.avatar}
+                        <div className="p-2">
+                            <div className="text-xs font-medium text-slate-500 dark:text-slate-400 px-3 py-2">
+                                {t('chat.selectMember')}
+                            </div>
+                            {filteredMentions.map((mention) => (
+                                <div
+                                    key={mention.id}
+                                    className="flex items-center gap-3 px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer transition-colors duration-150 text-sm rounded-lg"
+                                    onClick={() => handleMentionSelect(mention)}
+                                >
+                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-sm text-white shadow-sm">
+                                        {mention.avatar}
+                                    </div>
+                                    <div className="flex-1">
+                                        <div className="font-medium text-slate-900 dark:text-slate-100">
+                                            {mention.name}
+                                        </div>
+                                        <div className="text-xs text-slate-500 dark:text-slate-400">
+                                            {mention.type === 'agent' ? t('chat.aiAgent') : t('chat.user')}
+                                        </div>
+                                    </div>
                                 </div>
-                                <span>{mention.name}</span>
-                            </div>
-                        ))}
-                        {filteredMentions.length === 0 && (
-                            <div className="flex items-center gap-3 px-4 py-3 text-gray-500 dark:text-gray-400 cursor-default text-sm">
-                                {t('messages.noMatches')}
-                            </div>
-                        )}
+                            ))}
+                            {filteredMentions.length === 0 && (
+                                <div className="flex items-center gap-3 px-3 py-4 text-slate-500 dark:text-slate-400 text-sm">
+                                    <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-600 flex items-center justify-center text-slate-400">
+                                        ?
+                                    </div>
+                                    <span>{t('messages.noMatches')}</span>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 )}
             </div>

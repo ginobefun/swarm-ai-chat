@@ -1,11 +1,13 @@
 'use client'
 
-import React, { useEffect, useCallback } from 'react'
+import React, { useEffect, useCallback, useState } from 'react'
 import { motion } from 'framer-motion'
 import MessageList from './MessageList'
 import MessageInput from './MessageInput'
 import { Session, Message } from '@/types'
 import { useTranslation } from '@/contexts/AppContext'
+import AddAgentDialog from './AddAgentDialog'
+import ChatSettingsDialog from './ChatSettingsDialog'
 import { useSession } from '@/components/providers/AuthProvider'
 import { Button } from '@/components/ui/button'
 import { useChat } from '@ai-sdk/react'
@@ -50,6 +52,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     const { data: sessionData } = useSession()
     const user = sessionData?.user
     const currentUserId = user?.id
+
+    // Dialog states
+    const [showAddAgentDialog, setShowAddAgentDialog] = useState(false)
+    const [showSettingsDialog, setShowSettingsDialog] = useState(false)
 
     // Get agent information functions - moved to top to avoid hoisting issues
     const getAgentName = useCallback((agentId: string): string => {
@@ -156,6 +162,37 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         })
     }
 
+    // Handle adding agent to session
+    const handleAddAgent = async (agentId: string) => {
+        if (!session || !onSessionUpdate) return
+
+        // Get current participants or initialize as empty array
+        const currentParticipants = session.participants || []
+
+        // Check if agent is already added
+        if (currentParticipants.some(p => p.id === agentId)) {
+            console.log('Agent already added to session')
+            return
+        }
+
+        // Add new agent participant
+        const newParticipant = {
+            id: agentId,
+            name: getAgentName(agentId),
+            avatar: getAgentAvatar(agentId),
+            type: 'agent' as const
+        }
+
+        const updatedParticipants = [...currentParticipants, newParticipant]
+
+        // Update session
+        onSessionUpdate(session.id, {
+            participants: updatedParticipants
+        })
+
+        console.log(`Added agent ${agentId} to session ${session.id}`)
+    }
+
 
     // Convert AI SDK messages to our Message format for display
     const displayMessages: Message[] = messages.map((msg) => ({
@@ -175,89 +212,116 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     }
 
     return (
-        <main className="flex flex-col flex-1 bg-background">
-            {/* Chat header with proper top spacing to match SessionList */}
-            <div className="flex items-center justify-between px-6 py-4 border-b bg-card shadow-sm mt-4">
-                <div className="flex items-center gap-4">
-                    {/* Participant avatars */}
-                    <div className="flex -space-x-2">
-                        {session.participants.filter(p => p.type === 'agent').slice(0, 3).map((participant) => (
-                            <motion.div
-                                key={participant.id}
-                                className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-primary-foreground text-sm font-medium border-2 border-background shadow-sm"
-                                title={participant.name}
-                                whileHover={{ scale: 1.1, zIndex: 10 }}
-                                transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                            >
-                                {participant.avatar || '🤖'}
-                            </motion.div>
-                        ))}
-                        {session.participants.filter(p => p.type === 'agent').length > 3 && (
-                            <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground text-xs font-medium border-2 border-background shadow-sm">
-                                +{session.participants.filter(p => p.type === 'agent').length - 3}
-                            </div>
-                        )}
+        <main className="flex flex-col h-full bg-slate-50 dark:bg-slate-900">
+            {/* Chat Header - Fixed at top with responsive design */}
+            <header className="flex-shrink-0 flex items-center justify-between px-4 sm:px-6 py-3 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shadow-sm">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                    {/* Agent Avatar */}
+                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center text-white text-base sm:text-lg font-medium shadow-md flex-shrink-0">
+                        {getAgentAvatar(session?.primaryAgentId || 'gemini-flash')}
                     </div>
 
-                    {/* Session info */}
-                    <div>
-                        <div className="text-lg font-semibold text-foreground">
+                    {/* Session Info */}
+                    <div className="flex-1 min-w-0">
+                        <h1 className="text-sm sm:text-base font-semibold text-slate-900 dark:text-slate-100 truncate">
                             {session.title}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                            {session.participants.filter(p => p.type === 'agent').length} {t('chat.agents')} · {messages.length || 0} {t('chat.messages')}
-                        </div>
+                        </h1>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">
+                            {getAgentName(session?.primaryAgentId || 'gemini-flash')} · {messages.length || 0} {t('chat.messages')}
+                        </p>
+                        {/* Mobile-only compact info */}
+                        <p className="text-xs text-slate-500 dark:text-slate-400 sm:hidden">
+                            {messages.length || 0} {t('chat.messages')}
+                        </p>
                     </div>
                 </div>
 
-                {/* Action buttons */}
-                <div className="flex items-center gap-2">
-                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                        <Button variant="outline" size="sm">
-                            <Plus className="w-4 h-4 mr-2" />
-                            {t('chat.addMember')}
+                {/* Header Actions - Responsive */}
+                <div className="flex items-center gap-1 flex-shrink-0">
+                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 hidden sm:flex"
+                            title={t('chat.addMember')}
+                            onClick={() => setShowAddAgentDialog(true)}
+                        >
+                            <Plus className="w-4 h-4" />
                         </Button>
                     </motion.div>
-                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                        <Button variant="ghost" size="sm">
+                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            title={t('chat.settings')}
+                            onClick={() => setShowSettingsDialog(true)}
+                        >
                             <Settings className="w-4 h-4" />
                         </Button>
                     </motion.div>
                 </div>
-            </div>
+            </header>
 
-            {/* Error display */}
+            {/* Error Banner - Fixed position below header */}
             {error && (
-                <div className="mx-6 mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
-                    <div className="text-sm text-destructive">
-                        ❌ {error.message || 'Something went wrong. Please try again.'}
+                <div className="flex-shrink-0 mx-4 mt-3 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/50 rounded-lg">
+                    <div className="flex items-center gap-2 text-sm text-red-700 dark:text-red-400">
+                        <span className="text-red-500">⚠️</span>
+                        {error.message || 'Something went wrong. Please try again.'}
                     </div>
                 </div>
             )}
 
-            {/* Message display area */}
-            <MessageList
-                messages={displayMessages}
-                isTyping={isLoading}
-                typingUser={getAgentName(session?.primaryAgentId || 'gemini-flash')}
-                typingAvatar={getAgentAvatar(session?.primaryAgentId || 'gemini-flash')}
+            {/* Messages Container - Scrollable content area */}
+            <div className="flex-1 flex flex-col min-h-0">
+                {/* Message List - Flexible content with proper scrolling */}
+                <div className="flex-1 overflow-hidden">
+                    <MessageList
+                        messages={displayMessages}
+                        isTyping={isLoading}
+                        typingUser={getAgentName(session?.primaryAgentId || 'gemini-flash')}
+                        typingAvatar={getAgentAvatar(session?.primaryAgentId || 'gemini-flash')}
+                    />
+                </div>
+
+                {/* Message Input - Fixed at bottom */}
+                <div className="flex-shrink-0 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+                    <MessageInput
+                        onSendMessage={handleSendMessage}
+                        mentionItems={session.participants.filter(p => p.type === 'agent').map(p => ({
+                            id: p.id,
+                            name: p.name,
+                            avatar: p.avatar || '🤖',
+                            type: 'agent' as const
+                        }))}
+                        disabled={isLoading || !currentUserId}
+                        placeholder={
+                            !currentUserId ? t('chat.loginToSendMessage') :
+                                isLoading ? t('chat.aiThinking') :
+                                    t('chat.inputPlaceholder')
+                        }
+                    />
+                </div>
+            </div>
+
+            {/* Dialogs */}
+            <AddAgentDialog
+                isOpen={showAddAgentDialog}
+                onClose={() => setShowAddAgentDialog(false)}
+                onAddAgent={handleAddAgent}
+                currentAgentIds={session.participants?.filter(p => p.type === 'agent').map(p => p.id) || []}
             />
 
-            {/* Message input area */}
-            <MessageInput
-                onSendMessage={handleSendMessage}
-                mentionItems={session.participants.filter(p => p.type === 'agent').map(p => ({
-                    id: p.id,
-                    name: p.name,
-                    avatar: p.avatar || '🤖',
-                    type: 'agent' as const
-                }))}
-                disabled={isLoading || !currentUserId}
-                placeholder={
-                    !currentUserId ? 'Please login to send messages...' :
-                        isLoading ? 'AI is thinking...' :
-                            'Type your message...'
-                }
+            <ChatSettingsDialog
+                isOpen={showSettingsDialog}
+                onClose={() => setShowSettingsDialog(false)}
+                session={session}
+                onUpdateSession={onSessionUpdate}
+                onDeleteSession={(sessionId) => {
+                    // This would be handled by parent component
+                    console.log('Delete session:', sessionId)
+                }}
             />
         </main>
     )

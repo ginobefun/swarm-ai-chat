@@ -66,6 +66,10 @@ module.exports = {
         "dialog-slide-out": "dialog-slide-out 0.15s ease-in",
         "typing-indicator": "typing-indicator 1.4s infinite",
         "pulse-soft": "pulse-soft 2s ease-in-out infinite",
+        "message-slide-in": "message-slide-in 0.3s ease-out",
+        "blob": "blob 7s infinite",
+        "blob-delay-2": "blob 7s infinite 2s",
+        "blob-delay-4": "blob 7s infinite 4s",
       },
       keyframes: {
         "accordion-down": {
@@ -144,6 +148,30 @@ module.exports = {
           },
           "50%": {
             opacity: "0.7",
+          },
+        },
+        "message-slide-in": {
+          "0%": {
+            opacity: "0",
+            transform: "translateY(20px) scale(0.95)",
+          },
+          "100%": {
+            opacity: "1",
+            transform: "translateY(0) scale(1)",
+          },
+        },
+        "blob": {
+          "0%": {
+            transform: "translate(0px, 0px) scale(1)",
+          },
+          "33%": {
+            transform: "translate(30px, -50px) scale(1.1)",
+          },
+          "66%": {
+            transform: "translate(-20px, 20px) scale(0.9)",
+          },
+          "100%": {
+            transform: "translate(0px, 0px) scale(1)",
           },
         },
       },

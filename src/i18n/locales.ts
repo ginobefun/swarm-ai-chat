@@ -22,6 +22,8 @@ export interface Messages {
         minute: string
         hour: string
         day: string
+        today: string
+        yesterday: string
     }
 
     // 认证系统
@@ -155,6 +157,24 @@ export interface Messages {
         untitledSession: string
         agents: string
         messages: string
+        startConversation: string
+        startConversationDesc: string
+        loginToSendMessage: string
+        aiThinking: string
+        selectMember: string
+        aiAgent: string
+        user: string
+        // Dialog related
+        addAgent: string
+        addAgentDesc: string
+        chatSettings: string
+        sessionInfo: string
+        participants: string
+        preferences: string
+        basicInfo: string
+        statistics: string
+        currentParticipants: string
+        chatPreferences: string
     }
 
     // 工作区
@@ -188,6 +208,13 @@ export interface Messages {
         specialist: string
         techExpert: string
         marketAnalyst: string
+        category: {
+            analysis: string
+            creative: string
+            technical: string
+            business: string
+            general: string
+        }
         description: {
             dataProcessing: string
             creativityInspiration: string
@@ -280,6 +307,7 @@ export interface Messages {
         sessionName: string
         sessionDescription: string
         description: string
+        noDescription: string
         enterSessionName: string
         enterDescription: string
 
@@ -288,6 +316,7 @@ export interface Messages {
         agentsSelected: string
         searchAgents: string
         noAgentsFound: string
+        allAgentsAdded: string
         noAgentsAvailable: string
         contactAdmin: string
         tryDifferentSearch: string
@@ -298,6 +327,7 @@ export interface Messages {
         pin: string
         unpin: string
         archive: string
+        unarchive: string
         duplicate: string
         export: string
         untitled: string
@@ -390,6 +420,8 @@ export const locales: Record<LocaleKey, Messages> = {
             minute: '分钟前',
             hour: '小时前',
             day: '天前',
+            today: '今天',
+            yesterday: '昨天',
         },
 
         // Authentication system
@@ -517,6 +549,24 @@ export const locales: Record<LocaleKey, Messages> = {
             untitledSession: '未命名会话',
             agents: '个 AI 智能体',
             messages: '条消息',
+            startConversation: '开始对话',
+            startConversationDesc: '发送消息开始与 AI 助手的对话。你可以提问、寻求帮助或开始讨论。',
+            loginToSendMessage: '请登录后发送消息...',
+            aiThinking: 'AI 正在思考...',
+            selectMember: '选择成员',
+            aiAgent: 'AI 助手',
+            user: '用户',
+            // Dialog related
+            addAgent: '添加智能体',
+            addAgentDesc: '选择专业的 AI 智能体加入对话',
+            chatSettings: '聊天设置',
+            sessionInfo: '会话信息',
+            participants: '参与者',
+            preferences: '偏好设置',
+            basicInfo: '基本信息',
+            statistics: '统计信息',
+            currentParticipants: '当前参与者',
+            chatPreferences: '聊天偏好',
         },
         workspace: {
             title: '工作区',
@@ -546,6 +596,13 @@ export const locales: Record<LocaleKey, Messages> = {
             specialist: '专家',
             techExpert: '技术专家',
             marketAnalyst: '市场分析师',
+            category: {
+                analysis: '分析类',
+                creative: '创意类',
+                technical: '技术类',
+                business: '商务类',
+                general: '通用类',
+            },
             description: {
                 dataProcessing: '擅长数据处理和可视化',
                 creativityInspiration: '激发创意灵感',
@@ -630,6 +687,7 @@ export const locales: Record<LocaleKey, Messages> = {
             sessionName: '会话名称',
             sessionDescription: '会话描述',
             description: '描述',
+            noDescription: '暂无描述',
             enterSessionName: '请输入会话名称',
             enterDescription: '请输入会话描述',
 
@@ -638,6 +696,7 @@ export const locales: Record<LocaleKey, Messages> = {
             agentsSelected: '个已选择',
             searchAgents: '搜索 AI 角色...',
             noAgentsFound: '未找到匹配的 AI 角色',
+            allAgentsAdded: '所有智能体都已添加',
             noAgentsAvailable: '暂无 AI 角色',
             contactAdmin: '请联系管理员添加 AI 角色',
             tryDifferentSearch: '请尝试其他搜索词',
@@ -648,6 +707,7 @@ export const locales: Record<LocaleKey, Messages> = {
             pin: '置顶',
             unpin: '取消置顶',
             archive: '归档',
+            unarchive: '取消归档',
             duplicate: '复制会话',
             export: '导出',
             untitled: '未命名会话',
@@ -738,6 +798,8 @@ export const locales: Record<LocaleKey, Messages> = {
             minute: 'm ago',
             hour: 'h ago',
             day: 'd ago',
+            today: 'Today',
+            yesterday: 'Yesterday',
         },
 
         // Authentication system
@@ -865,6 +927,24 @@ export const locales: Record<LocaleKey, Messages> = {
             untitledSession: 'Untitled Session',
             agents: ' AI agents',
             messages: ' messages',
+            startConversation: 'Start Conversation',
+            startConversationDesc: 'Send a message to begin your chat with the AI assistant. You can ask questions, request help, or start a discussion.',
+            loginToSendMessage: 'Please login to send messages...',
+            aiThinking: 'AI is thinking...',
+            selectMember: 'Select Member',
+            aiAgent: 'AI Agent',
+            user: 'User',
+            // Dialog related
+            addAgent: 'Add Agent',
+            addAgentDesc: 'Select professional AI agents to join the conversation',
+            chatSettings: 'Chat Settings',
+            sessionInfo: 'Session Info',
+            participants: 'Participants',
+            preferences: 'Preferences',
+            basicInfo: 'Basic Info',
+            statistics: 'Statistics',
+            currentParticipants: 'Current Participants',
+            chatPreferences: 'Chat Preferences',
         },
         workspace: {
             title: 'Workspace',
@@ -894,6 +974,13 @@ export const locales: Record<LocaleKey, Messages> = {
             specialist: 'Specialist',
             techExpert: 'Tech Expert',
             marketAnalyst: 'Market Analyst',
+            category: {
+                analysis: 'Analysis',
+                creative: 'Creative',
+                technical: 'Technical',
+                business: 'Business',
+                general: 'General',
+            },
             description: {
                 dataProcessing: 'Expert in data processing and visualization',
                 creativityInspiration: 'Inspiring creativity and innovation',
@@ -978,6 +1065,7 @@ export const locales: Record<LocaleKey, Messages> = {
             sessionName: 'Session Name',
             sessionDescription: 'Session Description',
             description: 'Description',
+            noDescription: 'No description',
             enterSessionName: 'Enter session name',
             enterDescription: 'Enter session description',
 
@@ -986,6 +1074,7 @@ export const locales: Record<LocaleKey, Messages> = {
             agentsSelected: ' selected',
             searchAgents: 'Search AI agents...',
             noAgentsFound: 'No matching AI agents found',
+            allAgentsAdded: 'All agents have been added',
             noAgentsAvailable: 'No AI agents available',
             contactAdmin: 'Please contact administrator to add AI agents',
             tryDifferentSearch: 'Try a different search term',
@@ -996,6 +1085,7 @@ export const locales: Record<LocaleKey, Messages> = {
             pin: 'Pin',
             unpin: 'Unpin',
             archive: 'Archive',
+            unarchive: 'Unarchive',
             duplicate: 'Duplicate',
             export: 'Export',
             untitled: 'Untitled Session',
