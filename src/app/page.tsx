@@ -4,8 +4,10 @@ import { useState, useEffect } from 'react'
 import Navbar from '@/components/Navbar'
 import SessionList from '@/components/session/SessionList'
 import ChatArea from '@/components/chat/ChatArea'
+import WelcomeGuide from '@/components/WelcomeGuide'
 import WorkspacePanel from '@/components/workspace/WorkspacePanel'
 import { useSessionManager } from '@/hooks/useSessionManager'
+import { useSession } from '@/components/providers/AuthProvider'
 
 /**
  * Home component - Main application page
@@ -21,6 +23,10 @@ import { useSessionManager } from '@/hooks/useSessionManager'
  * @returns JSX element representing the complete application interface
  */
 export default function Home() {
+    // User authentication state
+    const { data: sessionData, isPending: authPending } = useSession()
+    const user = sessionData?.user
+
     // Session management hook provides all session-related functionality
     const {
         sessions,        // Array of user sessions
@@ -36,6 +42,9 @@ export default function Home() {
     // UI state management for responsive design
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)    // Mobile sidebar visibility
     const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(true) // Workspace panel visibility
+
+    // Determine if we should show the welcome guide
+    const shouldShowWelcomeGuide = !authPending && (!user?.id || !currentSession)
 
     /**
      * Responsive layout control effect
@@ -98,6 +107,29 @@ export default function Home() {
         setIsWorkspaceOpen(!isWorkspaceOpen)
     }
 
+    /**
+     * Handle create session from welcome guide
+     * Opens create session dialog from SessionList component
+     */
+    const handleCreateSessionFromWelcome = () => {
+        // Trigger create session dialog in SessionList
+        // This would need to be implemented with a ref or state management
+        console.log('Create session from welcome guide')
+        // For now, we'll automatically close sidebar on mobile after creating
+        if (window.innerWidth < 768) {
+            setIsSidebarOpen(false)
+        }
+    }
+
+    /**
+     * Handle explore agents from welcome guide
+     * Navigate to agent discovery or show agent selection
+     */
+    const handleExploreAgents = () => {
+        console.log('Explore agents from welcome guide')
+        // TODO: Navigate to agent discovery page or show agent modal
+    }
+
     return (
         <div className="flex flex-col h-screen bg-gray-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100">
             {/* 
@@ -141,7 +173,11 @@ export default function Home() {
                 </div>
 
                 {/* 
-                    Main Chat Area
+                    Main Content Area
+                    
+                    Conditional rendering based on user state:
+                    - Welcome Guide: When user is not logged in or no session is selected
+                    - Chat Area: When user is logged in and has an active session
                     
                     Features:
                     - Flexible layout that adapts to available space
@@ -149,10 +185,17 @@ export default function Home() {
                     - Session-aware content display
                 */}
                 <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-slate-900">
-                    <ChatArea
-                        session={currentSession}
-                        onSessionUpdate={updateSession}
-                    />
+                    {shouldShowWelcomeGuide ? (
+                        <WelcomeGuide
+                            onCreateSession={handleCreateSessionFromWelcome}
+                            onExploreAgents={handleExploreAgents}
+                        />
+                    ) : (
+                        <ChatArea
+                            session={currentSession}
+                            onSessionUpdate={updateSession}
+                        />
+                    )}
                 </div>
 
                 {/* 
@@ -162,13 +205,14 @@ export default function Home() {
                     - Hidden on mobile and tablet (< 1024px)
                     - Visible on desktop (>= 1024px)
                     - Can be toggled via navbar controls
+                    - Hidden when showing welcome guide to give more space
                     
                     Features:
                     - Session-aware content display
                     - Modular workspace components
                     - Real-time updates based on current session
                 */}
-                {isWorkspaceOpen && (
+                {isWorkspaceOpen && !shouldShowWelcomeGuide && (
                     <div className="hidden lg:flex w-[360px] min-w-[320px] max-w-[400px] border-l border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800">
                         <WorkspacePanel session={currentSession} />
                     </div>
