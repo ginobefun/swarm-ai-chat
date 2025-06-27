@@ -366,3 +366,55 @@ chore: 构建过程或辅助工具变动
 Made with ❤️ by the SwarmAI.chat Team
 
 </div>
+
+---
+
+## 💬 聊天功能使用指南
+
+### 🚀 快速开始
+
+基础聊天功能已实现！按照以下步骤即可开始与 AI 智能体对话：
+
+#### 1. 环境配置
+```bash
+# 复制环境变量模板
+cp .env.example .env.local
+
+# 编辑 .env.local，添加 OpenRouter API 密钥
+OPENROUTER_API_KEY="sk-or-v1-your-api-key-here"
+DATABASE_URL="your-database-url"
+BETTER_AUTH_SECRET="your-secret-key"
+```
+
+#### 2. 获取 OpenRouter API 密钥
+1. 访问 [OpenRouter.ai](https://openrouter.ai/)
+2. 注册账户并获取 API 密钥
+3. 将密钥添加到 `.env.local` 文件
+
+#### 3. 启动应用
+```bash
+pnpm install
+pnpm db:generate
+pnpm db:push
+pnpm dev
+```
+
+#### 4. 开始聊天
+1. 打开 http://localhost:3000
+2. 创建或选择聊天会话
+3. 在输入框输入问题
+4. 享受与 AI 的实时对话！
+
+### ✨ 功能特色
+
+- **🤖 多智能体支持** - Gemini Flash、文章摘要师、批判性思考者等
+- **⚡ 流式响应** - 实时显示 AI 回复过程
+- **💾 消息持久化** - 所有对话自动保存
+- **🎨 精美界面** - 响应式设计，支持暗黑模式
+- **📝 Markdown 支持** - AI 回复支持格式化文本
+
+### 📋 详细文档
+
+完整的实现说明和故障排除指南请查看：[聊天功能实现文档](./CHAT_IMPLEMENTATION.md)
+
+---

@@ -1,12 +1,13 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import MessageList from './MessageList'
 import MessageInput from './MessageInput'
-import { Session } from '@/types'
+import { Session, Message } from '@/types'
 import { useTranslation } from '@/contexts/AppContext'
 import { Button } from '@/components/ui/button'
+import { useChat } from 'ai/react'
 import {
     Plus,
     Settings
@@ -28,6 +29,7 @@ interface ChatAreaProps {
  * - Dark mode support throughout
  * - Loading and typing indicators
  * - Accessibility features with ARIA labels
+ * - AI streaming responses with useChat hook
  * 
  * Layout:
  * - Chat header with session info and controls
@@ -42,12 +44,122 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     onSessionUpdate
 }) => {
     const { t } = useTranslation()
-
-    const handleSendMessage = (message: string) => {
-        if (session && onSessionUpdate) {
-            console.log('Sending message:', message)
-            // TODO: Implement message sending logic
+    
+    // State for current user (in real app, get from auth context)
+    const [currentUserId] = useState('user-123') // TODO: Get from auth context
+    
+    // Vercel AI useChat hook for handling streaming responses
+    const {
+        messages,
+        handleInputChange,
+        handleSubmit,
+        isLoading,
+        error,
+        setMessages
+    } = useChat({
+        api: '/api/chat',
+        body: {
+            sessionId: session?.id,
+            userId: currentUserId,
+            agentId: session?.primaryAgentId || 'gemini-flash'
+        },
+        onError: (error) => {
+            console.error('Chat error:', error)
+        },
+        onFinish: (message) => {
+            console.log('AI response finished:', message)
+            // Update session message count
+            if (session && onSessionUpdate) {
+                onSessionUpdate(session.id, {
+                    messageCount: (session.messageCount || 0) + 2 // +1 for user, +1 for AI
+                })
+            }
         }
+    })
+
+    // Load existing messages when session changes
+    useEffect(() => {
+        const loadSessionMessages = async () => {
+            if (!session?.id) return
+
+            try {
+                const response = await fetch(`/api/sessions/${session.id}/messages`)
+                if (response.ok) {
+                    const sessionMessages = await response.json()
+                    
+                    // Convert SwarmChatMessage format to AI SDK format
+                    const formattedMessages = sessionMessages.map((msg: { 
+                        id: string; 
+                        senderType: string; 
+                        content: string; 
+                        createdAt: string 
+                    }) => ({
+                        id: msg.id,
+                        role: msg.senderType === 'user' ? 'user' : 'assistant',
+                        content: msg.content,
+                        createdAt: new Date(msg.createdAt)
+                    }))
+                    
+                    setMessages(formattedMessages)
+                }
+            } catch (error) {
+                console.error('Error loading session messages:', error)
+            }
+        }
+
+        loadSessionMessages()
+    }, [session?.id, setMessages])
+
+    // Handle manual message sending (from MessageInput component)
+    const handleSendMessage = async (message: string) => {
+        if (!session) return
+
+        // The useChat hook will handle the API call automatically
+        const syntheticEvent = {
+            preventDefault: () => {},
+        } as React.FormEvent<HTMLFormElement>
+
+        // Set the input and submit
+        handleInputChange({ target: { value: message } } as React.ChangeEvent<HTMLInputElement>)
+        
+        // Use a slight delay to ensure input is set
+        setTimeout(() => {
+            handleSubmit(syntheticEvent)
+        }, 10)
+    }
+
+    // Convert AI SDK messages to our Message format for display
+    const displayMessages: Message[] = messages.map((msg) => ({
+        id: msg.id,
+        content: msg.content,
+        sender: msg.role === 'user' ? 'You' : getAgentName(session?.primaryAgentId || 'gemini-flash'),
+        senderType: msg.role === 'user' ? 'user' : 'ai',
+        timestamp: msg.createdAt || new Date(),
+        avatar: msg.role === 'user' ? 'You' : getAgentAvatar(session?.primaryAgentId || 'gemini-flash'),
+        avatarStyle: undefined
+    }))
+
+    // Get agent information
+    const getAgentName = (agentId: string): string => {
+        const agentNames: Record<string, string> = {
+            'gemini-flash': 'Gemini Flash',
+            'article-summarizer': '文章摘要师',
+            'critical-thinker': '批判性思考者',
+            'creative-writer': '创意作家',
+            'data-scientist': '数据科学家'
+        }
+        return agentNames[agentId] || 'AI Assistant'
+    }
+
+    const getAgentAvatar = (agentId: string): string => {
+        const agentAvatars: Record<string, string> = {
+            'gemini-flash': '⚡',
+            'article-summarizer': '📝',
+            'critical-thinker': '🤔',
+            'creative-writer': '✍️',
+            'data-scientist': '📊'
+        }
+        return agentAvatars[agentId] || '🤖'
     }
 
     // ChatArea should only render when there's an active session
@@ -86,7 +198,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                             {session.title}
                         </div>
                         <div className="text-sm text-muted-foreground">
-                            {session.participants.filter(p => p.type === 'agent').length} {t('chat.agents')} · {session.messageCount || 0} {t('chat.messages')}
+                            {session.participants.filter(p => p.type === 'agent').length} {t('chat.agents')} · {messages.length || 0} {t('chat.messages')}
                         </div>
                     </div>
                 </div>
@@ -107,17 +219,34 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                 </div>
             </div>
 
+            {/* Error display */}
+            {error && (
+                <div className="mx-6 mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+                    <div className="text-sm text-destructive">
+                        ❌ {error.message || 'Something went wrong. Please try again.'}
+                    </div>
+                </div>
+            )}
+
             {/* Message display area */}
             <MessageList
-                messages={[]}
-                isTyping={false}
-                typingUser=""
+                messages={displayMessages}
+                isTyping={isLoading}
+                typingUser={getAgentName(session?.primaryAgentId || 'gemini-flash')}
+                typingAvatar={getAgentAvatar(session?.primaryAgentId || 'gemini-flash')}
             />
 
             {/* Message input area */}
             <MessageInput
                 onSendMessage={handleSendMessage}
-                mentionItems={[]}
+                mentionItems={session.participants.filter(p => p.type === 'agent').map(p => ({
+                    id: p.id,
+                    name: p.name,
+                    avatar: p.avatar || '🤖',
+                    type: 'agent' as const
+                }))}
+                disabled={isLoading}
+                placeholder={isLoading ? 'AI is thinking...' : 'Type your message...'}
             />
         </main>
     )
