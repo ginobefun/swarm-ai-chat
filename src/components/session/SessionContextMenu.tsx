@@ -5,7 +5,7 @@ import { SessionContextMenuProps, SessionAction } from '@/types'
 import { useTranslation } from '@/contexts/AppContext'
 
 /**
- * SessionContextMenu - Enhanced right-click context menu for session items
+ * SessionContextMenu - Compact right-click context menu for session items
  * 
  * Features:
  * - Smart positioning with boundary detection
@@ -15,6 +15,7 @@ import { useTranslation } from '@/contexts/AppContext'
  * - Accessibility compliance
  * - Dark mode compatible
  * - International text support
+ * - Compact design for better interaction
  * 
  * Design Principles Applied:
  * - User-centered design: Quick access to common actions
@@ -129,35 +130,31 @@ const SessionContextMenu: React.FC<SessionContextMenuProps> = ({
 
     if (!isOpen || !session) return null
 
-    // Define menu items with enhanced icons and accessibility
+    // Define menu items with compact design
     const menuItems = [
         {
             key: 'rename',
             icon: '✏️',
             label: t('session.rename') || 'Rename',
-            action: () => handleAction('rename'),
-            shortcut: 'F2'
+            action: () => handleAction('rename')
         },
         {
             key: 'pin',
             icon: session.isPinned ? '📌' : '📌',
             label: session.isPinned ? (t('session.unpin') || 'Unpin') : (t('session.pin') || 'Pin'),
-            action: () => handleAction(session.isPinned ? 'unpin' : 'pin'),
-            shortcut: 'Ctrl+P'
+            action: () => handleAction(session.isPinned ? 'unpin' : 'pin')
         },
         {
             key: 'duplicate',
             icon: '📋',
             label: t('session.duplicate') || 'Duplicate',
-            action: () => handleAction('duplicate'),
-            shortcut: 'Ctrl+D'
+            action: () => handleAction('duplicate')
         },
         {
             key: 'export',
             icon: '📤',
             label: t('session.export') || 'Export',
-            action: () => handleAction('export'),
-            shortcut: 'Ctrl+E'
+            action: () => handleAction('export')
         },
         { key: 'divider' },
         {
@@ -165,8 +162,7 @@ const SessionContextMenu: React.FC<SessionContextMenuProps> = ({
             icon: '🗑️',
             label: t('session.delete') || 'Delete',
             action: () => handleAction('delete'),
-            danger: true,
-            shortcut: 'Del'
+            danger: true
         }
     ]
 
@@ -179,10 +175,10 @@ const SessionContextMenu: React.FC<SessionContextMenuProps> = ({
                 aria-hidden="true"
             />
 
-            {/* Context menu with optimized positioning and styling */}
+            {/* Context menu with compact design */}
             <div
                 ref={menuRef}
-                className="fixed z-[9998] bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200/80 dark:border-slate-700/80 rounded-xl shadow-2xl shadow-black/10 dark:shadow-black/25 min-w-64 max-w-80 overflow-hidden animate-menu-slide-in"
+                className="fixed z-[9998] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/80 dark:border-slate-700/80 rounded-lg shadow-lg shadow-black/10 dark:shadow-black/20 min-w-48 max-w-64 overflow-hidden animate-menu-slide-in"
                 style={{
                     left: adjustedPosition.x,
                     top: adjustedPosition.y,
@@ -192,33 +188,21 @@ const SessionContextMenu: React.FC<SessionContextMenuProps> = ({
                 onKeyDown={handleKeyDown}
                 tabIndex={-1}
             >
-                {/* Session header with improved visual hierarchy */}
-                <div className="px-4 py-3 border-b border-slate-200/60 dark:border-slate-700/60 bg-slate-50/50 dark:bg-slate-800/50">
-                    <div className="flex flex-col gap-1">
-                        <div className="font-semibold text-slate-900 dark:text-slate-100 text-sm leading-snug whitespace-nowrap overflow-hidden text-ellipsis">
-                            {session.title || t('session.untitled') || 'Untitled Session'}
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
-                            <span className="uppercase font-medium tracking-wide">
-                                {session.type === 'GROUP' ? (t('session.groupChat') || 'Group Chat') : (t('session.directChat') || 'Direct Chat')}
-                            </span>
-                            {session.isPinned && (
-                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded-full text-xs font-medium">
-                                    📌 {t('session.pinned') || 'Pinned'}
-                                </span>
-                            )}
-                        </div>
+                {/* Compact session header */}
+                <div className="px-3 py-2 border-b border-slate-200/60 dark:border-slate-700/60 bg-slate-50/50 dark:bg-slate-800/50">
+                    <div className="font-medium text-slate-900 dark:text-slate-100 text-sm leading-tight whitespace-nowrap overflow-hidden text-ellipsis">
+                        {session.title || t('session.untitled') || 'Untitled Session'}
                     </div>
                 </div>
 
-                {/* Menu items with enhanced interaction design */}
+                {/* Menu items with reduced padding */}
                 <div className="py-1" role="none">
                     {menuItems.map((item, index) => {
                         if (item.key === 'divider') {
                             return (
                                 <div
                                     key={`divider-${index}`}
-                                    className="h-px bg-slate-200/60 dark:bg-slate-700/60 my-1 mx-2"
+                                    className="h-px bg-slate-200/60 dark:bg-slate-700/60 my-1"
                                     role="separator"
                                 />
                             )
@@ -228,48 +212,22 @@ const SessionContextMenu: React.FC<SessionContextMenuProps> = ({
                             <button
                                 key={item.key}
                                 onClick={item.action}
-                                className={`w-full flex items-center gap-3 px-4 py-2.5 border-none bg-none cursor-pointer transition-all duration-200 text-sm text-left group hover:bg-slate-100/80 dark:hover:bg-slate-800/60 focus:bg-slate-100/80 dark:focus:bg-slate-800/60 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 ${item.danger
+                                className={`w-full flex items-center gap-2.5 px-3 py-1.5 border-none bg-none cursor-pointer transition-all duration-150 text-sm text-left group hover:bg-slate-100/80 dark:hover:bg-slate-800/60 focus:bg-slate-100/80 dark:focus:bg-slate-800/60 focus:outline-none ${item.danger
                                     ? 'text-red-600 dark:text-red-400 hover:bg-red-50/80 dark:hover:bg-red-900/20 focus:bg-red-50/80 dark:focus:bg-red-900/20'
-                                    : 'text-slate-900 dark:text-slate-100'
+                                    : 'text-slate-700 dark:text-slate-200'
                                     }`}
                                 role="menuitem"
-                                aria-label={`${item.label}${item.shortcut ? ` (${item.shortcut})` : ''}`}
+                                aria-label={item.label}
                             >
-                                <span className="text-base flex-shrink-0 w-5 text-center group-hover:scale-110 transition-transform duration-200">
+                                <span className="text-sm flex-shrink-0 w-4 text-center opacity-80 group-hover:opacity-100 transition-opacity">
                                     {item.icon}
                                 </span>
-                                <div className="flex-1 flex items-center justify-between">
-                                    <span className="font-medium leading-tight">
-                                        {item.label}
-                                    </span>
-                                    {item.shortcut && (
-                                        <span className="text-xs text-slate-500 dark:text-slate-400 font-mono bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
-                                            {item.shortcut}
-                                        </span>
-                                    )}
-                                </div>
+                                <span className="font-medium leading-tight">
+                                    {item.label}
+                                </span>
                             </button>
                         )
                     })}
-                </div>
-
-                {/* Enhanced session metadata footer */}
-                <div className="px-4 py-3 border-t border-slate-200/60 dark:border-slate-700/60 bg-slate-50/50 dark:bg-slate-800/50">
-                    <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
-                        <div className="flex items-center gap-3">
-                            <span className="flex items-center gap-1.5">
-                                <span className="text-indigo-500">👥</span>
-                                {session.participants.filter(p => p.type === 'agent').length} {t('session.agentsCount') || 'agents'}
-                            </span>
-                            <span className="flex items-center gap-1.5">
-                                <span className="text-green-500">💬</span>
-                                {session.messageCount} {t('session.messagesCount') || 'messages'}
-                            </span>
-                        </div>
-                        <div className="text-slate-500 dark:text-slate-400">
-                            {new Date(session.updatedAt).toLocaleDateString()}
-                        </div>
-                    </div>
                 </div>
             </div>
         </>
