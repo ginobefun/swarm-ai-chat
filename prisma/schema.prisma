@@ -159,6 +159,7 @@ model SwarmChatSession {
   updatedAt      DateTime                      @default(now()) @updatedAt @map("updated_at")
   messages       SwarmChatMessage[]
   participants   SwarmChatSessionParticipant[]
+  results        SwarmChatResult[]
   createdBy      SwarmUser                     @relation(fields: [createdById], references: [id])
   primaryAgent   SwarmAIAgent?                 @relation(fields: [primaryAgentId], references: [id])
 
@@ -200,6 +201,19 @@ model SwarmChatMessage {
   session         SwarmChatSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@map("swarm_chat_messages")
+}
+
+model SwarmChatResult {
+  id        String           @id @default(uuid()) @db.Uuid
+  sessionId String           @map("session_id") @db.Uuid
+  turnIndex Int              @map("turn_index")
+  stateBlob Json             @map("state_blob")
+  summary   String?
+  createdAt DateTime         @default(now()) @map("created_at")
+  session   SwarmChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@map("swarm_chat_results")
 }
 
 model User {
