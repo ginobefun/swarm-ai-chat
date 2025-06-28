@@ -5,6 +5,7 @@
 import { ChatOpenAI } from '@langchain/openai'
 import { SystemMessage } from '@langchain/core/messages'
 import { nanoid } from 'nanoid'
+import { extractJSONFromResponse } from '@/utils'
 import type { OrchestratorState, Task, ModeratorContext, TaskPlan, GraphEvent } from '../types'
 
 const moderatorModel = new ChatOpenAI({
@@ -198,7 +199,7 @@ Respond in JSON format:
         ])
 
         try {
-            const plan: TaskPlan = JSON.parse(response.content as string)
+            const plan: TaskPlan = extractJSONFromResponse<TaskPlan>(response.content as string)
 
             // Convert plan to actual tasks
             const tasks: Task[] = plan.tasks.map((taskDef) => ({

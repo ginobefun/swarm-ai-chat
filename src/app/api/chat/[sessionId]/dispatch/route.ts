@@ -212,12 +212,10 @@ export async function POST(
             costUSD: finalState.costUSD
         })
 
-        // Save results
-        if (finalState.summary || finalState.shouldClarify) {
-            console.log('💾 Saving orchestrator result...')
-            await saveOrchestratorResult(finalState)
-            console.log('✅ Orchestrator result saved')
-        }
+        // Always save orchestrator state for progress tracking
+        console.log('💾 Saving orchestrator result...')
+        await saveOrchestratorResult(finalState)
+        console.log('✅ Orchestrator result saved')
 
         // Save AI messages to database
         if (finalState.shouldClarify) {
