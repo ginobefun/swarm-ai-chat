@@ -68,7 +68,7 @@ export const metadata: Metadata = {
     openGraph: {
         type: "website",
         locale: "en_US", // Default to English for international users
-        alternateLocale: ["zh_CN", "ja_JP", "ko_KR"], // Support for Asian markets
+        alternateLocale: ["zh_CN"],
         url: "https://swarm-ai.chat",
         siteName: "SwarmAI.chat",
         title: "SwarmAI.chat - AI Collaboration Platform",
@@ -142,8 +142,6 @@ export default function RootLayout({
         <html lang="en" suppressHydrationWarning>
             <body
                 className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-                // Suppress hydration warnings for theme switching
-                suppressHydrationWarning
             >
                 {/* Theme provider must wrap everything for proper dark mode support */}
                 <ThemeProvider>

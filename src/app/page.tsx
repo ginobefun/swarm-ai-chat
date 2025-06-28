@@ -41,7 +41,7 @@ export default function Home() {
 
     // UI state management for responsive design
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)    // Mobile sidebar visibility
-    const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(true) // Workspace panel visibility
+    const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false) // Workspace panel visibility
 
     // Determine if we should show the welcome guide
     const shouldShowWelcomeGuide = !authPending && (!user?.id || !currentSession)
@@ -58,13 +58,6 @@ export default function Home() {
             // Mobile: sidebar should be closed by default
             if (width >= 768) {
                 setIsSidebarOpen(false) // Reset mobile sidebar state on larger screens
-            }
-
-            // Desktop: workspace should be visible by default
-            if (width >= 1024) {
-                setIsWorkspaceOpen(true) // Show workspace on desktop
-            } else {
-                setIsWorkspaceOpen(false) // Hide workspace on tablets and mobile
             }
         }
 
@@ -88,23 +81,8 @@ export default function Home() {
         // On mobile, close sidebar after selecting a session for better UX
         if (window.innerWidth < 768) {
             setIsSidebarOpen(false)
+            setIsWorkspaceOpen(false)
         }
-    }
-
-    /**
-     * Toggle mobile sidebar visibility
-     * Used primarily for mobile navigation
-     */
-    const toggleSidebar = () => {
-        setIsSidebarOpen(!isSidebarOpen)
-    }
-
-    /**
-     * Toggle workspace panel visibility
-     * Allows users to hide/show the workspace panel for more chat space
-     */
-    const toggleWorkspace = () => {
-        setIsWorkspaceOpen(!isWorkspaceOpen)
     }
 
     /**
@@ -118,6 +96,7 @@ export default function Home() {
         // For now, we'll automatically close sidebar on mobile after creating
         if (window.innerWidth < 768) {
             setIsSidebarOpen(false)
+            setIsWorkspaceOpen(false)
         }
     }
 
@@ -136,12 +115,7 @@ export default function Home() {
                 Navigation bar with responsive controls
                 Provides access to sidebar and workspace toggles on mobile 
             */}
-            <Navbar
-                onToggleSidebar={toggleSidebar}
-                onToggleWorkspace={toggleWorkspace}
-                isSidebarOpen={isSidebarOpen}
-                isWorkspaceOpen={isWorkspaceOpen}
-            />
+            <Navbar />
 
             {/* Main content area with proper top spacing to avoid navbar overlap */}
             <div className="flex flex-1 overflow-hidden pt-14 sm:pt-16">

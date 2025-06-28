@@ -40,8 +40,8 @@ export const LanguageToggle: React.FC<LanguageToggleProps> = ({ className = '' }
                 title={t('navbar.language')}
             >
                 <span className="text-base">{currentLang.flag}</span>
-                <span className="font-medium hidden md:inline">{currentLang.label}</span>
-                <span className={`text-xs text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>▼</span>
+                <span className="font-medium inline">{currentLang.label}</span>
+                <span className={`text-sm text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>▼</span>
             </button>
 
             {isOpen && (
@@ -50,9 +50,9 @@ export const LanguageToggle: React.FC<LanguageToggleProps> = ({ className = '' }
                         <button
                             key={lang.key}
                             onClick={() => handleLanguageChange(lang.key)}
-                            className={`flex items-center gap-3 w-full px-4 py-3 text-sm text-left transition-colors duration-200 hover:bg-slate-50 dark:hover:bg-slate-700 ${locale === lang.key
-                                ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                                : 'text-slate-700 dark:text-slate-200'
+                            className={`flex items-center gap-3 w-full px-4 py-3 text-sm text-left transition-colors duration-200 ${locale === lang.key
+                                ? 'bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-700'
+                                : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700'
                                 }`}
                         >
                             <span className="text-base">{lang.flag}</span>

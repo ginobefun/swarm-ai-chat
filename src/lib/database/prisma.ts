@@ -7,7 +7,7 @@ declare global {
 
 // 创建 Prisma 客户端实例
 export const prisma = global.__prisma || new PrismaClient({
-    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+    log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
 })
 
 // 在开发环境中保持全局实例，避免热重载时创建多个连接

@@ -10,11 +10,10 @@ interface ThemeProviderProps {
 export function ThemeProvider({ children }: ThemeProviderProps) {
     return (
         <NextThemesProvider
-            attribute="data-theme"
-            defaultTheme="system"
-            enableSystem={true}
-            themes={['light', 'dark', 'system']}
-            disableTransitionOnChange={false}
+            attribute="class"
+            defaultTheme="light"
+            enableSystem={false}
+            disableTransitionOnChange
         >
             {children}
         </NextThemesProvider>

@@ -100,12 +100,12 @@ const WelcomeGuide: React.FC<WelcomeGuideProps> = ({
     ]
 
     return (
-        <div className="h-full relative overflow-hidden bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 dark:from-gray-950 dark:via-gray-900 dark:to-indigo-950/20">
+        <div className="h-full relative overflow-hidden bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950/30">
             {/* 动态背景效果 */}
             <div className="absolute inset-0">
-                <div className="absolute top-20 left-20 w-72 h-72 bg-blue-200 dark:bg-blue-900/20 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-3xl opacity-30 animate-blob"></div>
-                <div className="absolute top-40 right-20 w-72 h-72 bg-purple-200 dark:bg-purple-900/20 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-3xl opacity-30 animate-blob-delay-2"></div>
-                <div className="absolute bottom-20 left-1/2 w-72 h-72 bg-indigo-200 dark:bg-indigo-900/20 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-3xl opacity-30 animate-blob-delay-4"></div>
+                <div className="absolute top-20 left-20 w-72 h-72 bg-blue-200/40 dark:bg-blue-900/20 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-3xl opacity-30 animate-blob"></div>
+                <div className="absolute top-40 right-20 w-72 h-72 bg-purple-200/40 dark:bg-purple-900/20 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-3xl opacity-30 animate-blob-delay-2"></div>
+                <div className="absolute bottom-20 left-1/2 w-72 h-72 bg-indigo-200/40 dark:bg-indigo-900/20 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-3xl opacity-30 animate-blob-delay-4"></div>
             </div>
 
             {/* 主要内容区域，顶部预留空间与 SessionList 一致 */}
@@ -120,7 +120,7 @@ const WelcomeGuide: React.FC<WelcomeGuideProps> = ({
                     {/* 中心主体 */}
                     <div className="flex flex-col items-center">
                         <motion.div
-                            className="relative z-20 w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-xl flex items-center justify-center mb-8"
+                            className="relative z-20 w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 dark:from-indigo-600 dark:to-purple-700 shadow-xl flex items-center justify-center mb-8"
                             animate={{
                                 boxShadow: [
                                     "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
@@ -151,7 +151,7 @@ const WelcomeGuide: React.FC<WelcomeGuideProps> = ({
                                 >
                                     {/* AI 智能体图标 */}
                                     <motion.div
-                                        className={`w-14 h-14 rounded-xl bg-gradient-to-br ${agent.color} shadow-lg flex items-center justify-center cursor-pointer group mb-2`}
+                                        className={`w-14 h-14 rounded-xl bg-gradient-to-br ${agent.color} dark:shadow-lg shadow-md flex items-center justify-center cursor-pointer group mb-2`}
                                         whileHover={{ scale: 1.1, y: -2 }}
                                         animate={{
                                             y: [0, -5, 0],
@@ -170,7 +170,7 @@ const WelcomeGuide: React.FC<WelcomeGuideProps> = ({
 
                                     {/* 智能体名称 */}
                                     <div className="text-center">
-                                        <div className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                        <div className="text-xs font-medium text-gray-700 dark:text-gray-200 mb-1">
                                             {agent.name}
                                         </div>
                                         <div className="text-xs text-gray-500 dark:text-gray-400">
@@ -191,7 +191,7 @@ const WelcomeGuide: React.FC<WelcomeGuideProps> = ({
                     transition={{ delay: 0.3, duration: 0.8 }}
                 >
                     <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-                        {t('welcome.mainTitle').split('AI 团队')[0]} <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">AI 团队</span> {t('welcome.mainTitle').split('AI 团队')[1]}
+                        {t('welcome.mainTitle').split('AI 团队')[0]} <span className="bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">AI 团队</span> {t('welcome.mainTitle').split('AI 团队')[1]}
                     </h1>
 
                     <p className="text-xl text-gray-600 dark:text-gray-300 leading-relaxed">
@@ -209,7 +209,7 @@ const WelcomeGuide: React.FC<WelcomeGuideProps> = ({
                     <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                         <Button
                             size="lg"
-                            className="h-14 px-8 text-lg font-semibold bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200"
+                            className="h-14 px-8 text-lg font-semibold bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 dark:from-indigo-500 dark:to-purple-600 dark:hover:from-indigo-600 dark:hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
                             onClick={() => {
                                 if (onCreateSession) {
                                     onCreateSession()
@@ -229,7 +229,7 @@ const WelcomeGuide: React.FC<WelcomeGuideProps> = ({
                         <Button
                             size="lg"
                             variant="outline"
-                            className="!h-14 px-8 text-lg font-medium border-2 hover:bg-gray-50 dark:hover:bg-gray-800"
+                            className="!h-14 px-8 text-lg font-medium border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
                             onClick={() => {
                                 if (onExploreAgents) {
                                     onExploreAgents()
@@ -278,9 +278,9 @@ const WelcomeGuide: React.FC<WelcomeGuideProps> = ({
                             transition={{ delay: 0.9 + index * 0.1, duration: 0.5 }}
                             whileHover={{ y: -4 }}
                         >
-                            <Card className="h-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-gray-200/50 dark:border-gray-700/50 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 group">
+                            <Card className="h-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border-gray-200/60 dark:border-gray-700/60 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 group shadow-lg dark:shadow-gray-900/20">
                                 <CardContent className="p-6">
-                                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-200`}>
+                                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-200 shadow-md dark:shadow-lg`}>
                                         <feature.icon className="w-6 h-6 text-white" />
                                     </div>
                                     <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
@@ -295,8 +295,6 @@ const WelcomeGuide: React.FC<WelcomeGuideProps> = ({
                     ))}
                 </motion.div>
             </div>
-
-
         </div>
     )
 }
