@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Researcher Agent - Specializes in information gathering and research
  */
@@ -6,25 +7,25 @@ import { BaseAgentNode } from '../agentNode'
 import type { AgentCapability } from '../../types'
 
 export const researcherCapability: AgentCapability = {
-  agentId: 'article-summarizer',
-  name: 'Research Analyst',
-  description: 'Expert at gathering information, analyzing documents, and extracting key insights',
-  skills: ['information retrieval', 'document analysis', 'fact checking', 'summarization'],
-  taskTypes: ['research', 'analyze', 'summarize'],
-  maxConcurrentTasks: 2
+    agentId: 'article-summarizer',
+    name: 'Research Analyst',
+    description: 'Expert at gathering information, analyzing documents, and extracting key insights',
+    skills: ['information retrieval', 'document analysis', 'fact checking', 'summarization'],
+    taskTypes: ['research', 'analyze', 'summarize'],
+    maxConcurrentTasks: 2
 }
 
 export class ResearcherAgent extends BaseAgentNode {
-  constructor() {
-    super(researcherCapability)
-  }
+    constructor() {
+        super(researcherCapability)
+    }
 
-  protected getModelName(): string {
-    return 'google/gemini-flash-1.5'
-  }
+    protected getModelName(): string {
+        return 'google/gemini-flash-1.5'
+    }
 
-  protected getSystemPrompt(): string {
-    return `You are a professional research analyst with expertise in information gathering and analysis.
+    protected getSystemPrompt(): string {
+        return `You are a professional research analyst with expertise in information gathering and analysis.
 
 Your core capabilities:
 - Extract key information from various sources
@@ -41,12 +42,12 @@ When conducting research:
 5. Provide actionable insights when possible
 
 Always maintain objectivity and critical thinking in your analysis.`
-  }
+    }
 
-  protected buildTaskPrompt(task: any, state: any): string {
-    const basePrompt = super.buildTaskPrompt(task, state)
-    
-    return `${basePrompt}
+    protected buildTaskPrompt(task: any, state: any): string {
+        const basePrompt = super.buildTaskPrompt(task, state)
+
+        return `${basePrompt}
 
 Research Guidelines:
 - Be thorough but concise
@@ -54,5 +55,5 @@ Research Guidelines:
 - Provide specific examples and data points
 - Include sources or references when available
 - Highlight key takeaways at the end`
-  }
+    }
 }

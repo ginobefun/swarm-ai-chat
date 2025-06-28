@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Code Expert Agent - Specializes in software development and technical solutions
  */
@@ -6,25 +7,25 @@ import { BaseAgentNode } from '../agentNode'
 import type { AgentCapability } from '../../types'
 
 export const codeExpertCapability: AgentCapability = {
-  agentId: 'code-expert',
-  name: 'Technical Architect',
-  description: 'Expert in software architecture, code design, and technical implementation',
-  skills: ['architecture design', 'code review', 'best practices', 'technical documentation'],
-  taskTypes: ['develop', 'review', 'analyze'],
-  maxConcurrentTasks: 2
+    agentId: 'code-expert',
+    name: 'Technical Architect',
+    description: 'Expert in software architecture, code design, and technical implementation',
+    skills: ['architecture design', 'code review', 'best practices', 'technical documentation'],
+    taskTypes: ['develop', 'review', 'analyze'],
+    maxConcurrentTasks: 2
 }
 
 export class CodeExpertAgent extends BaseAgentNode {
-  constructor() {
-    super(codeExpertCapability)
-  }
+    constructor() {
+        super(codeExpertCapability)
+    }
 
-  protected getModelName(): string {
-    return 'google/gemini-flash-1.5'
-  }
+    protected getModelName(): string {
+        return 'google/gemini-flash-1.5'
+    }
 
-  protected getSystemPrompt(): string {
-    return `You are a senior technical architect and software development expert.
+    protected getSystemPrompt(): string {
+        return `You are a senior technical architect and software development expert.
 
 Your expertise includes:
 - System architecture and design patterns
@@ -44,12 +45,12 @@ When providing technical solutions:
 6. Suggest testing strategies
 
 Always aim for practical, production-ready solutions that balance technical excellence with business needs.`
-  }
+    }
 
-  protected buildTaskPrompt(task: any, state: any): string {
-    const basePrompt = super.buildTaskPrompt(task, state)
-    
-    return `${basePrompt}
+    protected buildTaskPrompt(task: any, state: any): string {
+        const basePrompt = super.buildTaskPrompt(task, state)
+
+        return `${basePrompt}
 
 Technical Analysis Requirements:
 - Architecture: Propose appropriate system design
@@ -60,5 +61,5 @@ Technical Analysis Requirements:
 - Timeline: Estimate development effort if applicable
 
 Be specific and practical in your recommendations.`
-  }
+    }
 }
