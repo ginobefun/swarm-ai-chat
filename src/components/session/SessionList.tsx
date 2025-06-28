@@ -8,7 +8,7 @@ import { LoginDialog } from '@/components/auth/LoginDialog'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import SessionItem from './SessionItem'
-import SessionContextMenu from './SessionContextMenu'
+
 import CreateSessionDialog from './CreateSessionDialog'
 import ConfirmDialog from './ConfirmDialog'
 import InlineRenameInput from './InlineRenameInput'
@@ -77,16 +77,7 @@ const SessionList: React.FC<SessionListProps> = (props) => {
     // Filtered and sorted sessions (pinned first, then by update time)
     const [filteredSessions, setFilteredSessions] = useState<Session[]>([])
 
-    // Context menu state for right-click operations
-    const [contextMenu, setContextMenu] = useState<{
-        session: Session | null
-        position: { x: number; y: number }
-        isOpen: boolean
-    }>({
-        session: null,
-        position: { x: 0, y: 0 },
-        isOpen: false
-    })
+
 
     // Create session dialog state
     const [createDialog, setCreateDialog] = useState({
@@ -175,34 +166,17 @@ const SessionList: React.FC<SessionListProps> = (props) => {
         setFilteredSessions(sorted)
     }, [sessions, searchQuery])
 
-    /**
-     * Handle context menu display for session operations
-     * Shows context menu at cursor position with session-specific actions
-     * 
-     * @param e - React mouse event containing cursor position
-     * @param session - Session object for which to show context menu
-     */
-    const handleContextMenu = (e: React.MouseEvent, session: Session) => {
-        e.preventDefault()
-        setContextMenu({
-            session,
-            position: { x: e.clientX, y: e.clientY },
-            isOpen: true
-        })
-    }
+
 
     /**
-     * Process context menu actions with proper error handling
+     * Process session actions with proper error handling
      * Handles: rename, pin/unpin, archive, delete, duplicate operations
      * 
+     * @param session - The session to perform action on
      * @param action - The session action to perform
      */
-    const handleSessionAction = async (action: SessionAction) => {
-        if (!contextMenu.session) return
-
+    const handleSessionAction = async (session: Session, action: SessionAction) => {
         try {
-            const session = contextMenu.session
-
             switch (action) {
                 case 'rename':
                     setRenameDialog({
@@ -248,9 +222,6 @@ const SessionList: React.FC<SessionListProps> = (props) => {
             console.error('Error handling session action:', error)
             // TODO: Replace alert with toast notification system
             alert(t('session.operationFailed') + ', ' + t('session.retryLater'))
-        } finally {
-            // Close context menu after action
-            setContextMenu(prev => ({ ...prev, isOpen: false }))
         }
     }
 
@@ -569,7 +540,7 @@ const SessionList: React.FC<SessionListProps> = (props) => {
                             session={session}
                             isActive={session.id === currentSessionId}
                             onClick={() => onSelectSession(session.id)}
-                            onContextMenu={(e) => handleContextMenu(e, session)}
+                            onAction={(action) => handleSessionAction(session, action)}
                         />
                     ))}
 
@@ -603,16 +574,7 @@ const SessionList: React.FC<SessionListProps> = (props) => {
                 </div>
             </div>
 
-            {/* Context Menu for Session Operations */}
-            {contextMenu.session && (
-                <SessionContextMenu
-                    session={contextMenu.session}
-                    isOpen={contextMenu.isOpen}
-                    position={contextMenu.position}
-                    onClose={() => setContextMenu(prev => ({ ...prev, isOpen: false }))}
-                    onAction={handleSessionAction}
-                />
-            )}
+
 
             {/* Create Session Dialog */}
             <CreateSessionDialog
