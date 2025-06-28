@@ -167,7 +167,7 @@ const SessionList: React.FC<SessionListProps> = (props) => {
             // Pinned sessions always come first
             if (a.isPinned && !b.isPinned) return -1
             if (!a.isPinned && b.isPinned) return 1
-            
+
             // Then sort by update time
             return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
         })
@@ -519,12 +519,13 @@ const SessionList: React.FC<SessionListProps> = (props) => {
                 {/* 
                     Search and Create Controls - WeChat Style
                     Long search bar with icon-only create button
+                    Height: Mobile 60px (py-3 + h-9 = 12px + 36px + 12px), Desktop 64px (py-3 + h-10 = 12px + 40px + 12px) - matches ChatArea header
                 */}
-                <div className="p-3 border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+                <div className="px-4 sm:px-6 py-3 border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
                     <div className="flex gap-2 items-center">
                         <div className="relative flex-1">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <svg className="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none">
+                                <svg className="h-4 w-4 sm:h-5 sm:w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                 </svg>
                             </div>
@@ -533,7 +534,7 @@ const SessionList: React.FC<SessionListProps> = (props) => {
                                 placeholder={t('session.searchSessions')}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-9 h-9 bg-slate-100 dark:bg-slate-800 border-transparent hover:bg-slate-200 dark:hover:bg-slate-700 focus:bg-white dark:focus:bg-slate-900 focus:border-slate-300 dark:focus:border-slate-600 transition-all duration-200"
+                                className="pl-9 sm:pl-11 h-9 sm:h-10 bg-slate-100 dark:bg-slate-800 border-transparent hover:bg-slate-200 dark:hover:bg-slate-700 focus:bg-white dark:focus:bg-slate-900 focus:border-slate-300 dark:focus:border-slate-600 transition-all duration-200"
                                 aria-label="Search sessions by title or content"
                                 autoComplete="off"
                                 spellCheck="false"
@@ -542,11 +543,11 @@ const SessionList: React.FC<SessionListProps> = (props) => {
 
                         <Button
                             size="icon"
-                            className="h-9 w-9 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm hover:shadow-md transition-all duration-200"
+                            className="h-9 w-9 sm:h-10 sm:w-10 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm hover:shadow-md transition-all duration-200"
                             onClick={() => setCreateDialog(prev => ({ ...prev, isOpen: true }))}
                             aria-label="Create a new session"
                         >
-                            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                             </svg>
                         </Button>
