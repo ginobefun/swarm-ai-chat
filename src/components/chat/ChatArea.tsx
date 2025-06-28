@@ -8,7 +8,7 @@ import { Session, Message } from '@/types'
 import { useTranslation } from '@/contexts/AppContext'
 import AddAgentDialog from './AddAgentDialog'
 import ChatSettingsDialog from './ChatSettingsDialog'
-import { useSession } from '@/components/providers/AuthProvider'
+
 import WorkspacePanel from '@/components/workspace/WorkspacePanel'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -19,42 +19,43 @@ import {
     Users,
     Bot
 } from 'lucide-react'
+import { aiAgents } from '@/constants/agents'
+import { ChatRequestData, OrchestratorResponse } from '@/types/chat'
+
+// Helper functions to get agent information
+const getAgentName = (agentId: string): string => {
+    const agent = aiAgents.find(a => a.id === agentId)
+    if (agent) return agent.name
+
+    const agentNames: Record<string, string> = {
+        'gemini-flash': 'Gemini Flash',
+        'gpt-4o': 'GPT-4o',
+        'claude-sonnet': 'Claude Sonnet',
+        'llama-3': 'Llama 3',
+        'qwen-coder': 'Qwen Coder'
+    }
+    return agentNames[agentId] || 'AI Assistant'
+}
+
+const getAgentAvatar = (agentId: string): string => {
+    const agent = aiAgents.find(a => a.id === agentId)
+    if (agent) return agent.avatar
+
+    const agentAvatars: Record<string, string> = {
+        'gemini-flash': '⚡',
+        'gpt-4o': '🤖',
+        'claude-sonnet': '🎭',
+        'llama-3': '🦙',
+        'qwen-coder': '💻'
+    }
+    return agentAvatars[agentId] || '🤖'
+}
 
 interface ChatAreaProps {
     session: Session | null
     onSessionUpdate?: (sessionId: string, updates: Partial<Session>) => void
     isWorkspaceOpen?: boolean
     onWorkspaceToggle?: (isOpen: boolean) => void
-}
-
-// Orchestrator response interface
-interface OrchestratorResponse {
-    success: boolean
-    turnIndex: number
-    shouldClarify?: boolean
-    clarificationQuestion?: string
-    summary?: string
-    events: Array<{
-        id: string
-        type: string
-        timestamp: string | Date
-        content?: string
-        agentId?: string
-    }>
-    tasks: Array<{
-        id: string
-        title: string
-        description: string
-        assignedTo: string
-        status: 'pending' | 'in_progress' | 'completed' | 'failed'
-        priority: string
-    }>
-    results: Array<{
-        taskId: string
-        agentId: string
-        content: string
-    }>
-    costUSD: number
 }
 
 /**
@@ -75,11 +76,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 }) => {
     const { t } = useTranslation()
 
-    // Get user authentication state
-    const { data: sessionData } = useSession()
-    const user = sessionData?.user
-    const currentUserId = user?.id
-
     // Dialog states
     const [showAddAgentDialog, setShowAddAgentDialog] = useState(false)
     const [showSettingsDialog, setShowSettingsDialog] = useState(false)
@@ -92,52 +88,16 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     const agentParticipants = session?.participants?.filter(p => p.type === 'agent') || []
     const isMultiAgentSession = agentParticipants.length > 1
 
-    // Get agent information functions
-    const getAgentName = useCallback((agentId: string): string => {
-        const agentNames: Record<string, string> = {
-            'gemini-flash': 'Gemini Flash',
-            'article-summarizer': '文章摘要师',
-            'critical-thinker': '批判性思考者',
-            'creative-writer': '创意作家',
-            'data-scientist': '数据科学家',
-            'code-expert': '代码专家',
-            'general-assistant': '通用助手',
-            'education-tutor': '教育导师',
-            'researcher': '研究专家'
-        }
-        return agentNames[agentId] || 'AI Assistant'
-    }, [])
-
-    const getAgentAvatar = useCallback((agentId: string): string => {
-        const agentAvatars: Record<string, string> = {
-            'gemini-flash': '⚡',
-            'article-summarizer': '📝',
-            'critical-thinker': '🤔',
-            'creative-writer': '✍️',
-            'data-scientist': '📊',
-            'code-expert': '💻',
-            'general-assistant': '🤖',
-            'education-tutor': '👨‍🏫',
-            'researcher': '🔬'
-        }
-        return agentAvatars[agentId] || '🤖'
-    }, [])
-
-    // Unified chat using Vercel AI SDK with custom body
+    // Initialize unified chat
     const {
         messages,
+        append,
+        setMessages,
         isLoading,
         error,
-        setMessages,
-        append
+        data
     } = useChat({
         api: '/api/chat',
-        body: {
-            sessionId: session?.id,
-            userId: currentUserId,
-            agentId: session?.primaryAgentId || 'gemini-flash',
-            confirmedIntent: confirmedIntent || undefined
-        },
         onError: (error) => {
             console.error('🔴 Chat error:', error)
         },
@@ -145,60 +105,12 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             console.log('✅ Chat response finished:', {
                 finishReason,
                 usage,
-                messageContentType: typeof message.content,
-                messageContentLength: message.content?.length,
-                messageContentPreview: message.content?.substring(0, 200)
+                messageLength: message.content?.length
             })
 
-            // Check if this was an orchestrator response
-            try {
-                console.log('🔍 Attempting to parse orchestrator response from content:', {
-                    contentLength: message.content.length,
-                    startsWithBrace: message.content.startsWith('{'),
-                    endsWithBrace: message.content.endsWith('}'),
-                    preview: message.content.substring(0, 100)
-                })
-
-                const possibleOrchestratorResponse = JSON.parse(message.content)
-
-                console.log('✅ JSON parsing successful:', {
-                    hasSuccess: 'success' in possibleOrchestratorResponse,
-                    successValue: possibleOrchestratorResponse.success,
-                    responseKeys: Object.keys(possibleOrchestratorResponse),
-                    turnIndex: possibleOrchestratorResponse.turnIndex
-                })
-
-                if (possibleOrchestratorResponse.success !== undefined) {
-                    // This is an orchestrator response
-                    console.log('🤖 Confirmed orchestrator response, updating state:', {
-                        turnIndex: possibleOrchestratorResponse.turnIndex,
-                        shouldClarify: possibleOrchestratorResponse.shouldClarify,
-                        hasQuestion: !!possibleOrchestratorResponse.clarificationQuestion,
-                        tasksCount: possibleOrchestratorResponse.tasks?.length || 0,
-                        resultsCount: possibleOrchestratorResponse.results?.length || 0
-                    })
-
-                    setOrchestratorResponse(possibleOrchestratorResponse)
-
-                    // Reload messages to show collaboration results
-                    console.log('🔄 Reloading messages to display collaboration results')
-                    reloadMessages()
-                    return
-                } else {
-                    console.log('📝 Parsed JSON but no success field, treating as regular response')
-                }
-            } catch (parseError) {
-                console.log('📝 JSON parsing failed, treating as regular streaming response:', {
-                    error: (parseError as Error).message,
-                    contentType: typeof message.content,
-                    isString: typeof message.content === 'string',
-                    contentStart: message.content?.substring(0, 50)
-                })
-            }
-
-            // Update session message count for regular responses
+            // For single-agent mode, update session message count
             if (session && onSessionUpdate) {
-                console.log('📊 Updating session message count for regular response')
+                console.log('📊 Updating session message count for response')
                 onSessionUpdate(session.id, {
                     messageCount: (session.messageCount || 0) + 2
                 })
@@ -244,25 +156,56 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         }
     }, [session?.id, setMessages])
 
+    // Monitor data changes for orchestrator responses
+    useEffect(() => {
+        if (data && data.length > 0) {
+            const latestData = data[data.length - 1] as unknown as OrchestratorResponse
+            if (latestData?.type === 'orchestrator') {
+                console.log('🤖 Received orchestrator response via StreamData:', {
+                    turnIndex: latestData.turnIndex,
+                    shouldClarify: latestData.shouldClarify,
+                    hasQuestion: !!latestData.clarificationQuestion,
+                    tasksCount: latestData.tasks?.length || 0,
+                    resultsCount: latestData.results?.length || 0
+                })
+
+                setOrchestratorResponse(latestData)
+
+                // Reload messages to show collaboration results
+                console.log('🔄 Reloading messages to display collaboration results')
+                reloadMessages()
+            }
+        }
+    }, [data, reloadMessages])
+
     // Handle unified message sending
     const handleSendMessage = async (message: string) => {
-        if (!message.trim() || !currentUserId || isLoading) return
+        if (!message.trim() || !session?.id || isLoading) return
 
         console.log('📤 Sending unified message:', {
-            sessionId: session?.id,
+            sessionId: session.id,
             messageLength: message.length,
             agentParticipants: agentParticipants.length,
             isMultiAgentSession,
-            confirmedIntent: confirmedIntent || 'none'
+            confirmedIntent: confirmedIntent || 'auto'
         })
+
+        // Prepare request data
+        const requestData: ChatRequestData = {
+            sessionId: session.id,
+            mode: 'auto', // Let server decide based on session analysis
+            confirmedIntent: confirmedIntent || undefined
+        }
 
         // Clear confirmed intent after sending
         setConfirmedIntent('')
 
-        // Use the unified chat interface for both modes
+        // Use the unified chat interface with request data
         await append({
             role: 'user',
             content: message
+        }, {
+            data: JSON.parse(JSON.stringify(requestData))
         })
     }
 
@@ -375,6 +318,19 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                                 <Settings className="w-4 h-4" />
                             </Button>
                         </motion.div>
+                        {/* Workspace Toggle */}
+                        {isMultiAgentSession && (
+                            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                <Button
+                                    variant={isWorkspaceOpen ? "default" : "ghost"}
+                                    size="sm"
+                                    className="h-8 px-3 text-xs"
+                                    onClick={() => onWorkspaceToggle?.(!isWorkspaceOpen)}
+                                >
+                                    工作区
+                                </Button>
+                            </motion.div>
+                        )}
                     </div>
                 </header>
 
@@ -445,20 +401,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                     <div className="flex-shrink-0 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
                         <MessageInput
                             onSendMessage={handleSendMessage}
-                            mentionItems={agentParticipants.map(p => ({
-                                id: p.id,
-                                name: p.name,
-                                avatar: p.avatar || '🤖',
-                                type: 'agent' as const
-                            }))}
-                            disabled={isLoading || !currentUserId}
-                            placeholder={
-                                !currentUserId ? t('chat.loginToSendMessage') :
-                                    isLoading ? (isMultiAgentSession ? '智能体协作中...' : t('chat.aiThinking')) :
-                                        orchestratorResponse?.shouldClarify ? "回复上方的澄清问题..." :
-                                            isMultiAgentSession ? "描述你的任务，我们的智能体团队会协作完成..." :
-                                                t('chat.inputPlaceholder')
-                            }
+                            mentionItems={[]}
+                            disabled={isLoading}
+                            placeholder={t('chat.inputPlaceholder')}
                         />
                     </div>
                 </div>
@@ -483,7 +428,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             </main>
 
             {/* Workspace Panel - Integrated */}
-            {isWorkspaceOpen && (
+            {isMultiAgentSession && isWorkspaceOpen && (
                 <div className="hidden lg:flex w-[360px] min-w-[320px] max-w-[400px] border-l border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
                     <WorkspacePanel
                         session={session}
