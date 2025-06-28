@@ -34,7 +34,7 @@ interface SessionListProps {
  * Features:
  * - User authentication state awareness
  * - Beautiful login guidance for unauthenticated users
- * - Session grouping (pinned, recent, by AI agent)
+ * - Natural flat session list (WeChat-style)
  * - Search and filtering capabilities
  * - Context menu operations (rename, pin, delete, duplicate)
  * - Create new session dialog
@@ -74,16 +74,8 @@ const SessionList: React.FC<SessionListProps> = (props) => {
     // Local state for search
     const [searchQuery, setSearchQuery] = useState('')
 
-    // Organized session groups for different display sections
-    const [sessionGroups, setSessionGroups] = useState<{
-        pinned: Session[]
-        recent: Session[]
-        byAgent: Record<string, Session[]>
-    }>({
-        pinned: [],
-        recent: [],
-        byAgent: {}
-    })
+    // Filtered and sorted sessions (pinned first, then by update time)
+    const [filteredSessions, setFilteredSessions] = useState<Session[]>([])
 
     // Context menu state for right-click operations
     const [contextMenu, setContextMenu] = useState<{
@@ -150,14 +142,13 @@ const SessionList: React.FC<SessionListProps> = (props) => {
     }, [user?.id, authPending])
 
     /**
-     * Process and group sessions for organized display
-     * Groups sessions by: pinned status, recency, and associated AI agents
-     * Filters sessions based on search query
-     * Updates whenever the sessions array or search query changes
+     * Filter and sort sessions
+     * WeChat-style: pinned sessions first, then sorted by update time
+     * No grouping, just natural flat list
      */
     useEffect(() => {
         // Filter sessions based on search query
-        const filteredSessions = sessions.filter(session => {
+        const filtered = sessions.filter(session => {
             if (!searchQuery.trim()) return true
 
             const query = searchQuery.toLowerCase()
@@ -171,21 +162,17 @@ const SessionList: React.FC<SessionListProps> = (props) => {
             )
         })
 
-        const pinned = filteredSessions.filter(s => s.isPinned)
-        const recent = filteredSessions.filter(s => !s.isPinned)
-        const byAgent: Record<string, Session[]> = {}
-
-        // Group sessions by primary AI agent
-        filteredSessions.forEach(session => {
-            if (session.primaryAgentId) {
-                if (!byAgent[session.primaryAgentId]) {
-                    byAgent[session.primaryAgentId] = []
-                }
-                byAgent[session.primaryAgentId].push(session)
-            }
+        // Sort: pinned first, then by update time (newest first)
+        const sorted = [...filtered].sort((a, b) => {
+            // Pinned sessions always come first
+            if (a.isPinned && !b.isPinned) return -1
+            if (!a.isPinned && b.isPinned) return 1
+            
+            // Then sort by update time
+            return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
         })
 
-        setSessionGroups({ pinned, recent, byAgent })
+        setFilteredSessions(sorted)
     }, [sessions, searchQuery])
 
     /**
@@ -377,52 +364,6 @@ const SessionList: React.FC<SessionListProps> = (props) => {
     }
 
     /**
-     * Render a session group with header and session items
-     * Creates expandable/collapsible sections for different session types
-     * 
-     * @param title - Display title for the group
-     * @param icon - Emoji icon for the group
-     * @param sessions - Array of sessions in this group
-     * @returns JSX element for the session group or null if empty
-     */
-    const renderSessionGroup = (title: string, icon: string, sessions: Session[], groupKey?: string) => {
-        if (sessions.length === 0) return null
-
-        const uniqueKey = groupKey || title
-        const groupId = `group-${uniqueKey.toLowerCase().replace(/[^a-z0-9]/g, '-')}`
-
-        return (
-            <div key={uniqueKey} className="mb-5" role="group" aria-labelledby={groupId}>
-                <div
-                    id={groupId}
-                    className="flex items-center gap-2 px-3 py-2 mb-2 bg-slate-100/80 dark:bg-slate-800/80 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300 border border-slate-200/50 dark:border-slate-700/50"
-                >
-                    <span className="text-sm" aria-hidden="true">{icon}</span>
-                    <span className="flex-1">{title}</span>
-                    <span
-                        className="bg-slate-200/80 dark:bg-slate-700/80 px-1.5 py-0.5 rounded text-xs text-slate-600 dark:text-slate-400 border border-slate-300/50 dark:border-slate-600/50"
-                        aria-label={`${sessions.length} sessions`}
-                    >
-                        {sessions.length}
-                    </span>
-                </div>
-                <div className="flex flex-col gap-1" role="list">
-                    {sessions.map(session => (
-                        <div key={session.id} role="listitem">
-                            <SessionItem
-                                session={session}
-                                isActive={session.id === currentSessionId}
-                                onClick={() => onSelectSession(session.id)}
-                                onContextMenu={(e) => handleContextMenu(e, session)}
-                            />
-                        </div>
-                    ))}
-                </div>
-            </div>
-        )
-    }
-
-    /**
      * Handle successful login
      * Closes the login dialog and refreshes the session state
      */
@@ -574,80 +515,88 @@ const SessionList: React.FC<SessionListProps> = (props) => {
 
     return (
         <>
-            <div className="flex flex-col h-full bg-white dark:bg-slate-900">
+            <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-950">
                 {/* 
-                    Search and Create Controls
-                    Provides session search and new session creation
+                    Search and Create Controls - WeChat Style
+                    Long search bar with icon-only create button
                 */}
-                <div className="p-4 border-b border-slate-200 bg-slate-50/50 dark:border-slate-700 dark:bg-slate-800/50">
+                <div className="p-3 border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
                     <div className="flex gap-2 items-center">
-                        <Input
-                            type="search"
-                            placeholder={t('session.searchSessions')}
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="flex-1 bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400 focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-indigo-500 dark:focus:ring-indigo-400"
-                            aria-label="Search sessions by title or content"
-                            autoComplete="off"
-                            spellCheck="false"
-                        />
+                        <div className="relative flex-1">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg className="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                            </div>
+                            <Input
+                                type="search"
+                                placeholder={t('session.searchSessions')}
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="pl-9 h-9 bg-slate-100 dark:bg-slate-800 border-transparent hover:bg-slate-200 dark:hover:bg-slate-700 focus:bg-white dark:focus:bg-slate-900 focus:border-slate-300 dark:focus:border-slate-600 transition-all duration-200"
+                                aria-label="Search sessions by title or content"
+                                autoComplete="off"
+                                spellCheck="false"
+                            />
+                        </div>
 
                         <Button
-                            size="lg"
-                            className="h-10 px-6 text-base font-semibold bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:-translate-y-0.5 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800"
+                            size="icon"
+                            className="h-9 w-9 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm hover:shadow-md transition-all duration-200"
                             onClick={() => setCreateDialog(prev => ({ ...prev, isOpen: true }))}
                             aria-label="Create a new session"
                         >
-                            <span aria-hidden="true">➕</span> {t('session.createSession')}
+                            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
                         </Button>
                     </div>
                 </div>
 
                 {/* 
-                    Session List Content
-                    Organized into groups with scroll capability
+                    Session List Content - Flat list without grouping
+                    WeChat-style natural flow with pinned sessions first
                 */}
                 <div
-                    className="flex-1 overflow-y-auto p-4"
+                    className="flex-1 overflow-y-auto custom-scrollbar"
                     role="main"
                     aria-label="Session list"
                 >
-                    {sessionGroups?.pinned?.length > 0 && renderSessionGroup(
-                        t('session.pinnedSessions'),
-                        '📌',
-                        sessionGroups.pinned
-                    )}
-
-                    {sessionGroups?.recent?.length > 0 && renderSessionGroup(
-                        t('session.recentSessions'),
-                        '🕒',
-                        sessionGroups.recent
-                    )}
-
-                    {Object.keys(sessionGroups?.byAgent || {}).length > 0 && (
-                        <div className="agent-groups">
-                            {Object.entries(sessionGroups.byAgent).map(([agentId, agentSessions]) => {
-                                const agentName = agentSessions[0]?.participants
-                                    .find(p => p.type === 'agent' && p.id === agentId)?.name || t('session.unknownAgent') || 'Unknown Agent'
-                                return renderSessionGroup(
-                                    agentName,
-                                    '🤖',
-                                    agentSessions,
-                                    `agent-${agentId}` // 使用 agentId 作为唯一 key
-                                )
-                            })}
-                        </div>
-                    )}
+                    {filteredSessions.map(session => (
+                        <SessionItem
+                            key={session.id}
+                            session={session}
+                            isActive={session.id === currentSessionId}
+                            onClick={() => onSelectSession(session.id)}
+                            onContextMenu={(e) => handleContextMenu(e, session)}
+                        />
+                    ))}
 
                     {/* Empty state when no sessions exist */}
                     {sessions?.length === 0 && (
                         <div
-                            className="flex flex-col items-center justify-center p-10 text-center text-slate-600 dark:text-slate-400"
+                            className="flex flex-col items-center justify-center p-10 text-center text-slate-500 dark:text-slate-400"
                             role="status"
                         >
-                            <span className="text-5xl mb-3 opacity-50" aria-hidden="true">💬</span>
-                            <p className="mb-2">{t('session.noSessions') || 'No sessions yet'}</p>
-                            <p className="text-sm">{t('session.createFirstSession')}</p>
+                            <div className="w-16 h-16 mb-4 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                                <span className="text-3xl opacity-50" aria-hidden="true">💬</span>
+                            </div>
+                            <p className="mb-2 text-sm font-medium">{t('session.noSessions') || 'No sessions yet'}</p>
+                            <p className="text-xs opacity-70">{t('session.createFirstSession')}</p>
+                        </div>
+                    )}
+
+                    {/* No results state when search yields nothing */}
+                    {sessions?.length > 0 && filteredSessions.length === 0 && searchQuery && (
+                        <div
+                            className="flex flex-col items-center justify-center p-10 text-center text-slate-500 dark:text-slate-400"
+                            role="status"
+                        >
+                            <div className="w-16 h-16 mb-4 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                                <span className="text-3xl opacity-50" aria-hidden="true">🔍</span>
+                            </div>
+                            <p className="text-sm font-medium">{t('session.noSearchResults') || 'No results found'}</p>
+                            <p className="text-xs opacity-70 mt-1">{t('session.tryDifferentKeywords') || 'Try different keywords'}</p>
                         </div>
                     )}
                 </div>
