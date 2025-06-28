@@ -24,6 +24,8 @@ export interface Messages {
         day: string
         today: string
         yesterday: string
+        saving: string
+        close: string
     }
 
     // 认证系统
@@ -124,6 +126,61 @@ export interface Messages {
         confirmSignOut: string
         signOutMessage: string
         signingOut: string
+    }
+
+    // 用户个人资料
+    userProfile: {
+        title: string
+        username: string
+        usernamePlaceholder: string
+        noUsername: string
+        memberSince: string
+        lastUpdated: string
+        loadError: string
+        validation: {
+            tooShort: string
+            tooLong: string
+            invalidChars: string
+            reserved: string
+        }
+    }
+
+    // 设置
+    settings: {
+        title: string
+        general: string
+        notifications: string
+        privacy: string
+        language: string
+        theme: string
+        themeLight: string
+        themeDark: string
+        themeSystem: string
+        timezone: string
+        emailNotifications: string
+        emailNotificationsDesc: string
+        browserNotifications: string
+        browserNotificationsDesc: string
+        mobileNotifications: string
+        mobileNotificationsDesc: string
+        showOnlineStatus: string
+        showOnlineStatusDesc: string
+        allowDirectMessages: string
+        allowDirectMessagesDesc: string
+    }
+
+    // 订阅状态
+    subscription: {
+        free: string
+        pro: string
+        premium: string
+    }
+
+    // 用户角色
+    role: {
+        user: string
+        moderator: string
+        admin: string
     }
 
     // 侧边栏
@@ -422,6 +479,8 @@ export const locales: Record<LocaleKey, Messages> = {
             day: '天前',
             today: '今天',
             yesterday: '昨天',
+            saving: '保存中...',
+            close: '关闭',
         },
 
         // Authentication system
@@ -520,6 +579,61 @@ export const locales: Record<LocaleKey, Messages> = {
             confirmSignOut: '确认退出',
             signOutMessage: '您确定要退出登录吗？',
             signingOut: '正在退出...',
+        },
+
+        // 用户个人资料
+        userProfile: {
+            title: '个人资料',
+            username: '用户名',
+            usernamePlaceholder: '请输入用户名',
+            noUsername: '未设置用户名',
+            memberSince: '注册时间',
+            lastUpdated: '最后更新',
+            loadError: '加载资料失败',
+            validation: {
+                tooShort: '用户名至少需要6个字符',
+                tooLong: '用户名不能超过50个字符',
+                invalidChars: '用户名只能包含字母、数字、下划线和连字符',
+                reserved: '该用户名为系统保留，无法使用'
+            }
+        },
+
+        // 设置
+        settings: {
+            title: '设置',
+            general: '通用',
+            notifications: '通知',
+            privacy: '隐私',
+            language: '语言',
+            theme: '主题',
+            themeLight: '浅色',
+            themeDark: '深色',
+            themeSystem: '跟随系统',
+            timezone: '时区',
+            emailNotifications: '邮件通知',
+            emailNotificationsDesc: '接收重要更新和通知的邮件',
+            browserNotifications: '浏览器通知',
+            browserNotificationsDesc: '在浏览器中显示实时通知',
+            mobileNotifications: '移动端通知',
+            mobileNotificationsDesc: '在移动设备上接收推送通知',
+            showOnlineStatus: '显示在线状态',
+            showOnlineStatusDesc: '让其他用户看到您的在线状态',
+            allowDirectMessages: '允许私信',
+            allowDirectMessagesDesc: '允许其他用户向您发送私信',
+        },
+
+        // 订阅状态
+        subscription: {
+            free: '免费版',
+            pro: '专业版',
+            premium: '高级版',
+        },
+
+        // 用户角色
+        role: {
+            user: '用户',
+            moderator: '管理员',
+            admin: '超级管理员',
         },
         sidebar: {
             searchPlaceholder: '搜索对话...',
@@ -800,6 +914,8 @@ export const locales: Record<LocaleKey, Messages> = {
             day: 'd ago',
             today: 'Today',
             yesterday: 'Yesterday',
+            saving: 'Saving...',
+            close: 'Close',
         },
 
         // Authentication system
@@ -898,6 +1014,61 @@ export const locales: Record<LocaleKey, Messages> = {
             confirmSignOut: 'Confirm Sign Out',
             signOutMessage: 'Are you sure you want to sign out?',
             signingOut: 'Signing out...',
+        },
+
+        // User profile
+        userProfile: {
+            title: 'Personal Profile',
+            username: 'Username',
+            usernamePlaceholder: 'Enter your username',
+            noUsername: 'No username set',
+            memberSince: 'Member since',
+            lastUpdated: 'Last updated',
+            loadError: 'Failed to load profile',
+            validation: {
+                tooShort: 'Username must be at least 6 characters',
+                tooLong: 'Username cannot exceed 50 characters',
+                invalidChars: 'Username can only contain letters, numbers, underscores, and hyphens',
+                reserved: 'This username is reserved and cannot be used'
+            }
+        },
+
+        // Settings
+        settings: {
+            title: 'Settings',
+            general: 'General',
+            notifications: 'Notifications',
+            privacy: 'Privacy',
+            language: 'Language',
+            theme: 'Theme',
+            themeLight: 'Light',
+            themeDark: 'Dark',
+            themeSystem: 'System',
+            timezone: 'Timezone',
+            emailNotifications: 'Email Notifications',
+            emailNotificationsDesc: 'Receive important updates and notifications via email',
+            browserNotifications: 'Browser Notifications',
+            browserNotificationsDesc: 'Show real-time notifications in browser',
+            mobileNotifications: 'Mobile Notifications',
+            mobileNotificationsDesc: 'Receive push notifications on mobile devices',
+            showOnlineStatus: 'Show Online Status',
+            showOnlineStatusDesc: 'Let other users see when you are online',
+            allowDirectMessages: 'Allow Direct Messages',
+            allowDirectMessagesDesc: 'Allow other users to send you private messages',
+        },
+
+        // Subscription status
+        subscription: {
+            free: 'Free',
+            pro: 'Pro',
+            premium: 'Premium',
+        },
+
+        // User roles
+        role: {
+            user: 'User',
+            moderator: 'Moderator',
+            admin: 'Administrator',
         },
         sidebar: {
             searchPlaceholder: 'Search chats...',

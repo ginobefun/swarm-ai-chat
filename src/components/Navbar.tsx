@@ -7,7 +7,7 @@ import { useSession } from '@/components/providers/AuthProvider'
 import { LanguageToggle } from './LanguageToggle'
 import { SwarmLogo } from './SwarmLogo'
 import { LoginDialog } from './auth/LoginDialog'
-import UserMenu from './UserMenu'
+import UserMenu from '@/components/profile/UserMenu'
 
 /**
  * SwarmAI Navigation Bar
@@ -75,7 +75,7 @@ const Navbar: React.FC = () => {
                     }
                 }}
             >
-                <SwarmLogo size="md" showPulse={true} />
+                <SwarmLogo size="lg" showPulse={true} />
 
                 {/* Brand Text - Always visible with responsive text sizing */}
                 <div className="flex flex-col">
@@ -109,7 +109,7 @@ const Navbar: React.FC = () => {
                     <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        className="relative flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full transition-all duration-200 shadow-lg hover:shadow-xl active:shadow-md overflow-hidden group border-2 border-white/30 dark:border-slate-600/30 touch-manipulation"
+                        className="relative flex items-center justify-center w-12 h-12 rounded-full transition-all duration-200 shadow-lg hover:shadow-xl active:shadow-md overflow-hidden group border-2 border-white/30 dark:border-slate-600/30 touch-manipulation"
                         onClick={() => setIsLoginDialogOpen(true)}
                         title={t('auth.signIn')}
                         aria-label={t('auth.signIn')}

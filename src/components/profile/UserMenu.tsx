@@ -3,9 +3,10 @@
 import React, { useState } from 'react'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
-import { useTranslation } from '../contexts/AppContext'
+import { useTranslation } from '@/contexts/AppContext'
 import { useSession } from '@/components/providers/AuthProvider'
 import { signOut } from '@/lib/auth-client'
+import ProfileDialog from '@/components/profile/ProfileDialog'
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -24,7 +25,7 @@ interface UserMenuProps {
  * 
  * 功能包括：
  * 1. 显示用户头像或初始字母
- * 2. 下拉菜单包含设置和注销功能
+ * 2. 下拉菜单包含个人资料和注销功能
  * 3. 支持国际化
  * 4. 流畅的动画效果
  */
@@ -33,6 +34,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ className = "" }) => {
     const { data: session, isPending } = useSession()
     const [isSigningOut, setIsSigningOut] = useState(false)
     const [isMenuOpen, setIsMenuOpen] = useState(false)
+    const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false)
 
     // 计算用户状态
     const isLoggedIn = !!session?.user
@@ -52,8 +54,8 @@ const UserMenu: React.FC<UserMenuProps> = ({ className = "" }) => {
     }
 
     /**
- * 处理注销
- */
+     * 处理注销
+     */
     const handleSignOut = async () => {
         try {
             setIsSigningOut(true)
@@ -81,21 +83,11 @@ const UserMenu: React.FC<UserMenuProps> = ({ className = "" }) => {
     }
 
     /**
-     * 处理设置（预留功能）
-     */
-    const handleSettings = () => {
-        console.log('Settings clicked - Feature coming soon')
-        setIsMenuOpen(false)
-        // TODO: 实现设置页面
-    }
-
-    /**
-     * 处理个人资料（预留功能）
+     * 处理个人资料
      */
     const handleProfile = () => {
-        console.log('Profile clicked - Feature coming soon')
         setIsMenuOpen(false)
-        // TODO: 实现个人资料页面
+        setIsProfileDialogOpen(true)
     }
 
     if (!isLoggedIn) {
@@ -108,7 +100,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ className = "" }) => {
                 <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className={`relative flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full transition-all duration-200 shadow-lg hover:shadow-xl active:shadow-md overflow-hidden group border-2 border-white/30 dark:border-slate-600/30 touch-manipulation ${className}`}
+                    className={`relative flex items-center justify-center w-12 h-12 rounded-full transition-all duration-200 shadow-lg hover:shadow-xl active:shadow-md overflow-hidden group border-2 border-white/30 dark:border-slate-600/30 touch-manipulation ${className}`}
                     disabled={isPending || isSigningOut}
                     style={{
                         background: 'linear-gradient(135deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%)'
@@ -119,7 +111,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ className = "" }) => {
                 >
                     {isPending || isSigningOut ? (
                         // Loading state
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     ) : (
                         <>
                             {user?.image ? (
@@ -132,7 +124,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ className = "" }) => {
                                     unoptimized
                                 />
                             ) : (
-                                <span className="relative z-10 text-white font-semibold text-xs sm:text-sm">
+                                <span className="relative z-10 text-white font-semibold text-base">
                                     {getUserInitial()}
                                 </span>
                             )}
@@ -149,7 +141,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ className = "" }) => {
                             />
 
                             {/* Online Status Indicator */}
-                            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 dark:bg-green-500 rounded-full border-2 border-white dark:border-slate-900 shadow-sm"></div>
+                            <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-400 dark:bg-green-500 rounded-full border-2 border-white dark:border-slate-900 shadow-sm"></div>
                         </>
                     )}
                 </motion.button>
@@ -202,19 +194,6 @@ const UserMenu: React.FC<UserMenuProps> = ({ className = "" }) => {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
                     <span>{t('userMenu.myProfile')}</span>
-                    <span className="ml-auto text-xs text-gray-400 dark:text-gray-500">{t('common.comingSoon')}</span>
-                </DropdownMenuItem>
-
-                <DropdownMenuItem
-                    onClick={handleSettings}
-                    className="flex items-center gap-3 px-3 py-3 sm:py-2 cursor-pointer hover:bg-gray-100/80 dark:hover:bg-slate-700/80 rounded-md transition-colors touch-manipulation"
-                >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    <span>{t('userMenu.settings')}</span>
-                    <span className="ml-auto text-xs text-gray-400 dark:text-gray-500">{t('common.comingSoon')}</span>
                 </DropdownMenuItem>
 
                 <DropdownMenuSeparator />
@@ -236,8 +215,14 @@ const UserMenu: React.FC<UserMenuProps> = ({ className = "" }) => {
                     <span>{isSigningOut ? t('userMenu.signingOut') : t('userMenu.signOut')}</span>
                 </DropdownMenuItem>
             </DropdownMenuContent>
+
+            {/* Profile Dialog */}
+            <ProfileDialog
+                isOpen={isProfileDialogOpen}
+                onClose={() => setIsProfileDialogOpen(false)}
+            />
         </DropdownMenu>
     )
 }
 
-export default UserMenu 
+export default UserMenu
