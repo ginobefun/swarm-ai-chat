@@ -1,6 +1,8 @@
 import { NextRequest } from 'next/server'
 import { streamText, createDataStreamResponse } from 'ai'
 import { createOpenRouter } from '@openrouter/ai-sdk-provider'
+
+import prisma from '@/lib/database/prisma'
 import { getLatestTurnIndex, storeActiveGraph, getActiveGraph } from '@/lib/orchestrator/hooks'
 import { OrchestratorGraphBuilder } from '@/lib/orchestrator/graphBuilder'
 import { createInitialState } from '@/lib/orchestrator/graphBuilder'
@@ -258,7 +260,7 @@ async function handleSingleAgentChat({
     const openrouter = createOpenRouter({
         apiKey: process.env.OPENROUTER_API_KEY,
         headers: {
-            'HTTP-Referer': process.env.BETTER_AUTH_URL || 'http://localhost:3000',
+            'HTTP-Referer': process.env.BETTER_AUTH_URL || 'https://swarmai.chat',
             'X-Title': 'SwarmAI.chat'
         }
     })
@@ -329,9 +331,6 @@ async function handleSingleAgentChat({
 
 async function analyzeSession(sessionId: string, userId: string): Promise<SessionAnalysis> {
     try {
-        // Import prisma here to avoid circular dependencies
-        const { prisma } = await import('@/lib/database/prisma')
-
         // First, find the SwarmUser record
         const swarmUser = await prisma.swarmUser.findUnique({
             where: { userId: userId }

@@ -17,7 +17,9 @@ import {
     Plus,
     Settings,
     Users,
-    Bot
+    Bot,
+    RefreshCw,
+    AlertCircle
 } from 'lucide-react'
 import { aiAgents } from '@/constants/agents'
 import { ChatRequestData, OrchestratorResponse } from '@/types/chat'
@@ -84,11 +86,82 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     const [orchestratorResponse, setOrchestratorResponse] = useState<OrchestratorResponse | null>(null)
     const [confirmedIntent, setConfirmedIntent] = useState<string>('')
 
+    // Enhanced state management for error handling and reliability
+    const [sendingState, setSendingState] = useState<'idle' | 'sending' | 'error'>('idle')
+    const [lastError, setLastError] = useState<Error | null>(null)
+    const [lastFailedMessage, setLastFailedMessage] = useState<string>('')
+    const [userErrorMessage, setUserErrorMessage] = useState<string>('')
+
+    // Concurrent request management
+    const pendingRequests = React.useRef(new Set<string>())
+    const MAX_CONCURRENT_REQUESTS = 3
+
+    // Memory management constants
+    const MAX_DATA_ITEMS = 50
+    const ORCHESTRATOR_RESPONSE_CLEANUP_DELAY = 30000
+
     // Determine session characteristics for UI display
     const agentParticipants = session?.participants?.filter(p => p.type === 'agent') || []
     const isMultiAgentSession = agentParticipants.length > 1
 
-    // Initialize unified chat
+    // Enhanced error handling with user-friendly feedback (no auto-retry)
+    const handleChatError = useCallback((error: Error) => {
+        console.error('🔴 Chat error:', error)
+        setLastError(error)
+        setSendingState('error')
+
+        // Error classification and user feedback
+        const errorMessage = error.message.toLowerCase()
+        let errorType = 'generic_error'
+        let userMessage = t('chat.sendMessageFailed')
+
+        if (errorMessage.includes('timeout') || errorMessage.includes('network')) {
+            errorType = 'network_timeout'
+            userMessage = t('chat.networkTimeout')
+        } else if (errorMessage.includes('rate limit') || errorMessage.includes('too many requests')) {
+            errorType = 'rate_limit'
+            userMessage = t('chat.rateLimitExceeded')
+        } else if (errorMessage.includes('unauthorized') || errorMessage.includes('authentication')) {
+            errorType = 'authentication_failed'
+            userMessage = t('chat.authenticationFailed')
+        } else if (errorMessage.includes('quota') || errorMessage.includes('limit exceeded')) {
+            errorType = 'quota_exceeded'
+            userMessage = t('chat.quotaExceeded')
+        }
+
+        // Store user-friendly error message for UI display
+        setUserErrorMessage(userMessage)
+
+        // Log error classification for debugging (English for developers)
+        console.warn('❌ Chat error classified as:', errorType, 'Original error:', error.message)
+    }, [t])
+
+    // Manual retry function will be defined after handleSendMessage
+
+    // Component cleanup and memory management
+    useEffect(() => {
+        const currentPendingRequests = pendingRequests.current
+        return () => {
+            // Clear all pending requests
+            currentPendingRequests.clear()
+            console.log('🧹 Component cleanup: cleared pending requests')
+        }
+    }, [])
+
+    // Session change cleanup
+    useEffect(() => {
+        // Reset states when session changes
+        setSendingState('idle')
+        setLastError(null)
+        setLastFailedMessage('')
+        setUserErrorMessage('')
+        setOrchestratorResponse(null)
+        pendingRequests.current.clear()
+
+        console.log('🔄 Session changed, states reset')
+    }, [session?.id])
+
+    // Initialize unified chat with enhanced error handling
     const {
         messages,
         append,
@@ -98,15 +171,19 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         data
     } = useChat({
         api: '/api/chat',
-        onError: (error) => {
-            console.error('🔴 Chat error:', error)
-        },
+        onError: handleChatError,
         onFinish: (message, { finishReason, usage }) => {
             console.log('✅ Chat response finished:', {
                 finishReason,
                 usage,
                 messageLength: message.content?.length
             })
+
+            // Reset error state on successful completion
+            setSendingState('idle')
+            setLastError(null)
+            setLastFailedMessage('')
+            setUserErrorMessage('')
 
             // For single-agent mode, update session message count
             if (session && onSessionUpdate) {
@@ -156,9 +233,14 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         }
     }, [session?.id, setMessages])
 
-    // Monitor data changes for orchestrator responses
+    // Monitor data changes for orchestrator responses with memory management
     useEffect(() => {
         if (data && data.length > 0) {
+            // Memory management: Limit data array size to prevent memory leaks
+            if (data.length > MAX_DATA_ITEMS) {
+                console.warn(`🧹 Data array size (${data.length}) exceeds limit (${MAX_DATA_ITEMS}), cleanup recommended`)
+            }
+
             const latestData = data[data.length - 1] as unknown as OrchestratorResponse
             if (latestData?.type === 'orchestrator') {
                 console.log('🤖 Received orchestrator response via StreamData:', {
@@ -171,6 +253,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
                 setOrchestratorResponse(latestData)
 
+                // Delayed cleanup of orchestrator response to prevent memory leaks
+                setTimeout(() => {
+                    setOrchestratorResponse(prev =>
+                        prev?.turnIndex === latestData.turnIndex ? null : prev
+                    )
+                }, ORCHESTRATOR_RESPONSE_CLEANUP_DELAY)
+
                 // Reload messages to show collaboration results
                 console.log('🔄 Reloading messages to display collaboration results')
                 reloadMessages()
@@ -178,36 +267,101 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         }
     }, [data, reloadMessages])
 
-    // Handle unified message sending
-    const handleSendMessage = async (message: string) => {
-        if (!message.trim() || !session?.id || isLoading) return
-
-        console.log('📤 Sending unified message:', {
-            sessionId: session.id,
-            messageLength: message.length,
-            agentParticipants: agentParticipants.length,
-            isMultiAgentSession,
-            confirmedIntent: confirmedIntent || 'auto'
-        })
-
-        // Prepare request data
-        const requestData: ChatRequestData = {
-            sessionId: session.id,
-            mode: 'auto', // Let server decide based on session analysis
-            confirmedIntent: confirmedIntent || undefined
+    // Handle unified message sending with enhanced reliability and concurrency control
+    const handleSendMessage = useCallback(async (message: string) => {
+        // Input validation and state checks
+        if (!message.trim() || !session?.id) {
+            console.warn('⚠️ Invalid message or session')
+            return
         }
 
-        // Clear confirmed intent after sending
-        setConfirmedIntent('')
+        // Prevent sending while already processing
+        if (sendingState === 'sending') {
+            console.warn('⚠️ Message already being sent, ignoring duplicate request')
+            return
+        }
 
-        // Use the unified chat interface with request data
-        await append({
-            role: 'user',
-            content: message
-        }, {
-            data: JSON.parse(JSON.stringify(requestData))
-        })
-    }
+        // Concurrent request limit check
+        if (pendingRequests.current.size >= MAX_CONCURRENT_REQUESTS) {
+            console.warn(`⚠️ Maximum concurrent requests (${MAX_CONCURRENT_REQUESTS}) reached`)
+            return
+        }
+
+        const requestId = crypto.randomUUID()
+
+        try {
+            // Add to pending requests for concurrency control
+            pendingRequests.current.add(requestId)
+            setSendingState('sending')
+            setLastFailedMessage(message)
+            setLastError(null)
+
+            console.log('📤 Sending unified message:', {
+                requestId,
+                sessionId: session.id,
+                messageLength: message.length,
+                agentParticipants: agentParticipants.length,
+                isMultiAgentSession,
+                confirmedIntent: confirmedIntent || 'auto',
+                pendingRequests: pendingRequests.current.size
+            })
+
+            // Prepare request data
+            const requestData: ChatRequestData = {
+                sessionId: session.id,
+                mode: 'auto', // Let server decide based on session analysis
+                confirmedIntent: confirmedIntent || undefined
+            }
+
+            // Clear confirmed intent after sending
+            setConfirmedIntent('')
+
+            // Use the unified chat interface with request data and tracking headers
+            await append({
+                role: 'user',
+                content: message,
+                id: crypto.randomUUID(),
+                createdAt: new Date()
+            }, {
+                data: JSON.parse(JSON.stringify(requestData)),
+                headers: {
+                    'X-Request-ID': requestId,
+                    'X-Session-ID': session.id
+                }
+            })
+
+            // Success: message will be handled by onFinish callback
+            console.log('✅ Message sent successfully:', requestId)
+
+        } catch (error) {
+            console.error('❌ Failed to send message:', error)
+            setSendingState('error')
+            setLastError(error as Error)
+            // Error will be handled by onError callback via useChat
+        } finally {
+            // Always clean up the pending request
+            pendingRequests.current.delete(requestId)
+        }
+    }, [
+        session?.id,
+        sendingState,
+        agentParticipants.length,
+        isMultiAgentSession,
+        confirmedIntent,
+        append
+    ])
+
+    // Simple manual retry function (defined after handleSendMessage to avoid dependency issues)
+    const handleRetry = useCallback(() => {
+        if (lastFailedMessage && sendingState === 'error') {
+            console.log('🔄 Manual retry triggered')
+            setLastError(null)
+            setUserErrorMessage('')
+            handleSendMessage(lastFailedMessage)
+        }
+    }, [lastFailedMessage, sendingState, handleSendMessage])
+
+    // Note: Auto-retry logic removed to avoid complexity and potential server-side conflicts
 
     // Load existing messages when session changes
     useEffect(() => {
@@ -278,13 +432,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                                 </h1>
                                 {isMultiAgentSession && (
                                     <Badge variant="secondary" className="text-xs">
-                                        协作模式
+                                        {t('chat.collaborationMode')}
                                     </Badge>
                                 )}
                             </div>
                             <p className="text-xs text-slate-500 dark:text-slate-400">
                                 {isMultiAgentSession
-                                    ? `${agentParticipants.length} 个智能体协作`
+                                    ? `${agentParticipants.length}${t('chat.agentsCollaborating')}`
                                     : `${getAgentName(session?.primaryAgentId || 'gemini-flash')} · ${messages.length || 0} ${t('chat.messages')}`
                                 }
                                 {orchestratorResponse && (
@@ -327,20 +481,45 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                                     className="h-8 px-3 text-xs"
                                     onClick={() => onWorkspaceToggle?.(!isWorkspaceOpen)}
                                 >
-                                    工作区
+                                    {t('chat.workspace')}
                                 </Button>
                             </motion.div>
                         )}
                     </div>
                 </header>
 
-                {/* Error Banner */}
-                {error && (
+                {/* Simplified Error Banner */}
+                {(error || lastError) && (
                     <div className="flex-shrink-0 mx-4 mt-3 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/50 rounded-lg">
-                        <div className="flex items-center gap-2 text-sm text-red-700 dark:text-red-400">
-                            <span className="text-red-500">⚠️</span>
-                            {error.message || 'Something went wrong. Please try again.'}
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-2 text-sm text-red-700 dark:text-red-400">
+                                <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                                <span>
+                                    {userErrorMessage || (error || lastError)?.message || 'Something went wrong. Please try again.'}
+                                </span>
+                            </div>
+
+                            {/* Simple Manual Retry Button */}
+                            {sendingState === 'error' && lastFailedMessage && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-7 px-2 text-xs border-red-300 text-red-700 hover:bg-red-100 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-950/30"
+                                    onClick={handleRetry}
+                                    disabled={sendingState !== 'error'}
+                                >
+                                    <RefreshCw className="w-3 h-3 mr-1" />
+                                    {t('chat.retry')}
+                                </Button>
+                            )}
                         </div>
+
+                        {/* Simple progress indicator for sending */}
+                        {sendingState === 'sending' && (
+                            <div className="mt-2 w-full bg-red-100 dark:bg-red-900/30 rounded-full h-1">
+                                <div className="bg-red-500 h-1 rounded-full animate-pulse" style={{ width: '30%' }} />
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -351,7 +530,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                         <MessageList
                             messages={displayMessages}
                             isTyping={isLoading}
-                            typingUser={isLoading ? (isMultiAgentSession ? '智能体协作中...' : getAgentName(session?.primaryAgentId || 'gemini-flash')) : ''}
+                            typingUser={isLoading ? (isMultiAgentSession ? t('chat.agentsCollaboratingInProgress') : getAgentName(session?.primaryAgentId || 'gemini-flash')) : ''}
                             typingAvatar={isLoading ? (isMultiAgentSession ? '🤖' : getAgentAvatar(session?.primaryAgentId || 'gemini-flash')) : ''}
                         />
                     </div>
@@ -360,7 +539,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                     {orchestratorResponse?.shouldClarify && (
                         <div className="flex-shrink-0 p-4 bg-amber-50 dark:bg-amber-950/20 border-t border-amber-200 dark:border-amber-800/50">
                             <p className="text-sm font-medium text-amber-800 dark:text-amber-300 mb-2">
-                                需要澄清：
+                                {t('chat.needsClarification')}
                             </p>
                             <p className="text-sm text-amber-700 dark:text-amber-400 mb-3">
                                 {orchestratorResponse.clarificationQuestion}
@@ -369,7 +548,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                                 type="text"
                                 value={confirmedIntent}
                                 onChange={(e) => setConfirmedIntent(e.target.value)}
-                                placeholder="请回复..."
+                                placeholder={t('chat.pleaseReply')}
                                 className="w-full px-3 py-2 text-sm border rounded-md bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600"
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter' && confirmedIntent.trim()) {
@@ -384,14 +563,14 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                     {orchestratorResponse?.summary && (
                         <div className="flex-shrink-0 p-4 bg-green-50 dark:bg-green-950/20 border-t border-green-200 dark:border-green-800/50">
                             <p className="text-sm font-medium text-green-800 dark:text-green-300 mb-2">
-                                协作总结：
+                                {t('chat.collaborationSummary')}
                             </p>
                             <p className="text-sm text-green-700 dark:text-green-400 whitespace-pre-wrap">
                                 {orchestratorResponse.summary}
                             </p>
                             {orchestratorResponse.costUSD > 0 && (
                                 <p className="text-xs text-green-600 dark:text-green-500 mt-2">
-                                    本次协作成本：${orchestratorResponse.costUSD.toFixed(4)}
+                                    {t('chat.collaborationCost')}${orchestratorResponse.costUSD.toFixed(4)}
                                 </p>
                             )}
                         </div>

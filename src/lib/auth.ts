@@ -63,16 +63,9 @@ export const auth = betterAuth({
     hooks: {
         after: createAuthMiddleware(async (ctx) => {
             try {
-                console.log("🔍 Better Auth - After hook triggered")
-                console.log("🔍 Path:", ctx.path)
-                console.log("🔍 Method:", ctx.method)
-
                 // 检查是否有新用户创建
                 const newSession = ctx.context.newSession
-                console.log("🔍 New Session:", !!newSession)
-
                 if (!newSession || !newSession.user) {
-                    console.log("🔍 No new session or user, skipping SwarmUser creation")
                     return
                 }
 
