@@ -1,8 +1,13 @@
 'use client'
 
 import React, { useEffect, useRef } from 'react'
+import Image from 'next/image'
 import { Message } from '@/types'
 import { useTranslation } from '@/contexts/AppContext'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import rehypeHighlight from 'rehype-highlight'
+import { MessageActions } from '@/components/ui/message-actions'
 
 interface MessageListProps {
     messages: Message[]
@@ -17,13 +22,32 @@ const TypingIndicator: React.FC<{
     avatarStyle?: string
 }> = ({ user, avatar, avatarStyle }) => {
     const { t } = useTranslation()
+
+    // Render avatar (image or text)
+    const renderAvatar = () => {
+        const isImageUrl = avatar.startsWith('http://') || avatar.startsWith('https://')
+
+        if (isImageUrl) {
+            return (
+                <Image
+                    src={avatar}
+                    alt={user}
+                    width={36}
+                    height={36}
+                    className="w-full h-full object-cover"
+                />
+            )
+        }
+        return avatar
+    }
+
     return (
         <div className="flex gap-3 group animate-pulse">
             <div
-                className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0 shadow-sm bg-gradient-to-br from-emerald-500 to-emerald-600 text-white ring-2 ring-white dark:ring-slate-800"
+                className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0 shadow-sm bg-gradient-to-br from-emerald-500 to-emerald-600 text-white ring-2 ring-white dark:ring-slate-800 overflow-hidden"
                 style={avatarStyle ? { background: avatarStyle } : undefined}
             >
-                {avatar}
+                {renderAvatar()}
             </div>
             <div className="flex flex-col gap-1 max-w-[85%] sm:max-w-[80%] lg:max-w-[70%] min-w-0">
                 <div className="text-xs font-medium text-slate-600 dark:text-slate-400 px-2">{user}</div>
@@ -135,28 +159,8 @@ const MessageItem: React.FC<{ message: Message }> = ({ message }) => {
         )
     }
 
+    // Enhanced markdown rendering with react-markdown
     const renderMessageContent = (content: string) => {
-        // Enhanced markdown support for AI responses
-        const processMarkdown = (text: string) => {
-            // Bold text
-            text = text.replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold">$1</strong>')
-            text = text.replace(/\*(.*?)\*/g, '<em class="italic">$1</em>')
-
-            // Code blocks with syntax highlighting style
-            text = text.replace(/```([\s\S]*?)```/g, '<pre class="bg-slate-900 dark:bg-slate-950 text-slate-100 p-4 rounded-xl overflow-x-auto text-sm font-mono my-3 border border-slate-700"><code>$1</code></pre>')
-            text = text.replace(/`([^`]+)`/g, '<code class="bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 px-2 py-1 rounded-md text-sm font-mono">$1</code>')
-
-            // Lists with better styling
-            text = text.replace(/^\d+\.\s+(.+)$/gm, '<li class="ml-4 mb-1">$1</li>')
-            text = text.replace(/^[-*]\s+(.+)$/gm, '<li class="ml-4 mb-1">$1</li>')
-            text = text.replace(/(<li.*?<\/li>)/g, '<ul class="list-disc pl-4 space-y-1 my-2">$1</ul>')
-
-            // Line breaks
-            text = text.replace(/\n/g, '<br />')
-
-            return text
-        }
-
         const isUser = message.senderType === 'user'
 
         if (isUser) {
@@ -168,18 +172,105 @@ const MessageItem: React.FC<{ message: Message }> = ({ message }) => {
                 </React.Fragment>
             ))
         } else {
-            // Enhanced markdown for AI responses
-            const processedContent = processMarkdown(content)
+            // Use react-markdown for AI responses with enhanced styling
             return (
-                <div
-                    className="prose prose-sm max-w-none dark:prose-invert prose-pre:bg-slate-900 prose-pre:text-slate-100 
-                              prose-p:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-1 
-                              prose-headings:my-2 prose-h1:my-2 prose-h2:my-2 prose-h3:my-2 
-                              prose-h4:my-1 prose-h5:my-1 prose-h6:my-1"
-                    dangerouslySetInnerHTML={{ __html: processedContent }}
+                <div className="prose prose-sm max-w-none dark:prose-invert
+                              prose-pre:bg-slate-900 dark:prose-pre:bg-slate-950 
+                              prose-pre:text-slate-100 prose-pre:border prose-pre:border-slate-700
+                              prose-code:bg-slate-200 dark:prose-code:bg-slate-700 
+                              prose-code:text-slate-800 dark:prose-code:text-slate-200
+                              prose-code:px-1 prose-code:py-0.5 prose-code:rounded
+                              prose-p:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-1
+                              prose-headings:my-3 prose-h1:text-xl prose-h2:text-lg prose-h3:text-base
+                              prose-blockquote:border-l-indigo-500 prose-blockquote:bg-slate-50 dark:prose-blockquote:bg-slate-800/50
+                              prose-blockquote:pl-4 prose-blockquote:py-2 prose-blockquote:my-4
+                              prose-table:text-sm prose-th:bg-slate-100 dark:prose-th:bg-slate-700
+                              prose-td:border-slate-300 dark:prose-td:border-slate-600
+                              prose-a:text-indigo-600 dark:prose-a:text-indigo-400 prose-a:no-underline hover:prose-a:underline">
+                    <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        rehypePlugins={[rehypeHighlight]}
+                        components={{
+                            // Custom code block styling
+                            pre: ({ children, ...props }) => (
+                                <pre
+                                    className="bg-slate-900 dark:bg-slate-950 text-slate-100 p-4 rounded-xl overflow-x-auto text-sm font-mono my-3 border border-slate-700"
+                                    {...props}
+                                >
+                                    {children}
+                                </pre>
+                            ),
+                            // Custom inline code styling
+                            code: ({ children, className, ...props }) => {
+                                const isInline = !className?.includes('language-')
+                                if (isInline) {
+                                    return (
+                                        <code
+                                            className="bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 px-2 py-1 rounded-md text-sm font-mono"
+                                            {...props}
+                                        >
+                                            {children}
+                                        </code>
+                                    )
+                                }
+                                return <code className={className} {...props}>{children}</code>
+                            },
+                            // Custom table styling
+                            table: ({ children, ...props }) => (
+                                <div className="overflow-x-auto my-4">
+                                    <table className="min-w-full border-collapse border border-slate-300 dark:border-slate-600" {...props}>
+                                        {children}
+                                    </table>
+                                </div>
+                            ),
+                            // Custom blockquote styling
+                            blockquote: ({ children, ...props }) => (
+                                <blockquote className="border-l-4 border-indigo-500 bg-slate-50 dark:bg-slate-800/50 pl-4 py-2 my-4 italic" {...props}>
+                                    {children}
+                                </blockquote>
+                            )
+                        }}
+                    >
+                        {content}
+                    </ReactMarkdown>
+                </div>
+            )
+        }
+    }
+
+    // Render avatar (image or text)
+    const renderAvatar = () => {
+        const avatarContent = message.avatar || (message.senderType === 'user' ? '👤' : '🤖')
+        const isImageUrl = avatarContent.startsWith('http://') || avatarContent.startsWith('https://')
+
+        if (isImageUrl) {
+            return (
+                <Image
+                    src={avatarContent}
+                    alt={message.sender}
+                    width={36}
+                    height={36}
+                    className="w-full h-full object-cover"
                 />
             )
         }
+        return avatarContent
+    }
+
+    // Message action handlers
+    const handleLike = (messageId: string) => {
+        console.log('Liked message:', messageId)
+        // TODO: Implement like functionality
+    }
+
+    const handleDislike = (messageId: string) => {
+        console.log('Disliked message:', messageId)
+        // TODO: Implement dislike functionality
+    }
+
+    const handleCopy = () => {
+        console.log('Copied message content')
+        // Message actions component handles the clipboard operation
     }
 
     const isUser = message.senderType === 'user'
@@ -191,11 +282,11 @@ const MessageItem: React.FC<{ message: Message }> = ({ message }) => {
                 className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0 shadow-sm ${isUser
                     ? 'bg-gradient-to-br from-indigo-500 to-indigo-600'
                     : 'bg-gradient-to-br from-emerald-500 to-emerald-600'
-                    } text-white ring-2 ring-white dark:ring-slate-800`}
+                    } text-white ring-2 ring-white dark:ring-slate-800 overflow-hidden`}
                 style={message.avatarStyle ? { background: message.avatarStyle } : undefined}
                 title={message.sender}
             >
-                {message.avatar || (isUser ? '👤' : '🤖')}
+                {renderAvatar()}
             </div>
 
             {/* Message Content - Responsive */}
@@ -227,6 +318,19 @@ const MessageItem: React.FC<{ message: Message }> = ({ message }) => {
                             ? 'right-0 bg-indigo-600 rounded-tl-full'
                             : 'left-0 bg-white dark:bg-slate-800 border-l border-t border-slate-200 dark:border-slate-700 rounded-br-full'
                             } transform ${isUser ? 'translate-x-2 -translate-y-1' : '-translate-x-2 -translate-y-1'}`}
+                        />
+                    </div>
+                )}
+
+                {/* Message actions - only show for AI messages */}
+                {!isUser && (
+                    <div className={`px-2 ${isUser ? 'text-right' : 'text-left'}`}>
+                        <MessageActions
+                            messageId={message.id}
+                            content={message.content}
+                            onLike={handleLike}
+                            onDislike={handleDislike}
+                            onCopy={handleCopy}
                         />
                     </div>
                 )}

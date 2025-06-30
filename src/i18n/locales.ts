@@ -248,6 +248,13 @@ export interface Messages {
         authenticationFailed: string
         quotaExceeded: string
         genericError: string
+        // Message actions
+        actions: {
+            like: string
+            dislike: string
+            copy: string
+            copied: string
+        }
     }
 
     // 工作区
@@ -713,6 +720,13 @@ export const locales: Record<LocaleKey, Messages> = {
             authenticationFailed: '认证失败，请重新登录',
             quotaExceeded: '服务额度已用尽，请联系管理员',
             genericError: '出现错误，请重试',
+            // Message actions
+            actions: {
+                like: '点赞',
+                dislike: '点踩',
+                copy: '复制',
+                copied: '已复制',
+            },
         },
         workspace: {
             title: '工作区',
@@ -1164,6 +1178,13 @@ export const locales: Record<LocaleKey, Messages> = {
             authenticationFailed: 'Authentication failed, please login again',
             quotaExceeded: 'Service quota exceeded, please contact administrator',
             genericError: 'An error occurred, please retry',
+            // Message actions
+            actions: {
+                like: 'Like',
+                dislike: 'Dislike',
+                copy: 'Copy',
+                copied: 'Copied',
+            },
         },
         workspace: {
             title: 'Workspace',
