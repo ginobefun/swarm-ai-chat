@@ -6,6 +6,7 @@ import MessageList from './MessageList'
 import MessageInput from './MessageInput'
 import { Session, Message } from '@/types'
 import { useTranslation } from '@/contexts/AppContext'
+import { useSession } from '@/components/providers/AuthProvider'
 import AddAgentDialog from './AddAgentDialog'
 import ChatSettingsDialog from './ChatSettingsDialog'
 
@@ -21,7 +22,7 @@ import {
     RefreshCw,
     AlertCircle
 } from 'lucide-react'
-import { databaseConfigAdapter } from '@/lib/services/DatabaseConfigAdapter'
+import { useAgentInfo, AgentInfo } from '@/hooks/useAgentInfo'
 import { ChatRequestData, OrchestratorResponse } from '@/types/chat'
 
 interface ChatAreaProps {
@@ -49,69 +50,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     onWorkspaceToggle
 }) => {
     const { t } = useTranslation()
+    const { data: authSession } = useSession()
+    const { getBatchAgentInfo } = useAgentInfo()
 
-    // Agent data cache for performance
-    const [agentCache, setAgentCache] = useState<Map<string, { name: string; avatar: string }>>(new Map())
-
-    // Helper functions using database configuration
-    const getAgentName = useCallback(async (agentId: string): Promise<string> => {
-        // Check cache first
-        const cached = agentCache.get(agentId)
-        if (cached) return cached.name
-
-        try {
-            const agent = await databaseConfigAdapter.getAgentById(agentId)
-            const name = agent?.name || 'AI Assistant'
-            const avatar = agent?.avatar || '🤖'
-
-            // Update cache
-            setAgentCache(prev => new Map(prev).set(agentId, { name, avatar }))
-
-            return name
-        } catch (error) {
-            console.error('Error fetching agent name:', error)
-            return 'AI Assistant'
-        }
-    }, [agentCache])
-
-    const getAgentAvatar = useCallback(async (agentId: string): Promise<string> => {
-        // Check cache first
-        const cached = agentCache.get(agentId)
-        if (cached) return cached.avatar
-
-        try {
-            const agent = await databaseConfigAdapter.getAgentById(agentId)
-            const name = agent?.name || 'AI Assistant'
-            const avatar = agent?.avatar || '🤖'
-
-            // Update cache
-            setAgentCache(prev => new Map(prev).set(agentId, { name, avatar }))
-
-            return avatar
-        } catch (error) {
-            console.error('Error fetching agent avatar:', error)
-            return '🤖'
-        }
-    }, [agentCache])
-
-    // Synchronous getters for immediate display (with fallbacks)
-    const getAgentNameSync = useCallback((agentId: string): string => {
-        const cached = agentCache.get(agentId)
-        if (cached) return cached.name
-
-        // Load async in background
-        getAgentName(agentId)
-        return 'AI Assistant' // Fallback while loading
-    }, [agentCache, getAgentName])
-
-    const getAgentAvatarSync = useCallback((agentId: string): string => {
-        const cached = agentCache.get(agentId)
-        if (cached) return cached.avatar
-
-        // Load async in background
-        getAgentAvatar(agentId)
-        return '🤖' // Fallback while loading
-    }, [agentCache, getAgentAvatar])
+    // Simplified agent info state - only store loaded info, no complex caching
+    const [loadedAgentInfo, setLoadedAgentInfo] = useState<Map<string, AgentInfo>>(new Map())
 
     // Dialog states
     const [showAddAgentDialog, setShowAddAgentDialog] = useState(false)
@@ -142,22 +85,44 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     )
     const isMultiAgentSession = agentParticipants.length > 1
 
-    // Preload agent cache for session participants
-    useEffect(() => {
-        if (session) {
-            // Preload all agent data for this session
-            const agentIds = [
-                ...agentParticipants.map(p => p.id),
-                ...(session.primaryAgentId ? [session.primaryAgentId] : [])
-            ]
+    // Simple agent info getter with fallback (no async state updates in render)
+    const getAgentDisplayInfo = useCallback((agentId: string): { name: string; avatar: string } => {
+        const loaded = loadedAgentInfo.get(agentId)
+        if (loaded) {
+            return { name: loaded.name, avatar: loaded.avatar }
+        }
+        // Return fallback immediately, no async operations
+        return { name: 'AI Assistant', avatar: '🤖' }
+    }, [loadedAgentInfo])
 
-            agentIds.forEach(agentId => {
-                if (!agentCache.has(agentId)) {
-                    getAgentName(agentId) // This will update the cache
-                }
+    // Load agent info when session changes (simplified)
+    useEffect(() => {
+        if (!session) return
+
+        const agentIds = [
+            ...agentParticipants.map(p => p.id),
+            ...(session.primaryAgentId ? [session.primaryAgentId] : [])
+        ]
+
+        if (agentIds.length > 0) {
+            // Load all agent info in batch, no complex caching logic
+            getBatchAgentInfo(agentIds).then(batchInfo => {
+                const newMap = new Map<string, AgentInfo>()
+                Object.entries(batchInfo).forEach(([id, info]) => {
+                    newMap.set(id, info)
+                })
+                setLoadedAgentInfo(newMap)
+            }).catch(error => {
+                console.error('Error loading agent info:', error)
+                // Set fallback info for all agents
+                const fallbackMap = new Map<string, AgentInfo>()
+                agentIds.forEach(id => {
+                    fallbackMap.set(id, { id, name: 'AI Assistant', avatar: '🤖' })
+                })
+                setLoadedAgentInfo(fallbackMap)
             })
         }
-    }, [session, agentParticipants, agentCache, getAgentName])
+    }, [session, agentParticipants, getBatchAgentInfo])
 
     // Enhanced error handling with user-friendly feedback (no auto-retry)
     const handleChatError = useCallback((error: Error) => {
@@ -190,8 +155,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         // Log error classification for debugging (English for developers)
         console.warn('❌ Chat error classified as:', errorType, 'Original error:', error.message)
     }, [t])
-
-    // Manual retry function will be defined after handleSendMessage
 
     // Component cleanup and memory management
     useEffect(() => {
@@ -270,7 +233,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                     metadata?: string
                 }) => ({
                     id: msg.id,
-                    role: msg.senderType === 'USER' ? 'user' : 'assistant',
+                    role: msg.senderType === 'user' ? 'user' : 'assistant',
                     content: msg.content,
                     createdAt: new Date(msg.createdAt),
                     metadata: {
@@ -406,7 +369,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         append
     ])
 
-    // Simple manual retry function (defined after handleSendMessage to avoid dependency issues)
+    // Simple manual retry function
     const handleRetry = useCallback(() => {
         if (lastFailedMessage && sendingState === 'error') {
             console.log('🔄 Manual retry triggered')
@@ -416,11 +379,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         }
     }, [lastFailedMessage, sendingState, handleSendMessage])
 
-    // Note: Auto-retry logic removed to avoid complexity and potential server-side conflicts
-
     // Load existing messages when session changes
     useEffect(() => {
-        reloadMessages()
+        if (session?.id) {
+            reloadMessages()
+        }
     }, [session?.id, reloadMessages])
 
     // Handle adding agent to session
@@ -434,10 +397,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             return
         }
 
+        const agentDisplayInfo = getAgentDisplayInfo(agentId)
         const newParticipant = {
             id: agentId,
-            name: getAgentNameSync(agentId),
-            avatar: getAgentAvatarSync(agentId),
+            name: agentDisplayInfo.name,
+            avatar: agentDisplayInfo.avatar,
             type: 'agent' as const
         }
 
@@ -450,18 +414,42 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         console.log(`Added agent ${agentId} to session ${session.id}`)
     }
 
-    // Convert messages for display
-    const displayMessages: Message[] = messages.map((msg) => ({
-        id: msg.id,
-        content: msg.content,
-        sender: msg.role === 'user' ? 'You' : getAgentNameSync(session?.primaryAgentId || 'gemini-flash'),
-        senderType: msg.role === 'user' ? 'user' : 'ai',
-        timestamp: msg.createdAt || new Date(),
-        avatar: msg.role === 'user' ? 'You' : getAgentAvatarSync(session?.primaryAgentId || 'gemini-flash'),
-        avatarStyle: undefined,
-        // Pass through metadata for collaboration messages
-        metadata: (msg as unknown as { metadata?: { senderType?: string; senderId?: string; contentType?: string; rawMetadata?: Record<string, unknown> } }).metadata
-    }))
+    // Convert messages for display with proper sender identification
+    const displayMessages: Message[] = messages.map((msg) => {
+        if (msg.role === 'user') {
+            // Get user info from better-auth session
+            const user = authSession?.user
+            const userName = user?.name || user?.username || user?.email || 'You'
+            const userAvatar = user?.image || user?.avatarUrl || userName.charAt(0).toUpperCase()
+
+            return {
+                id: msg.id,
+                content: msg.content,
+                sender: userName,
+                senderType: 'user' as const,
+                timestamp: msg.createdAt || new Date(),
+                avatar: userAvatar,
+                avatarStyle: undefined,
+                metadata: (msg as unknown as { metadata?: { senderType?: string; senderId?: string; contentType?: string; rawMetadata?: Record<string, unknown> } }).metadata
+            }
+        } else {
+            // For AI messages, use the actual senderId from metadata if available, otherwise use primaryAgentId
+            const metadata = (msg as unknown as { metadata?: { senderType?: string; senderId?: string; contentType?: string; rawMetadata?: Record<string, unknown> } }).metadata
+            const actualSenderId = metadata?.senderId || session?.primaryAgentId || 'gemini-flash'
+            const agentDisplayInfo = getAgentDisplayInfo(actualSenderId)
+
+            return {
+                id: msg.id,
+                content: msg.content,
+                sender: agentDisplayInfo.name,
+                senderType: 'ai' as const,
+                timestamp: msg.createdAt || new Date(),
+                avatar: agentDisplayInfo.avatar,
+                avatarStyle: undefined,
+                metadata
+            }
+        }
+    })
 
     if (!session) {
         return null
@@ -494,7 +482,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                             <p className="text-xs text-slate-500 dark:text-slate-400">
                                 {isMultiAgentSession
                                     ? `${agentParticipants.length}${t('chat.agentsCollaborating')}`
-                                    : `${getAgentNameSync(session?.primaryAgentId || 'gemini-flash')} · ${messages.length || 0} ${t('chat.messages')}`
+                                    : `${getAgentDisplayInfo(session?.primaryAgentId || 'gemini-flash').name} · ${messages.length || 0} ${t('chat.messages')}`
                                 }
                                 {orchestratorResponse && (
                                     <span className="ml-2">• Turn #{orchestratorResponse.turnIndex}</span>
@@ -585,8 +573,16 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                         <MessageList
                             messages={displayMessages}
                             isTyping={isLoading}
-                            typingUser={isLoading ? (isMultiAgentSession ? t('chat.agentsCollaboratingInProgress') : getAgentNameSync(session?.primaryAgentId || 'gemini-flash')) : ''}
-                            typingAvatar={isLoading ? (isMultiAgentSession ? '🤖' : getAgentAvatarSync(session?.primaryAgentId || 'gemini-flash')) : ''}
+                            typingUser={isLoading ? (
+                                isMultiAgentSession
+                                    ? t('chat.agentsCollaboratingInProgress')
+                                    : getAgentDisplayInfo(session?.primaryAgentId || 'gemini-flash').name
+                            ) : ''}
+                            typingAvatar={isLoading ? (
+                                isMultiAgentSession
+                                    ? '🤖'
+                                    : getAgentDisplayInfo(session?.primaryAgentId || 'gemini-flash').avatar
+                            ) : ''}
                         />
                     </div>
 

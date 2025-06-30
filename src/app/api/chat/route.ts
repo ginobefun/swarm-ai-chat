@@ -17,6 +17,7 @@ import {
     OrchestratorResponse,
     SessionAnalysis
 } from '@/types/chat'
+import { AgentConfigService } from '@/lib/services/AgentConfigService'
 
 export async function POST(req: NextRequest) {
     try {
@@ -178,13 +179,6 @@ async function handleMultiAgentChat({
         costUSD: finalState.costUSD || 0
     }
 
-    // Metadata for response headers
-    // const metadata: ChatMetadata = {
-    //     mode: 'multi',
-    //     agentIds,
-    //     executionTime
-    // }
-
     console.log('🎉 Multi-agent orchestration completed, sending via createDataStreamResponse')
 
     // Use createDataStreamResponse to send orchestrator data
@@ -267,38 +261,40 @@ async function handleSingleAgentChat({
         }
     })
 
-    const modelName = await getModelForAgent(agentId)
-    const model = openrouter.chat(modelName)
-    const systemPrompt = await getAgentSystemPrompt(agentId)
+    const agentConfigService = AgentConfigService.getInstance()
+    const agentConfig = await agentConfigService.getAgentConfiguration(agentId)
+    const model = openrouter.chat(agentConfig.modelName)
 
     const startTime = Date.now()
 
     // Prepare messages for AI model
     const aiMessages = [
-        { role: 'system' as const, content: systemPrompt },
+        { role: 'system' as const, content: agentConfig.systemPrompt },
         ...messages.map((msg: ChatMessage) => ({
             role: msg.role,
             content: msg.content
         }))
     ]
 
-    // Metadata for response headers
-    // const metadata: ChatMetadata = {
-    //     mode: 'single',
-    //     agentId
-    // }
-
     // Stream AI response
     const result = streamText({
         model,
         messages: aiMessages,
-        temperature: 0.7,
-        maxTokens: 2048,
+        temperature: agentConfig.temperature,
+        maxTokens: agentConfig.maxTokens,
         onFinish: async (completion) => {
             try {
                 const processingTime = Date.now() - startTime
-                const tokenCount = completion.usage?.totalTokens || 0
-                const cost = calculateCost(tokenCount)
+                const inputTokens = completion.usage?.promptTokens || 0
+                const outputTokens = completion.usage?.completionTokens || 0
+                const totalTokens = completion.usage?.totalTokens || (inputTokens + outputTokens)
+
+                const cost = calculateCost(
+                    inputTokens,
+                    outputTokens,
+                    agentConfig.inputPricePerK,
+                    agentConfig.outputPricePerK
+                )
 
                 await addMessageToSession({
                     sessionId,
@@ -306,16 +302,18 @@ async function handleSingleAgentChat({
                     senderId: agentId,
                     content: completion.text,
                     contentType: 'text',
-                    tokenCount,
+                    tokenCount: totalTokens,
                     processingTime,
                     cost
                 })
 
                 console.log(`✅ Single-agent response saved:`, {
                     agentId,
-                    tokenCount,
+                    inputTokens,
+                    outputTokens,
+                    totalTokens,
                     processingTime: `${processingTime}ms`,
-                    cost: `$${cost.toFixed(4)}`
+                    cost: `$${cost.toFixed(6)}`
                 })
             } catch (error) {
                 console.error('❌ Error saving single-agent response:', error)
@@ -372,94 +370,36 @@ async function analyzeSession(sessionId: string, userId: string): Promise<Sessio
             totalParticipants: session.participants.length,
             agentParticipants: agentParticipants.length,
             agentIds,
-            primaryAgent: session.primaryAgentId
+            primaryAgent: session.primaryAgentId || agentIds[0]
         })
 
         return {
             isMultiAgent: agentParticipants.length > 1,
             agentIds,
-            primaryAgentId: session.primaryAgentId || agentIds[0] || 'gemini-flash',
+            primaryAgentId: session.primaryAgentId || agentIds[0],
             session: {
                 id: sessionId,
                 participants: session.participants.map(p => ({ agentId: p.agentId }))
             },
             swarmUser: {
                 id: swarmUser.id,
-                userId: swarmUser.userId
+                userId: swarmUser.userId,
+                username: swarmUser.username || ''
             }
         }
     } catch (error) {
         console.error('❌ Session analysis failed:', error)
-        // Return fallback for single-agent mode
-        return {
-            isMultiAgent: false,
-            agentIds: ['gemini-flash'],
-            primaryAgentId: 'gemini-flash',
-            session: {
-                id: sessionId,
-                participants: []
-            },
-            swarmUser: {
-                id: '',
-                userId
-            }
-        }
+        throw new Error(`Failed to analyze session '${sessionId}': ${(error as Error).message}`)
     }
 }
 
-async function getModelForAgent(agentId: string): Promise<string> {
-    try {
-        const agent = await prisma.swarmAIAgent.findUnique({
-            where: {
-                id: agentId,
-                isActive: true
-            },
-            include: {
-                model: true
-            }
-        })
-
-        if (agent?.model) {
-            console.log(`📋 Retrieved model for agent ${agentId}: ${agent.model.modelName}`)
-            return agent.model.modelName
-        }
-
-        console.warn(`⚠️ Agent ${agentId} not found, using fallback model`)
-        return 'google/gemini-flash-1.5' // Fallback
-    } catch (error) {
-        console.error(`❌ Error getting model for agent ${agentId}:`, error)
-        return 'google/gemini-flash-1.5' // Fallback
-    }
-}
-
-async function getAgentSystemPrompt(agentId: string): Promise<string> {
-    try {
-        const agent = await prisma.swarmAIAgent.findUnique({
-            where: {
-                id: agentId,
-                isActive: true
-            },
-            select: {
-                systemPrompt: true,
-                name: true
-            }
-        })
-
-        if (agent?.systemPrompt) {
-            console.log(`📋 Retrieved system prompt for agent ${agentId}: ${agent.name}`)
-            return agent.systemPrompt
-        }
-
-        console.warn(`⚠️ Agent ${agentId} not found, using fallback prompt`)
-        return 'You are a helpful and knowledgeable AI assistant.' // Fallback
-    } catch (error) {
-        console.error(`❌ Error getting system prompt for agent ${agentId}:`, error)
-        return 'You are a helpful and knowledgeable AI assistant.' // Fallback
-    }
-}
-
-function calculateCost(tokenCount: number): number {
-    // Simplified cost calculation
-    const costPer1kTokens = 0.001
-    return (tokenCount / 1000) * costPer1kTokens
+function calculateCost(
+    inputTokens: number,
+    outputTokens: number,
+    inputPricePerK: number,
+    outputPricePerK: number
+): number {
+    const inputCost = (inputTokens / 1000) * inputPricePerK
+    const outputCost = (outputTokens / 1000) * outputPricePerK
+    return inputCost + outputCost
 }

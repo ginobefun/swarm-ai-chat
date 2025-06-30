@@ -80,5 +80,22 @@ export interface SessionAnalysis {
     swarmUser: {
         id: string
         userId: string
+        username: string
     }
+}
+
+/**
+ * Agent configuration interface including model parameters
+ */
+export interface AgentConfiguration {
+    systemPrompt: string
+    modelName: string
+    temperature: number  // Always has a value (either from agent config, model default, or fallback)
+    maxTokens: number   // Always has a value (either from agent config, model default, or fallback)
+    name: string
+    agentId: string
+    avatar: string      // Agent avatar/icon from SwarmAIAgent.icon field
+    // Model pricing information
+    inputPricePerK: number   // Price per 1K input tokens in USD
+    outputPricePerK: number  // Price per 1K output tokens in USD
 } 
