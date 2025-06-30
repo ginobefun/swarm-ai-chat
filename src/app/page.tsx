@@ -5,7 +5,6 @@ import Navbar from '@/components/Navbar'
 import SessionList from '@/components/session/SessionList'
 import ChatArea from '@/components/chat/ChatArea'
 import WelcomeGuide from '@/components/WelcomeGuide'
-import WorkspacePanel from '@/components/workspace/WorkspacePanel'
 import { useSessionManager } from '@/hooks/useSessionManager'
 import { useSession } from '@/components/providers/AuthProvider'
 
@@ -168,29 +167,11 @@ export default function Home() {
                         <ChatArea
                             session={currentSession}
                             onSessionUpdate={updateSession}
+                            isWorkspaceOpen={isWorkspaceOpen}
+                            onWorkspaceToggle={setIsWorkspaceOpen}
                         />
                     )}
                 </div>
-
-                {/* 
-                    Workspace Panel
-                    
-                    Responsive behavior:
-                    - Hidden on mobile and tablet (< 1024px)
-                    - Visible on desktop (>= 1024px)
-                    - Can be toggled via navbar controls
-                    - Hidden when showing welcome guide to give more space
-                    
-                    Features:
-                    - Session-aware content display
-                    - Modular workspace components
-                    - Real-time updates based on current session
-                */}
-                {isWorkspaceOpen && !shouldShowWelcomeGuide && (
-                    <div className="hidden lg:flex w-[360px] min-w-[320px] max-w-[400px] border-l border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800">
-                        <WorkspacePanel session={currentSession} />
-                    </div>
-                )}
             </div>
 
             {/* 

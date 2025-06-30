@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useCallback, useState } from 'react'
+import React, { useEffect, useCallback, useState, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import MessageList from './MessageList'
 import MessageInput from './MessageInput'
@@ -8,184 +8,441 @@ import { Session, Message } from '@/types'
 import { useTranslation } from '@/contexts/AppContext'
 import AddAgentDialog from './AddAgentDialog'
 import ChatSettingsDialog from './ChatSettingsDialog'
-import { useSession } from '@/components/providers/AuthProvider'
+
+import WorkspacePanel from '@/components/workspace/WorkspacePanel'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { useChat } from '@ai-sdk/react'
 import {
     Plus,
-    Settings
+    Settings,
+    Users,
+    Bot,
+    RefreshCw,
+    AlertCircle
 } from 'lucide-react'
+import { databaseConfigAdapter } from '@/lib/services/DatabaseConfigAdapter'
+import { ChatRequestData, OrchestratorResponse } from '@/types/chat'
 
 interface ChatAreaProps {
     session: Session | null
     onSessionUpdate?: (sessionId: string, updates: Partial<Session>) => void
+    isWorkspaceOpen?: boolean
+    onWorkspaceToggle?: (isOpen: boolean) => void
 }
 
 /**
- * ChatArea component - Main chat interface for active sessions
+ * ChatArea component - Unified chat interface
  * 
  * Features:
- * - Real-time message display and input
- * - Session header with participant information
- * - Add member and settings functionality
- * - Responsive design with proper spacing
- * - Dark mode support throughout
- * - Loading and typing indicators
- * - Accessibility features with ARIA labels
- * - AI streaming responses with useChat hook
- * 
- * Layout:
- * - Chat header with session info and controls
- * - Message list with scrolling capability
- * - Message input at bottom
- * 
- * @param props - ChatAreaProps containing session data and handlers
- * @returns JSX element representing the chat interface
+ * - Unified interface for both single-agent and multi-agent modes
+ * - Server-side mode detection and routing
+ * - Traditional streaming for single agents
+ * - LangGraph orchestration for multi-agent sessions
+ * - Database-driven agent configuration
+ * - Seamless user experience regardless of mode
  */
 const ChatArea: React.FC<ChatAreaProps> = ({
     session,
-    onSessionUpdate
+    onSessionUpdate,
+    isWorkspaceOpen = false,
+    onWorkspaceToggle
 }) => {
     const { t } = useTranslation()
 
-    // Get user authentication state
-    const { data: sessionData } = useSession()
-    const user = sessionData?.user
-    const currentUserId = user?.id
+    // Agent data cache for performance
+    const [agentCache, setAgentCache] = useState<Map<string, { name: string; avatar: string }>>(new Map())
+
+    // Helper functions using database configuration
+    const getAgentName = useCallback(async (agentId: string): Promise<string> => {
+        // Check cache first
+        const cached = agentCache.get(agentId)
+        if (cached) return cached.name
+
+        try {
+            const agent = await databaseConfigAdapter.getAgentById(agentId)
+            const name = agent?.name || 'AI Assistant'
+            const avatar = agent?.avatar || '🤖'
+
+            // Update cache
+            setAgentCache(prev => new Map(prev).set(agentId, { name, avatar }))
+
+            return name
+        } catch (error) {
+            console.error('Error fetching agent name:', error)
+            return 'AI Assistant'
+        }
+    }, [agentCache])
+
+    const getAgentAvatar = useCallback(async (agentId: string): Promise<string> => {
+        // Check cache first
+        const cached = agentCache.get(agentId)
+        if (cached) return cached.avatar
+
+        try {
+            const agent = await databaseConfigAdapter.getAgentById(agentId)
+            const name = agent?.name || 'AI Assistant'
+            const avatar = agent?.avatar || '🤖'
+
+            // Update cache
+            setAgentCache(prev => new Map(prev).set(agentId, { name, avatar }))
+
+            return avatar
+        } catch (error) {
+            console.error('Error fetching agent avatar:', error)
+            return '🤖'
+        }
+    }, [agentCache])
+
+    // Synchronous getters for immediate display (with fallbacks)
+    const getAgentNameSync = useCallback((agentId: string): string => {
+        const cached = agentCache.get(agentId)
+        if (cached) return cached.name
+
+        // Load async in background
+        getAgentName(agentId)
+        return 'AI Assistant' // Fallback while loading
+    }, [agentCache, getAgentName])
+
+    const getAgentAvatarSync = useCallback((agentId: string): string => {
+        const cached = agentCache.get(agentId)
+        if (cached) return cached.avatar
+
+        // Load async in background
+        getAgentAvatar(agentId)
+        return '🤖' // Fallback while loading
+    }, [agentCache, getAgentAvatar])
 
     // Dialog states
     const [showAddAgentDialog, setShowAddAgentDialog] = useState(false)
     const [showSettingsDialog, setShowSettingsDialog] = useState(false)
 
-    // Get agent information functions - moved to top to avoid hoisting issues
-    const getAgentName = useCallback((agentId: string): string => {
-        const agentNames: Record<string, string> = {
-            'gemini-flash': 'Gemini Flash',
-            'article-summarizer': '文章摘要师',
-            'critical-thinker': '批判性思考者',
-            'creative-writer': '创意作家',
-            'data-scientist': '数据科学家',
-            'code-expert': '代码专家'
+    // Orchestrator response state for workspace
+    const [orchestratorResponse, setOrchestratorResponse] = useState<OrchestratorResponse | null>(null)
+    const [confirmedIntent, setConfirmedIntent] = useState<string>('')
+
+    // Enhanced state management for error handling and reliability
+    const [sendingState, setSendingState] = useState<'idle' | 'sending' | 'error'>('idle')
+    const [lastError, setLastError] = useState<Error | null>(null)
+    const [lastFailedMessage, setLastFailedMessage] = useState<string>('')
+    const [userErrorMessage, setUserErrorMessage] = useState<string>('')
+
+    // Concurrent request management
+    const pendingRequests = React.useRef(new Set<string>())
+    const MAX_CONCURRENT_REQUESTS = 3
+
+    // Memory management constants
+    const MAX_DATA_ITEMS = 50
+    const ORCHESTRATOR_RESPONSE_CLEANUP_DELAY = 30000
+
+    // Determine session characteristics for UI display
+    const agentParticipants = useMemo(() =>
+        session?.participants?.filter(p => p.type === 'agent') || [],
+        [session?.participants]
+    )
+    const isMultiAgentSession = agentParticipants.length > 1
+
+    // Preload agent cache for session participants
+    useEffect(() => {
+        if (session) {
+            // Preload all agent data for this session
+            const agentIds = [
+                ...agentParticipants.map(p => p.id),
+                ...(session.primaryAgentId ? [session.primaryAgentId] : [])
+            ]
+
+            agentIds.forEach(agentId => {
+                if (!agentCache.has(agentId)) {
+                    getAgentName(agentId) // This will update the cache
+                }
+            })
         }
-        return agentNames[agentId] || 'AI Assistant'
+    }, [session, agentParticipants, agentCache, getAgentName])
+
+    // Enhanced error handling with user-friendly feedback (no auto-retry)
+    const handleChatError = useCallback((error: Error) => {
+        console.error('🔴 Chat error:', error)
+        setLastError(error)
+        setSendingState('error')
+
+        // Error classification and user feedback
+        const errorMessage = error.message.toLowerCase()
+        let errorType = 'generic_error'
+        let userMessage = t('chat.sendMessageFailed')
+
+        if (errorMessage.includes('timeout') || errorMessage.includes('network')) {
+            errorType = 'network_timeout'
+            userMessage = t('chat.networkTimeout')
+        } else if (errorMessage.includes('rate limit') || errorMessage.includes('too many requests')) {
+            errorType = 'rate_limit'
+            userMessage = t('chat.rateLimitExceeded')
+        } else if (errorMessage.includes('unauthorized') || errorMessage.includes('authentication')) {
+            errorType = 'authentication_failed'
+            userMessage = t('chat.authenticationFailed')
+        } else if (errorMessage.includes('quota') || errorMessage.includes('limit exceeded')) {
+            errorType = 'quota_exceeded'
+            userMessage = t('chat.quotaExceeded')
+        }
+
+        // Store user-friendly error message for UI display
+        setUserErrorMessage(userMessage)
+
+        // Log error classification for debugging (English for developers)
+        console.warn('❌ Chat error classified as:', errorType, 'Original error:', error.message)
+    }, [t])
+
+    // Manual retry function will be defined after handleSendMessage
+
+    // Component cleanup and memory management
+    useEffect(() => {
+        const currentPendingRequests = pendingRequests.current
+        return () => {
+            // Clear all pending requests
+            currentPendingRequests.clear()
+            console.log('🧹 Component cleanup: cleared pending requests')
+        }
     }, [])
 
-    const getAgentAvatar = useCallback((agentId: string): string => {
-        const agentAvatars: Record<string, string> = {
-            'gemini-flash': '⚡',
-            'article-summarizer': '📝',
-            'critical-thinker': '🤔',
-            'creative-writer': '✍️',
-            'data-scientist': '📊',
-            'code-expert': '💻'
-        }
-        return agentAvatars[agentId] || '🤖'
-    }, [])
+    // Session change cleanup
+    useEffect(() => {
+        // Reset states when session changes
+        setSendingState('idle')
+        setLastError(null)
+        setLastFailedMessage('')
+        setUserErrorMessage('')
+        setOrchestratorResponse(null)
+        pendingRequests.current.clear()
 
-    // Vercel AI useChat hook for handling streaming responses
+        console.log('🔄 Session changed, states reset')
+    }, [session?.id])
+
+    // Initialize unified chat with enhanced error handling
     const {
         messages,
+        append,
+        setMessages,
         isLoading,
         error,
-        setMessages,
-        append
+        data
     } = useChat({
         api: '/api/chat',
-        body: {
-            sessionId: session?.id,
-            userId: currentUserId,
-            agentId: session?.primaryAgentId || 'gemini-flash'
-        },
-        onError: (error) => {
-            console.error('🔴 Frontend Chat error:', error)
-            console.error('🔴 Error details:', {
-                name: error.name,
-                message: error.message,
-                stack: error.stack
+        onError: handleChatError,
+        onFinish: (message, { finishReason, usage }) => {
+            console.log('✅ Chat response finished:', {
+                finishReason,
+                usage,
+                messageLength: message.content?.length
             })
-        },
-        onFinish: (message) => {
-            console.log('✅ Frontend - AI response finished:', message)
-            // Update session message count
+
+            // Reset error state on successful completion
+            setSendingState('idle')
+            setLastError(null)
+            setLastFailedMessage('')
+            setUserErrorMessage('')
+
+            // For single-agent mode, update session message count
             if (session && onSessionUpdate) {
+                console.log('📊 Updating session message count for response')
                 onSessionUpdate(session.id, {
-                    messageCount: (session.messageCount || 0) + 2 // +1 for user, +1 for AI
+                    messageCount: (session.messageCount || 0) + 2
                 })
             }
         }
     })
 
-    // Load existing messages when session changes
-    useEffect(() => {
-        const loadSessionMessages = async () => {
-            if (!session?.id) return
+    // Reload messages from database
+    const reloadMessages = useCallback(async () => {
+        if (!session?.id) return
 
-            try {
-                const response = await fetch(`/api/sessions/${session.id}/messages`)
-                if (response.ok) {
-                    const responseData = await response.json()
+        try {
+            const response = await fetch(`/api/sessions/${session.id}/messages`)
+            if (response.ok) {
+                const responseData = await response.json()
+                const sessionMessages = responseData.data || responseData
 
-                    // Handle both direct array response and wrapped response
-                    const sessionMessages = responseData.data || responseData
+                const formattedMessages = sessionMessages.map((msg: {
+                    id: string
+                    senderType: string
+                    senderId: string
+                    content: string
+                    contentType: string
+                    createdAt: string
+                    metadata?: string
+                }) => ({
+                    id: msg.id,
+                    role: msg.senderType === 'USER' ? 'user' : 'assistant',
+                    content: msg.content,
+                    createdAt: new Date(msg.createdAt),
+                    metadata: {
+                        senderType: msg.senderType,
+                        senderId: msg.senderId,
+                        contentType: msg.contentType,
+                        rawMetadata: msg.metadata && msg.metadata.length > 10 ? JSON.parse(msg.metadata) : undefined
+                    }
+                }))
 
-                    // Convert SwarmChatMessage format to AI SDK format
-                    const formattedMessages = sessionMessages.map((msg: {
-                        id: string
-                        senderType: string
-                        content: string
-                        createdAt: string
-                    }) => ({
-                        id: msg.id,
-                        role: msg.senderType === 'user' ? 'user' : 'assistant',
-                        content: msg.content,
-                        createdAt: new Date(msg.createdAt)
-                    }))
-
-                    setMessages(formattedMessages)
-                }
-            } catch (error) {
-                console.error('Error loading session messages:', error)
+                setMessages(formattedMessages)
             }
+        } catch (error) {
+            console.error('Error reloading messages:', error)
         }
-
-        loadSessionMessages()
     }, [session?.id, setMessages])
 
-    // Handle manual message sending (from MessageInput component)
-    const handleSendMessage = async (message: string) => {
-        if (!session || !message.trim() || !currentUserId) return
+    // Monitor data changes for orchestrator responses with memory management
+    useEffect(() => {
+        if (data && data.length > 0) {
+            // Memory management: Limit data array size to prevent memory leaks
+            if (data.length > MAX_DATA_ITEMS) {
+                console.warn(`🧹 Data array size (${data.length}) exceeds limit (${MAX_DATA_ITEMS}), cleanup recommended`)
+            }
 
-        // Use append to add the user message and trigger AI response
-        await append({
-            role: 'user',
-            content: message
-        })
-    }
+            const latestData = data[data.length - 1] as unknown as OrchestratorResponse
+            if (latestData?.type === 'orchestrator') {
+                console.log('🤖 Received orchestrator response via StreamData:', {
+                    turnIndex: latestData.turnIndex,
+                    shouldClarify: latestData.shouldClarify,
+                    hasQuestion: !!latestData.clarificationQuestion,
+                    tasksCount: latestData.tasks?.length || 0,
+                    resultsCount: latestData.results?.length || 0
+                })
+
+                setOrchestratorResponse(latestData)
+
+                // Delayed cleanup of orchestrator response to prevent memory leaks
+                setTimeout(() => {
+                    setOrchestratorResponse(prev =>
+                        prev?.turnIndex === latestData.turnIndex ? null : prev
+                    )
+                }, ORCHESTRATOR_RESPONSE_CLEANUP_DELAY)
+
+                // Reload messages to show collaboration results
+                console.log('🔄 Reloading messages to display collaboration results')
+                reloadMessages()
+            }
+        }
+    }, [data, reloadMessages])
+
+    // Handle unified message sending with enhanced reliability and concurrency control
+    const handleSendMessage = useCallback(async (message: string) => {
+        // Input validation and state checks
+        if (!message.trim() || !session?.id) {
+            console.warn('⚠️ Invalid message or session')
+            return
+        }
+
+        // Prevent sending while already processing
+        if (sendingState === 'sending') {
+            console.warn('⚠️ Message already being sent, ignoring duplicate request')
+            return
+        }
+
+        // Concurrent request limit check
+        if (pendingRequests.current.size >= MAX_CONCURRENT_REQUESTS) {
+            console.warn(`⚠️ Maximum concurrent requests (${MAX_CONCURRENT_REQUESTS}) reached`)
+            return
+        }
+
+        const requestId = crypto.randomUUID()
+
+        try {
+            // Add to pending requests for concurrency control
+            pendingRequests.current.add(requestId)
+            setSendingState('sending')
+            setLastFailedMessage(message)
+            setLastError(null)
+
+            console.log('📤 Sending unified message:', {
+                requestId,
+                sessionId: session.id,
+                messageLength: message.length,
+                agentParticipants: agentParticipants.length,
+                isMultiAgentSession,
+                confirmedIntent: confirmedIntent || 'auto',
+                pendingRequests: pendingRequests.current.size
+            })
+
+            // Prepare request data
+            const requestData: ChatRequestData = {
+                sessionId: session.id,
+                mode: 'auto', // Let server decide based on session analysis
+                confirmedIntent: confirmedIntent || undefined
+            }
+
+            // Clear confirmed intent after sending
+            setConfirmedIntent('')
+
+            // Use the unified chat interface with request data and tracking headers
+            await append({
+                role: 'user',
+                content: message,
+                id: crypto.randomUUID(),
+                createdAt: new Date()
+            }, {
+                data: JSON.parse(JSON.stringify(requestData)),
+                headers: {
+                    'X-Request-ID': requestId,
+                    'X-Session-ID': session.id
+                }
+            })
+
+            // Success: message will be handled by onFinish callback
+            console.log('✅ Message sent successfully:', requestId)
+
+        } catch (error) {
+            console.error('❌ Failed to send message:', error)
+            setSendingState('error')
+            setLastError(error as Error)
+            // Error will be handled by onError callback via useChat
+        } finally {
+            // Always clean up the pending request
+            pendingRequests.current.delete(requestId)
+        }
+    }, [
+        session?.id,
+        sendingState,
+        agentParticipants.length,
+        isMultiAgentSession,
+        confirmedIntent,
+        append
+    ])
+
+    // Simple manual retry function (defined after handleSendMessage to avoid dependency issues)
+    const handleRetry = useCallback(() => {
+        if (lastFailedMessage && sendingState === 'error') {
+            console.log('🔄 Manual retry triggered')
+            setLastError(null)
+            setUserErrorMessage('')
+            handleSendMessage(lastFailedMessage)
+        }
+    }, [lastFailedMessage, sendingState, handleSendMessage])
+
+    // Note: Auto-retry logic removed to avoid complexity and potential server-side conflicts
+
+    // Load existing messages when session changes
+    useEffect(() => {
+        reloadMessages()
+    }, [session?.id, reloadMessages])
 
     // Handle adding agent to session
     const handleAddAgent = async (agentId: string) => {
         if (!session || !onSessionUpdate) return
 
-        // Get current participants or initialize as empty array
         const currentParticipants = session.participants || []
 
-        // Check if agent is already added
         if (currentParticipants.some(p => p.id === agentId)) {
             console.log('Agent already added to session')
             return
         }
 
-        // Add new agent participant
         const newParticipant = {
             id: agentId,
-            name: getAgentName(agentId),
-            avatar: getAgentAvatar(agentId),
+            name: getAgentNameSync(agentId),
+            avatar: getAgentAvatarSync(agentId),
             type: 'agent' as const
         }
 
         const updatedParticipants = [...currentParticipants, newParticipant]
 
-        // Update session
         onSessionUpdate(session.id, {
             participants: updatedParticipants
         })
@@ -193,138 +450,230 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         console.log(`Added agent ${agentId} to session ${session.id}`)
     }
 
-
-    // Convert AI SDK messages to our Message format for display
+    // Convert messages for display
     const displayMessages: Message[] = messages.map((msg) => ({
         id: msg.id,
         content: msg.content,
-        sender: msg.role === 'user' ? 'You' : getAgentName(session?.primaryAgentId || 'gemini-flash'),
+        sender: msg.role === 'user' ? 'You' : getAgentNameSync(session?.primaryAgentId || 'gemini-flash'),
         senderType: msg.role === 'user' ? 'user' : 'ai',
         timestamp: msg.createdAt || new Date(),
-        avatar: msg.role === 'user' ? 'You' : getAgentAvatar(session?.primaryAgentId || 'gemini-flash'),
-        avatarStyle: undefined
+        avatar: msg.role === 'user' ? 'You' : getAgentAvatarSync(session?.primaryAgentId || 'gemini-flash'),
+        avatarStyle: undefined,
+        // Pass through metadata for collaboration messages
+        metadata: (msg as unknown as { metadata?: { senderType?: string; senderId?: string; contentType?: string; rawMetadata?: Record<string, unknown> } }).metadata
     }))
 
-
-    // ChatArea should only render when there's an active session
     if (!session) {
         return null
     }
 
     return (
-        <main className="flex flex-col h-full bg-slate-50 dark:bg-slate-900">
-            {/* Chat Header - Fixed at top with responsive design */}
-            <header className="flex-shrink-0 flex items-center justify-between px-4 sm:px-6 py-3 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shadow-sm">
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                    {/* Agent Avatar */}
-                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center text-white text-base sm:text-lg font-medium shadow-md flex-shrink-0">
-                        {getAgentAvatar(session?.primaryAgentId || 'gemini-flash')}
+        <div className="flex h-full bg-slate-50 dark:bg-slate-900">
+            {/* Main Chat Area */}
+            <main className="flex flex-col flex-1 min-w-0">
+                {/* Chat Header */}
+                <header className="flex-shrink-0 flex items-center justify-between px-4 sm:px-6 py-3 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shadow-sm">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                        {/* Mode Indicator */}
+                        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center text-white text-base sm:text-lg font-medium shadow-md flex-shrink-0">
+                            {isMultiAgentSession ? <Users className="w-5 h-5" /> : <Bot className="w-5 h-5" />}
+                        </div>
+
+                        {/* Session Info */}
+                        <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                                <h1 className="text-sm sm:text-base font-semibold text-slate-900 dark:text-slate-100 truncate">
+                                    {session.title}
+                                </h1>
+                                {isMultiAgentSession && (
+                                    <Badge variant="secondary" className="text-xs">
+                                        {t('chat.collaborationMode')}
+                                    </Badge>
+                                )}
+                            </div>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                                {isMultiAgentSession
+                                    ? `${agentParticipants.length}${t('chat.agentsCollaborating')}`
+                                    : `${getAgentNameSync(session?.primaryAgentId || 'gemini-flash')} · ${messages.length || 0} ${t('chat.messages')}`
+                                }
+                                {orchestratorResponse && (
+                                    <span className="ml-2">• Turn #{orchestratorResponse.turnIndex}</span>
+                                )}
+                            </p>
+                        </div>
                     </div>
 
-                    {/* Session Info */}
-                    <div className="flex-1 min-w-0">
-                        <h1 className="text-sm sm:text-base font-semibold text-slate-900 dark:text-slate-100 truncate">
-                            {session.title}
-                        </h1>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">
-                            {getAgentName(session?.primaryAgentId || 'gemini-flash')} · {messages.length || 0} {t('chat.messages')}
-                        </p>
-                        {/* Mobile-only compact info */}
-                        <p className="text-xs text-slate-500 dark:text-slate-400 sm:hidden">
-                            {messages.length || 0} {t('chat.messages')}
-                        </p>
+                    {/* Header Actions */}
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 hidden sm:flex"
+                                title={t('chat.addMember')}
+                                onClick={() => setShowAddAgentDialog(true)}
+                            >
+                                <Plus className="w-4 h-4" />
+                            </Button>
+                        </motion.div>
+                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0"
+                                title={t('chat.settings')}
+                                onClick={() => setShowSettingsDialog(true)}
+                            >
+                                <Settings className="w-4 h-4" />
+                            </Button>
+                        </motion.div>
+                        {/* Workspace Toggle */}
+                        {isMultiAgentSession && (
+                            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                <Button
+                                    variant={isWorkspaceOpen ? "default" : "ghost"}
+                                    size="sm"
+                                    className="h-8 px-3 text-xs"
+                                    onClick={() => onWorkspaceToggle?.(!isWorkspaceOpen)}
+                                >
+                                    {t('chat.workspace')}
+                                </Button>
+                            </motion.div>
+                        )}
+                    </div>
+                </header>
+
+                {/* Simplified Error Banner */}
+                {(error || lastError) && (
+                    <div className="flex-shrink-0 mx-4 mt-3 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/50 rounded-lg">
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-2 text-sm text-red-700 dark:text-red-400">
+                                <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                                <span>
+                                    {userErrorMessage || (error || lastError)?.message || 'Something went wrong. Please try again.'}
+                                </span>
+                            </div>
+
+                            {/* Simple Manual Retry Button */}
+                            {sendingState === 'error' && lastFailedMessage && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-7 px-2 text-xs border-red-300 text-red-700 hover:bg-red-100 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-950/30"
+                                    onClick={handleRetry}
+                                    disabled={sendingState !== 'error'}
+                                >
+                                    <RefreshCw className="w-3 h-3 mr-1" />
+                                    {t('chat.retry')}
+                                </Button>
+                            )}
+                        </div>
+
+                        {/* Simple progress indicator for sending */}
+                        {sendingState === 'sending' && (
+                            <div className="mt-2 w-full bg-red-100 dark:bg-red-900/30 rounded-full h-1">
+                                <div className="bg-red-500 h-1 rounded-full animate-pulse" style={{ width: '30%' }} />
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Main Content Area - Traditional Chat Interface */}
+                <div className="flex-1 flex flex-col min-h-0">
+                    {/* Chat Messages Area */}
+                    <div className="flex-1 overflow-hidden">
+                        <MessageList
+                            messages={displayMessages}
+                            isTyping={isLoading}
+                            typingUser={isLoading ? (isMultiAgentSession ? t('chat.agentsCollaboratingInProgress') : getAgentNameSync(session?.primaryAgentId || 'gemini-flash')) : ''}
+                            typingAvatar={isLoading ? (isMultiAgentSession ? '🤖' : getAgentAvatarSync(session?.primaryAgentId || 'gemini-flash')) : ''}
+                        />
+                    </div>
+
+                    {/* Clarification Section */}
+                    {orchestratorResponse?.shouldClarify && (
+                        <div className="flex-shrink-0 p-4 bg-amber-50 dark:bg-amber-950/20 border-t border-amber-200 dark:border-amber-800/50">
+                            <p className="text-sm font-medium text-amber-800 dark:text-amber-300 mb-2">
+                                {t('chat.needsClarification')}
+                            </p>
+                            <p className="text-sm text-amber-700 dark:text-amber-400 mb-3">
+                                {orchestratorResponse.clarificationQuestion}
+                            </p>
+                            <input
+                                type="text"
+                                value={confirmedIntent}
+                                onChange={(e) => setConfirmedIntent(e.target.value)}
+                                placeholder={t('chat.pleaseReply')}
+                                className="w-full px-3 py-2 text-sm border rounded-md bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600"
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && confirmedIntent.trim()) {
+                                        handleSendMessage(confirmedIntent)
+                                    }
+                                }}
+                            />
+                        </div>
+                    )}
+
+                    {/* Summary Section */}
+                    {orchestratorResponse?.summary && (
+                        <div className="flex-shrink-0 p-4 bg-green-50 dark:bg-green-950/20 border-t border-green-200 dark:border-green-800/50">
+                            <p className="text-sm font-medium text-green-800 dark:text-green-300 mb-2">
+                                {t('chat.collaborationSummary')}
+                            </p>
+                            <p className="text-sm text-green-700 dark:text-green-400 whitespace-pre-wrap">
+                                {orchestratorResponse.summary}
+                            </p>
+                            {orchestratorResponse.costUSD > 0 && (
+                                <p className="text-xs text-green-600 dark:text-green-500 mt-2">
+                                    {t('chat.collaborationCost')}${orchestratorResponse.costUSD.toFixed(4)}
+                                </p>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Message Input */}
+                    <div className="flex-shrink-0 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+                        <MessageInput
+                            onSendMessage={handleSendMessage}
+                            mentionItems={[]}
+                            disabled={isLoading}
+                            placeholder={t('chat.inputPlaceholder')}
+                        />
                     </div>
                 </div>
 
-                {/* Header Actions - Responsive */}
-                <div className="flex items-center gap-1 flex-shrink-0">
-                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0 hidden sm:flex"
-                            title={t('chat.addMember')}
-                            onClick={() => setShowAddAgentDialog(true)}
-                        >
-                            <Plus className="w-4 h-4" />
-                        </Button>
-                    </motion.div>
-                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0"
-                            title={t('chat.settings')}
-                            onClick={() => setShowSettingsDialog(true)}
-                        >
-                            <Settings className="w-4 h-4" />
-                        </Button>
-                    </motion.div>
-                </div>
-            </header>
+                {/* Dialogs */}
+                <AddAgentDialog
+                    isOpen={showAddAgentDialog}
+                    onClose={() => setShowAddAgentDialog(false)}
+                    onAddAgent={handleAddAgent}
+                    currentAgentIds={agentParticipants.map(p => p.id)}
+                />
 
-            {/* Error Banner - Fixed position below header */}
-            {error && (
-                <div className="flex-shrink-0 mx-4 mt-3 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/50 rounded-lg">
-                    <div className="flex items-center gap-2 text-sm text-red-700 dark:text-red-400">
-                        <span className="text-red-500">⚠️</span>
-                        {error.message || 'Something went wrong. Please try again.'}
-                    </div>
+                <ChatSettingsDialog
+                    isOpen={showSettingsDialog}
+                    onClose={() => setShowSettingsDialog(false)}
+                    session={session}
+                    onUpdateSession={onSessionUpdate}
+                    onDeleteSession={(sessionId) => {
+                        console.log('Delete session:', sessionId)
+                    }}
+                />
+            </main>
+
+            {/* Workspace Panel - Integrated */}
+            {isMultiAgentSession && isWorkspaceOpen && (
+                <div className="hidden lg:flex w-[360px] min-w-[320px] max-w-[400px] border-l border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+                    <WorkspacePanel
+                        session={session}
+                        orchestratorResponse={orchestratorResponse}
+                        isVisible={isWorkspaceOpen}
+                        onClose={() => onWorkspaceToggle?.(false)}
+                    />
                 </div>
             )}
-
-            {/* Messages Container - Scrollable content area */}
-            <div className="flex-1 flex flex-col min-h-0">
-                {/* Message List - Flexible content with proper scrolling */}
-                <div className="flex-1 overflow-hidden">
-                    <MessageList
-                        messages={displayMessages}
-                        isTyping={isLoading}
-                        typingUser={getAgentName(session?.primaryAgentId || 'gemini-flash')}
-                        typingAvatar={getAgentAvatar(session?.primaryAgentId || 'gemini-flash')}
-                    />
-                </div>
-
-                {/* Message Input - Fixed at bottom */}
-                <div className="flex-shrink-0 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
-                    <MessageInput
-                        onSendMessage={handleSendMessage}
-                        mentionItems={session.participants.filter(p => p.type === 'agent').map(p => ({
-                            id: p.id,
-                            name: p.name,
-                            avatar: p.avatar || '🤖',
-                            type: 'agent' as const
-                        }))}
-                        disabled={isLoading || !currentUserId}
-                        placeholder={
-                            !currentUserId ? t('chat.loginToSendMessage') :
-                                isLoading ? t('chat.aiThinking') :
-                                    t('chat.inputPlaceholder')
-                        }
-                    />
-                </div>
-            </div>
-
-            {/* Dialogs */}
-            <AddAgentDialog
-                isOpen={showAddAgentDialog}
-                onClose={() => setShowAddAgentDialog(false)}
-                onAddAgent={handleAddAgent}
-                currentAgentIds={session.participants?.filter(p => p.type === 'agent').map(p => p.id) || []}
-            />
-
-            <ChatSettingsDialog
-                isOpen={showSettingsDialog}
-                onClose={() => setShowSettingsDialog(false)}
-                session={session}
-                onUpdateSession={onSessionUpdate}
-                onDeleteSession={(sessionId) => {
-                    // This would be handled by parent component
-                    console.log('Delete session:', sessionId)
-                }}
-            />
-        </main>
+        </div>
     )
 }
 
-export default ChatArea 
+export default ChatArea

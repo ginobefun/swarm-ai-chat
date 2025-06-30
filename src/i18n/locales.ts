@@ -232,6 +232,22 @@ export interface Messages {
         statistics: string
         currentParticipants: string
         chatPreferences: string
+        // ChatArea specific
+        collaborationMode: string
+        agentsCollaborating: string
+        agentsCollaboratingInProgress: string
+        needsClarification: string
+        pleaseReply: string
+        collaborationSummary: string
+        collaborationCost: string
+        retry: string
+        // Error messages
+        sendMessageFailed: string
+        networkTimeout: string
+        rateLimitExceeded: string
+        authenticationFailed: string
+        quotaExceeded: string
+        genericError: string
     }
 
     // 工作区
@@ -681,6 +697,22 @@ export const locales: Record<LocaleKey, Messages> = {
             statistics: '统计信息',
             currentParticipants: '当前参与者',
             chatPreferences: '聊天偏好',
+            // ChatArea specific
+            collaborationMode: '协作模式',
+            agentsCollaborating: '个智能体协作',
+            agentsCollaboratingInProgress: '智能体协作中...',
+            needsClarification: '需要澄清：',
+            pleaseReply: '请回复...',
+            collaborationSummary: '协作总结：',
+            collaborationCost: '本次协作成本：',
+            retry: '重试',
+            // Error messages
+            sendMessageFailed: '发送消息失败，请重试',
+            networkTimeout: '网络连接超时，请检查网络后重试',
+            rateLimitExceeded: '请求过于频繁，请稍后再试',
+            authenticationFailed: '认证失败，请重新登录',
+            quotaExceeded: '服务额度已用尽，请联系管理员',
+            genericError: '出现错误，请重试',
         },
         workspace: {
             title: '工作区',
@@ -1116,6 +1148,22 @@ export const locales: Record<LocaleKey, Messages> = {
             statistics: 'Statistics',
             currentParticipants: 'Current Participants',
             chatPreferences: 'Chat Preferences',
+            // ChatArea specific
+            collaborationMode: 'Collaboration Mode',
+            agentsCollaborating: ' agents collaborating',
+            agentsCollaboratingInProgress: 'AI agents collaborating...',
+            needsClarification: 'Needs clarification:',
+            pleaseReply: 'Please reply...',
+            collaborationSummary: 'Collaboration Summary:',
+            collaborationCost: 'Collaboration cost:',
+            retry: 'Retry',
+            // Error messages
+            sendMessageFailed: 'Failed to send message, please retry',
+            networkTimeout: 'Network timeout, please check your connection and retry',
+            rateLimitExceeded: 'Too many requests, please try again later',
+            authenticationFailed: 'Authentication failed, please login again',
+            quotaExceeded: 'Service quota exceeded, please contact administrator',
+            genericError: 'An error occurred, please retry',
         },
         workspace: {
             title: 'Workspace',

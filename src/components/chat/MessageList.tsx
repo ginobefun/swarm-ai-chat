@@ -53,6 +53,88 @@ const MessageItem: React.FC<{ message: Message }> = ({ message }) => {
         })
     }
 
+    // Message metadata interface
+    interface MessageMetadata {
+        senderType?: string
+        senderId?: string
+        contentType?: string
+        rawMetadata?: {
+            taskId?: string
+            assignedTo?: string
+            turnIndex?: number
+            originalContent?: string
+            [key: string]: string | number | boolean | undefined
+        }
+    }
+
+    // Extended message interface for collaboration
+    interface ExtendedMessage extends Message {
+        metadata?: MessageMetadata
+    }
+
+    // Check if this is a collaboration message
+    const isCollaborationMessage = (message: ExtendedMessage) => {
+        return message.metadata?.contentType === 'SYSTEM' && message.metadata?.senderId === 'orchestrator'
+    }
+
+    const isTaskMessage = (message: ExtendedMessage) => {
+        return message.metadata?.rawMetadata?.taskId
+    }
+
+    const isResultMessage = (message: ExtendedMessage) => {
+        return message.metadata?.senderType === 'AGENT' && message.metadata?.contentType === 'TEXT' && message.metadata?.rawMetadata?.taskId
+    }
+
+    // Render collaboration-specific message styles
+    const renderCollaborationMessage = (content: string, message: ExtendedMessage) => {
+        if (isTaskMessage(message)) {
+            const metadata = message.metadata?.rawMetadata
+            return (
+                <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/50 rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                        <span className="text-blue-600 dark:text-blue-400">🎯</span>
+                        <span className="font-medium text-blue-900 dark:text-blue-300">新任务分配</span>
+                        {metadata?.assignedTo && (
+                            <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full">
+                                {metadata.assignedTo}
+                            </span>
+                        )}
+                    </div>
+                    <div className="text-sm text-blue-800 dark:text-blue-200 whitespace-pre-wrap">{content}</div>
+                </div>
+            )
+        }
+
+        if (isResultMessage(message)) {
+            const metadata = message.metadata?.rawMetadata
+            return (
+                <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800/50 rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                        <span className="text-green-600 dark:text-green-400">✅</span>
+                        <span className="font-medium text-green-900 dark:text-green-300">任务完成</span>
+                        {metadata?.taskId && (
+                            <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-1 rounded-full">
+                                {metadata.taskId.substring(0, 8)}
+                            </span>
+                        )}
+                    </div>
+                    <div className="text-sm text-green-800 dark:text-green-200 whitespace-pre-wrap">{content}</div>
+                </div>
+            )
+        }
+
+        // Default system message styling
+        return (
+            <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/50 rounded-lg p-3">
+                <div className="flex items-center gap-2 mb-2">
+                    <span className="text-amber-600 dark:text-amber-400">🔄</span>
+                    <span className="font-medium text-amber-900 dark:text-amber-300">协作进度</span>
+                </div>
+                <div className="text-sm text-amber-800 dark:text-amber-200 whitespace-pre-wrap">{content}</div>
+            </div>
+        )
+    }
+
     const renderMessageContent = (content: string) => {
         // Enhanced markdown support for AI responses
         const processMarkdown = (text: string) => {
@@ -126,19 +208,28 @@ const MessageItem: React.FC<{ message: Message }> = ({ message }) => {
                 )}
 
                 {/* Message bubble - Responsive */}
-                <div className={`relative px-3 py-2 sm:px-4 sm:py-3 text-sm break-words shadow-sm ${isUser
-                    ? 'bg-indigo-600 text-white rounded-2xl rounded-tr-md'
-                    : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-700 rounded-2xl rounded-tl-md'
-                    }`}>
-                    {renderMessageContent(message.content)}
+                {/* Check for collaboration messages and render accordingly */}
+                {isCollaborationMessage(message) || isTaskMessage(message) || isResultMessage(message) ? (
+                    // Collaboration message (no bubble, special styling)
+                    <div className="w-full">
+                        {renderCollaborationMessage(message.content, message)}
+                    </div>
+                ) : (
+                    // Regular message bubble
+                    <div className={`relative px-3 py-2 sm:px-4 sm:py-3 text-sm break-words shadow-sm ${isUser
+                        ? 'bg-indigo-600 text-white rounded-2xl rounded-tr-md'
+                        : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-700 rounded-2xl rounded-tl-md'
+                        }`}>
+                        {renderMessageContent(message.content)}
 
-                    {/* Message tail for bubble effect */}
-                    <div className={`absolute top-0 w-3 h-3 ${isUser
-                        ? 'right-0 bg-indigo-600 rounded-tl-full'
-                        : 'left-0 bg-white dark:bg-slate-800 border-l border-t border-slate-200 dark:border-slate-700 rounded-br-full'
-                        } transform ${isUser ? 'translate-x-2 -translate-y-1' : '-translate-x-2 -translate-y-1'}`}
-                    />
-                </div>
+                        {/* Message tail for bubble effect */}
+                        <div className={`absolute top-0 w-3 h-3 ${isUser
+                            ? 'right-0 bg-indigo-600 rounded-tl-full'
+                            : 'left-0 bg-white dark:bg-slate-800 border-l border-t border-slate-200 dark:border-slate-700 rounded-br-full'
+                            } transform ${isUser ? 'translate-x-2 -translate-y-1' : '-translate-x-2 -translate-y-1'}`}
+                        />
+                    </div>
+                )}
 
                 {/* Timestamp - show on hover */}
                 <div className={`text-xs text-slate-500 dark:text-slate-400 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${isUser ? 'text-right' : 'text-left'}`}>

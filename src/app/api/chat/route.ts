@@ -1,316 +1,465 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { streamText, createDataStreamResponse } from 'ai'
 import { createOpenRouter } from '@openrouter/ai-sdk-provider'
-import { streamText } from 'ai'
+
+import prisma from '@/lib/database/prisma'
+import { getLatestTurnIndex, storeActiveGraph, getActiveGraph } from '@/lib/orchestrator/hooks'
+import { OrchestratorGraphBuilder } from '@/lib/orchestrator/graphBuilder'
+import { createInitialState } from '@/lib/orchestrator/graphBuilder'
 import { addMessageToSession } from '@/lib/database/sessions-prisma'
-import { z } from 'zod'
+import { saveOrchestratorResult } from '@/lib/orchestrator/hooks'
+import { auth } from '@/lib/auth'
 
-// Types
-interface ChatMessage {
-    role: 'user' | 'assistant' | 'system'
-    content: string
-    parts?: Array<{
-        type: string
-        text: string
-    }>
-}
+// Import our new types
+import {
+    ChatMessage,
+    ChatRequestData,
+    OrchestratorResponse,
+    SessionAnalysis
+} from '@/types/chat'
 
-// Request validation schema
-const ChatRequestSchema = z.object({
-    sessionId: z.string().uuid(),
-    message: z.string().min(1),
-    agentId: z.string().optional(),
-    userId: z.string()
-})
-
-/**
- * POST /api/chat
- * Handle chat messages with AI using OpenRouter's Gemini 2.5 Flash
- * 
- * Features:
- * - Stream AI responses using Vercel AI SDK + OpenRouter
- * - Save user and AI messages to SwarmChatMessage
- * - Support for different AI agents
- * - Error handling and logging
- */
 export async function POST(req: NextRequest) {
     try {
-        console.log('🔍 Chat API - Starting request processing')
-        const body = await req.json()
-        console.log('🔍 Chat API - Received body:', {
-            hasMessages: !!body.messages,
-            messagesLength: body.messages?.length,
-            sessionId: body.sessionId,
-            userId: body.userId,
-            agentId: body.agentId
+        const session = await auth.api.getSession({
+            headers: req.headers
         })
 
-        // Extract message from Vercel AI SDK format (messages array) or direct format
-        const messageContent = body.messages?.slice(-1)[0]?.content || body.message
-        console.log('🔍 Chat API - Extracted message content:', messageContent?.substring(0, 100) + '...')
-
-        // Get all messages for context (required by AI SDK)
-        const allMessages = body.messages || []
-        console.log('🔍 Chat API - All messages count:', allMessages.length)
-
-        // Validate request data (message field is not required since it comes from messages array)
-        const { sessionId, agentId = 'gemini-flash', userId } = ChatRequestSchema.omit({ message: true }).parse(body)
-        console.log('🔍 Chat API - Validation passed:', { sessionId, agentId, userId })
-
-        // Validate message content
-        if (!messageContent || typeof messageContent !== 'string') {
-            throw new Error('Message content is required')
+        if (!session?.user?.id) {
+            return new Response('Unauthorized', { status: 401 })
         }
 
-        // Save user message to database first
-        console.log('🔍 Chat API - Saving user message to database')
-        try {
-            await addMessageToSession({
+        const { messages, data } = await req.json()
+        const requestData = data as ChatRequestData
+
+        if (!messages?.length || !requestData?.sessionId) {
+            return new Response('Invalid request: missing messages or sessionId', { status: 400 })
+        }
+
+        const userId = session.user.id
+        const sessionId = requestData.sessionId
+        const messageContent = messages[messages.length - 1]?.content
+
+        if (!messageContent) {
+            return new Response('Invalid request: empty message', { status: 400 })
+        }
+
+        console.log('📥 Unified chat request:', {
+            sessionId,
+            messageLength: messageContent.length,
+            requestMode: requestData.mode,
+            confirmedIntent: requestData.confirmedIntent,
+            userId
+        })
+
+        // Analyze session to determine mode
+        const sessionAnalysis = await analyzeSession(sessionId, userId)
+
+        // Determine final mode
+        const finalMode = requestData.mode === 'auto' || !requestData.mode
+            ? (sessionAnalysis.isMultiAgent ? 'multi' : 'single')
+            : requestData.mode
+
+        console.log('🎯 Mode decision:', {
+            requestMode: requestData.mode,
+            analysisResult: sessionAnalysis.isMultiAgent ? 'multi' : 'single',
+            finalMode,
+            agentCount: sessionAnalysis.agentIds.length
+        })
+
+        if (finalMode === 'multi') {
+            return handleMultiAgentChat({
+                messages,
                 sessionId,
-                senderType: 'user',
-                senderId: userId,
-                content: messageContent,
-                contentType: 'text'
+                messageContent,
+                userId,
+                requestData,
+                sessionAnalysis
             })
-            console.log('✅ Chat API - User message saved successfully')
-        } catch (dbError) {
-            console.error('❌ Chat API - Database error:', dbError)
-            throw new Error(`Database error: ${dbError instanceof Error ? dbError.message : 'Unknown database error'}`)
-        }
-
-        // Create OpenRouter provider instance
-        console.log('🔍 Chat API - Creating OpenRouter provider')
-        if (!process.env.OPENROUTER_API_KEY) {
-            throw new Error('OPENROUTER_API_KEY is not configured')
-        }
-
-        const openrouter = createOpenRouter({
-            apiKey: process.env.OPENROUTER_API_KEY,
-            headers: {
-                'HTTP-Referer': process.env.BETTER_AUTH_URL || 'http://localhost:3000',
-                'X-Title': 'SwarmAI.chat'
-            }
-        })
-
-        // Select model based on agent
-        const modelName = getModelForAgent(agentId)
-        const model = openrouter.chat(modelName)
-        console.log('🔍 Chat API - Selected model:', modelName)
-
-        // Create system prompt based on agent
-        const systemPrompt = getAgentSystemPrompt(agentId)
-        console.log('🔍 Chat API - Created system prompt for agent:', agentId)
-
-        const startTime = Date.now()
-
-        // Prepare messages for AI model
-        console.log('🔍 Chat API - Preparing messages for AI model')
-        const aiMessages = [
-            {
-                role: 'system' as const,
-                content: systemPrompt
-            },
-            ...allMessages.map((msg: ChatMessage) => ({
-                role: msg.role,
-                content: msg.content
-            }))
-        ]
-        console.log('🔍 Chat API - AI messages prepared, count:', aiMessages.length)
-
-        // Stream AI response
-        console.log('🔍 Chat API - Starting AI stream text generation')
-        try {
-            const result = await streamText({
-                model,
-                messages: aiMessages,
-                temperature: 0.7,
-                maxTokens: 2048,
-                // Callback to save AI response chunks as they come
-                onFinish: async (completion) => {
-                    console.log('🔍 Chat API - onFinish callback triggered')
-                    console.log('🔍 Chat API - Completion object:', {
-                        hasText: !!completion.text,
-                        textLength: completion.text?.length,
-                        hasUsage: !!completion.usage,
-                        usage: completion.usage
-                    })
-
-                    try {
-                        const processingTime = Date.now() - startTime
-                        const tokenCount = completion.usage?.totalTokens || 0
-                        const cost = calculateCost(tokenCount, modelName)
-
-                        console.log('🔍 Chat API - Calculated metrics:', {
-                            processingTime,
-                            tokenCount,
-                            cost
-                        })
-
-                        // Save AI response to database
-                        await addMessageToSession({
-                            sessionId,
-                            senderType: 'agent',
-                            senderId: agentId,
-                            content: completion.text,
-                            contentType: 'text',
-                            tokenCount,
-                            processingTime,
-                            cost
-                        })
-
-                        console.log(`✅ AI Response saved for session ${sessionId}:`, {
-                            agentId,
-                            modelName,
-                            tokenCount,
-                            processingTime: `${processingTime}ms`,
-                            cost: `$${cost.toFixed(4)}`
-                        })
-                    } catch (error) {
-                        console.error('❌ Error saving AI response:', error)
-                        console.error('❌ Error details:', {
-                            name: error instanceof Error ? error.name : 'Unknown',
-                            message: error instanceof Error ? error.message : String(error),
-                            stack: error instanceof Error ? error.stack : undefined
-                        })
-                    }
-                },
-                onError: (error) => {
-                    console.error('❌ Chat API - Stream error:', error)
-                }
+        } else {
+            return handleSingleAgentChat({
+                messages,
+                sessionId,
+                messageContent,
+                userId,
+                agentId: sessionAnalysis.primaryAgentId
             })
-
-            console.log('✅ Chat API - AI stream created successfully')
-            // Return streaming response
-            return result.toDataStreamResponse()
-        } catch (aiError) {
-            console.error('❌ Chat API - AI generation error:', aiError)
-            throw new Error(`AI generation error: ${aiError instanceof Error ? aiError.message : 'Unknown AI error'}`)
         }
 
     } catch (error) {
-        console.error('❌ Chat API Error:', error)
+        console.error('❌ Chat API error:', error)
+        return new Response(`Server error: ${(error as Error).message}`, { status: 500 })
+    }
+}
 
-        if (error instanceof z.ZodError) {
-            return NextResponse.json(
-                {
-                    success: false,
-                    error: 'Invalid request data',
-                    details: error.errors
-                },
-                { status: 400 }
-            )
+/**
+ * Handle multi-agent collaboration with StreamData
+ */
+async function handleMultiAgentChat({
+    sessionId,
+    messageContent,
+    userId,
+    requestData,
+    sessionAnalysis
+}: {
+    messages: ChatMessage[]
+    sessionId: string
+    messageContent: string
+    userId: string
+    requestData: ChatRequestData
+    sessionAnalysis: SessionAnalysis
+}) {
+    console.log('🤖 Starting multi-agent orchestration...')
+
+    const agentIds = sessionAnalysis.agentIds
+    const confirmedIntent = requestData.confirmedIntent
+
+    // Save user message to database
+    await addMessageToSession({
+        sessionId,
+        senderType: 'user',
+        senderId: userId,
+        content: messageContent,
+        contentType: 'text'
+    })
+
+    let graph = getActiveGraph(sessionId)
+    let state
+
+    if (graph && confirmedIntent) {
+        console.log('🔄 Continuing existing graph with confirmed intent')
+        const turnIndex = await getLatestTurnIndex(sessionId)
+        state = createInitialState(sessionId, messageContent, turnIndex)
+        state.confirmedIntent = confirmedIntent
+        state.shouldClarify = false
+    } else {
+        console.log('🆕 Creating new orchestrator graph')
+        const builder = new OrchestratorGraphBuilder({
+            sessionId,
+            participants: agentIds
+        })
+
+        graph = await builder.build()
+        storeActiveGraph(sessionId, graph)
+
+        const turnIndex = await getLatestTurnIndex(sessionId) + 1
+        state = createInitialState(sessionId, messageContent, turnIndex)
+    }
+
+    // Execute graph
+    console.log('🎬 Running orchestrator graph...')
+    const startTime = Date.now()
+    const finalState = await graph.invoke(state, {
+        recursionLimit: 50
+    })
+    const executionTime = Date.now() - startTime
+
+    console.log('✅ Graph execution completed:', {
+        executionTimeMs: executionTime,
+        finalTurnIndex: finalState.turnIndex,
+        shouldClarify: finalState.shouldClarify,
+        tasksCount: finalState.tasks?.length || 0,
+        resultsCount: finalState.results?.length || 0
+    })
+
+    // Save orchestrator result
+    await saveOrchestratorResult(finalState)
+
+    // Prepare orchestrator response for StreamData
+    const orchestratorResponse: OrchestratorResponse = {
+        type: 'orchestrator',
+        success: true,
+        turnIndex: finalState.turnIndex,
+        shouldClarify: finalState.shouldClarify,
+        clarificationQuestion: finalState.clarificationQuestion,
+        summary: finalState.summary,
+        events: finalState.events || [],
+        tasks: finalState.tasks || [],
+        results: finalState.results || [],
+        costUSD: finalState.costUSD || 0
+    }
+
+    // Metadata for response headers
+    // const metadata: ChatMetadata = {
+    //     mode: 'multi',
+    //     agentIds,
+    //     executionTime
+    // }
+
+    console.log('🎉 Multi-agent orchestration completed, sending via createDataStreamResponse')
+
+    // Use createDataStreamResponse to send orchestrator data
+    return createDataStreamResponse({
+        execute: async (dataStream) => {
+            // Write orchestrator response as data (convert to JSON-compatible format)
+            dataStream.writeData(JSON.parse(JSON.stringify(orchestratorResponse)))
+
+            // Send a simple completion message
+            const stream = streamText({
+                model: createOpenRouter({
+                    apiKey: process.env.OPENROUTER_API_KEY!,
+                    headers: {
+                        'HTTP-Referer': process.env.BETTER_AUTH_URL || 'https://swarmai.chat',
+                        'X-Title': 'SwarmAI.chat'
+                    }
+                }).chat('openai/gpt-4.1'),
+                messages: [
+                    {
+                        role: 'system',
+                        content: 'You are a helpful assistant. Simply acknowledge that the multi-agent collaboration has been completed.'
+                    },
+                    {
+                        role: 'user',
+                        content: 'Multi-agent collaboration completed'
+                    }
+                ]
+            })
+
+            // Merge the streamText result into the data stream
+            stream.mergeIntoDataStream(dataStream)
+        },
+        headers: {
+            'X-Chat-Mode': 'multi',
+            'X-Agent-Count': agentIds.length.toString()
+        },
+        onError: (error) => {
+            console.error('🔴 Multi-agent streaming error:', error)
+            return error instanceof Error ? error.message : 'Multi-agent collaboration failed'
+        }
+    })
+}
+
+/**
+ * Handle single-agent streaming
+ */
+async function handleSingleAgentChat({
+    messages,
+    sessionId,
+    messageContent,
+    userId,
+    agentId
+}: {
+    messages: ChatMessage[]
+    sessionId: string
+    messageContent: string
+    userId: string
+    agentId: string
+}) {
+    console.log('⚡ Starting single-agent streaming...')
+
+    // Save user message to database
+    await addMessageToSession({
+        sessionId,
+        senderType: 'user',
+        senderId: userId,
+        content: messageContent,
+        contentType: 'text'
+    })
+
+    if (!process.env.OPENROUTER_API_KEY) {
+        throw new Error('OPENROUTER_API_KEY is not configured')
+    }
+
+    const openrouter = createOpenRouter({
+        apiKey: process.env.OPENROUTER_API_KEY,
+        headers: {
+            'HTTP-Referer': process.env.BETTER_AUTH_URL || 'https://swarmai.chat',
+            'X-Title': 'SwarmAI.chat'
+        }
+    })
+
+    const modelName = await getModelForAgent(agentId)
+    const model = openrouter.chat(modelName)
+    const systemPrompt = await getAgentSystemPrompt(agentId)
+
+    const startTime = Date.now()
+
+    // Prepare messages for AI model
+    const aiMessages = [
+        { role: 'system' as const, content: systemPrompt },
+        ...messages.map((msg: ChatMessage) => ({
+            role: msg.role,
+            content: msg.content
+        }))
+    ]
+
+    // Metadata for response headers
+    // const metadata: ChatMetadata = {
+    //     mode: 'single',
+    //     agentId
+    // }
+
+    // Stream AI response
+    const result = streamText({
+        model,
+        messages: aiMessages,
+        temperature: 0.7,
+        maxTokens: 2048,
+        onFinish: async (completion) => {
+            try {
+                const processingTime = Date.now() - startTime
+                const tokenCount = completion.usage?.totalTokens || 0
+                const cost = calculateCost(tokenCount)
+
+                await addMessageToSession({
+                    sessionId,
+                    senderType: 'agent',
+                    senderId: agentId,
+                    content: completion.text,
+                    contentType: 'text',
+                    tokenCount,
+                    processingTime,
+                    cost
+                })
+
+                console.log(`✅ Single-agent response saved:`, {
+                    agentId,
+                    tokenCount,
+                    processingTime: `${processingTime}ms`,
+                    cost: `$${cost.toFixed(4)}`
+                })
+            } catch (error) {
+                console.error('❌ Error saving single-agent response:', error)
+            }
+        }
+    })
+
+    return result.toDataStreamResponse({
+        headers: {
+            'X-Chat-Mode': 'single',
+            'X-Agent-Id': agentId
+        }
+    })
+}
+
+async function analyzeSession(sessionId: string, userId: string): Promise<SessionAnalysis> {
+    try {
+        // First, find the SwarmUser record
+        const swarmUser = await prisma.swarmUser.findUnique({
+            where: { userId: userId }
+        })
+
+        if (!swarmUser) {
+            throw new Error('User not found in swarm system')
         }
 
-        return NextResponse.json(
-            {
-                success: false,
-                error: 'Internal server error',
-                message: error instanceof Error ? error.message : 'Unknown error'
+        // Get session with participants
+        const session = await prisma.swarmChatSession.findUnique({
+            where: { id: sessionId },
+            include: {
+                participants: {
+                    include: {
+                        agent: true
+                    }
+                }
+            }
+        })
+
+        if (!session) {
+            throw new Error('Session not found')
+        }
+
+        // Check authorization
+        if (session.createdById !== swarmUser.id) {
+            throw new Error('Unauthorized access to session')
+        }
+
+        // Analyze agent participants
+        const agentParticipants = session.participants.filter(p => p.agentId)
+        const agentIds = agentParticipants.map(p => p.agentId!)
+
+        console.log('📊 Session analysis:', {
+            sessionId,
+            totalParticipants: session.participants.length,
+            agentParticipants: agentParticipants.length,
+            agentIds,
+            primaryAgent: session.primaryAgentId
+        })
+
+        return {
+            isMultiAgent: agentParticipants.length > 1,
+            agentIds,
+            primaryAgentId: session.primaryAgentId || agentIds[0] || 'gemini-flash',
+            session: {
+                id: sessionId,
+                participants: session.participants.map(p => ({ agentId: p.agentId }))
             },
-            { status: 500 }
-        )
+            swarmUser: {
+                id: swarmUser.id,
+                userId: swarmUser.userId
+            }
+        }
+    } catch (error) {
+        console.error('❌ Session analysis failed:', error)
+        // Return fallback for single-agent mode
+        return {
+            isMultiAgent: false,
+            agentIds: ['gemini-flash'],
+            primaryAgentId: 'gemini-flash',
+            session: {
+                id: sessionId,
+                participants: []
+            },
+            swarmUser: {
+                id: '',
+                userId
+            }
+        }
     }
 }
 
-/**
- * Get OpenRouter model name based on agent ID
- */
-function getModelForAgent(agentId: string): string {
-    const agentModels: Record<string, string> = {
-        'gemini-flash': 'google/gemini-flash-1.5',
-        'article-summarizer': 'google/gemini-flash-1.5',
-        'critical-thinker': 'anthropic/claude-3.5-sonnet',
-        'creative-writer': 'anthropic/claude-3.5-sonnet',
-        'data-scientist': 'openai/gpt-4o',
-        'code-expert': 'google/gemini-flash-1.5'
-    }
+async function getModelForAgent(agentId: string): Promise<string> {
+    try {
+        const agent = await prisma.swarmAIAgent.findUnique({
+            where: {
+                id: agentId,
+                isActive: true
+            },
+            include: {
+                model: true
+            }
+        })
 
-    return agentModels[agentId] || agentModels['gemini-flash']
+        if (agent?.model) {
+            console.log(`📋 Retrieved model for agent ${agentId}: ${agent.model.modelName}`)
+            return agent.model.modelName
+        }
+
+        console.warn(`⚠️ Agent ${agentId} not found, using fallback model`)
+        return 'google/gemini-flash-1.5' // Fallback
+    } catch (error) {
+        console.error(`❌ Error getting model for agent ${agentId}:`, error)
+        return 'google/gemini-flash-1.5' // Fallback
+    }
 }
 
-/**
- * Get system prompt based on agent ID
- */
-function getAgentSystemPrompt(agentId: string): string {
-    const agentPrompts: Record<string, string> = {
-        'gemini-flash': `你是 SwarmAI.chat 平台上的智能助手，专门为用户提供高质量的对话支持。
+async function getAgentSystemPrompt(agentId: string): Promise<string> {
+    try {
+        const agent = await prisma.swarmAIAgent.findUnique({
+            where: {
+                id: agentId,
+                isActive: true
+            },
+            select: {
+                systemPrompt: true,
+                name: true
+            }
+        })
 
-核心特征：
-- 友好、专业、富有洞察力
-- 能够理解上下文并提供深入的回答
-- 支持中英文交流，优先使用用户的语言
-- 关注用户体验，提供结构化的回答
+        if (agent?.systemPrompt) {
+            console.log(`📋 Retrieved system prompt for agent ${agentId}: ${agent.name}`)
+            return agent.systemPrompt
+        }
 
-回答风格：
-- 清晰简洁，重点突出
-- 使用适当的格式（列表、段落等）
-- 必要时提供具体的例子
-- 保持温和且专业的语调
-
-请根据用户的问题提供有帮助的回答。`,
-
-        'article-summarizer': `你是一位专业的文章摘要师，擅长快速提取文档的核心观点和要点。
-
-专长能力：
-- 快速理解长篇文档的主要内容
-- 提取关键信息和核心论点
-- 生成结构化的摘要报告
-- 识别重要的数据和结论
-
-工作方式：
-- 首先概述文档的主题和范围
-- 列出 3-5 个核心要点
-- 提供具体的数据支持
-- 总结主要结论和建议`,
-
-        'critical-thinker': `你是一位批判性思维专家，专门分析论点的逻辑性和可靠性。
-
-分析重点：
-- 论证的逻辑结构和推理过程
-- 证据的可靠性和相关性
-- 潜在的偏见和假设
-- 论点的局限性和反驳观点
-
-分析框架：
-1. 论点强度分析
-2. 证据质量评估
-3. 逻辑漏洞识别
-4. 替代观点探讨
-5. 改进建议`,
-
-        'code-expert': `你是一位编程专家，擅长多种编程语言和技术栈。
-
-专长能力：
-- 精通 Java、Python、JavaScript、TypeScript、Go 等多种编程语言
-- 熟悉前端、后端、移动端开发
-- 代码审查和性能优化
-- 架构设计和最佳实践
-
-回答风格：
-- 提供清晰的代码示例
-- 解释关键概念和原理
-- 给出最佳实践建议
-- 包含完整的实现步骤
-
-请根据用户的编程问题提供专业的技术解答。`
+        console.warn(`⚠️ Agent ${agentId} not found, using fallback prompt`)
+        return 'You are a helpful and knowledgeable AI assistant.' // Fallback
+    } catch (error) {
+        console.error(`❌ Error getting system prompt for agent ${agentId}:`, error)
+        return 'You are a helpful and knowledgeable AI assistant.' // Fallback
     }
-
-    return agentPrompts[agentId] || agentPrompts['gemini-flash']
 }
 
-/**
- * Calculate cost based on token usage and model
- * OpenRouter pricing varies by model
- */
-function calculateCost(tokenCount: number, modelName: string): number {
-    // OpenRouter pricing per 1M tokens (approximate)
-    const modelPricing: Record<string, number> = {
-        'google/gemini-flash-1.5': 0.075,     // $0.075 per 1M tokens (input)
-        'google/gemini-2.0-flash-001': 0.10,  // $0.10 per 1M tokens (input)
-        'google/gemini-2.0-flash-exp:free': 0, // Free tier
-        'anthropic/claude-3.5-sonnet': 3.0,   // $3.00 per 1M tokens  
-        'openai/gpt-4o': 2.5                  // $2.50 per 1M tokens
-    }
-
-    const pricePerMillion = modelPricing[modelName] || 0.075
-    return (tokenCount / 1000000) * pricePerMillion
+function calculateCost(tokenCount: number): number {
+    // Simplified cost calculation
+    const costPer1kTokens = 0.001
+    return (tokenCount / 1000) * costPer1kTokens
 }

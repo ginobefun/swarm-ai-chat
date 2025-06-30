@@ -4,6 +4,7 @@ import "./globals.css"
 import { LanguageProvider } from '../contexts/AppContext'
 import { ThemeProvider } from '../components/ThemeProvider'
 import { AuthProvider } from '../components/providers/AuthProvider'
+import { ConfigInitializer } from '../components/providers/ConfigInitializer'
 
 // Configure Google Fonts with CSS variables for optimal performance
 // Geist Sans is used for body text and UI elements
@@ -149,7 +150,10 @@ export default function RootLayout({
                     <LanguageProvider>
                         {/* Auth provider for user authentication state management */}
                         <AuthProvider>
-                            {children}
+                            {/* Config initializer for loading models and agents */}
+                            <ConfigInitializer>
+                                {children}
+                            </ConfigInitializer>
                         </AuthProvider>
                     </LanguageProvider>
                 </ThemeProvider>

@@ -70,4 +70,119 @@ export const isValidContentType = (value: string): value is ContentTypeValue => 
 
 export const isValidMessageStatus = (value: string): value is MessageStatusValue => {
     return ['sending', 'sent', 'delivered', 'read', 'failed'].includes(value)
+}
+
+/**
+ * Extract JSON from AI response that might be wrapped in markdown code blocks
+ * or contain extra text before/after the JSON
+ */
+export const extractJSONFromResponse = <T = unknown>(text: string): T => {
+    if (!text || typeof text !== 'string') {
+        throw new Error('Invalid input: text must be a non-empty string')
+    }
+
+    // Try different extraction strategies
+    const strategies = [
+        // Strategy 1: Direct JSON parse (pure JSON response)
+        () => JSON.parse(text.trim()),
+
+        // Strategy 2: Extract from markdown code blocks
+        () => {
+            const jsonBlockMatch = text.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/i)
+            if (jsonBlockMatch) {
+                return JSON.parse(jsonBlockMatch[1].trim())
+            }
+            throw new Error('No JSON code block found')
+        },
+
+        // Strategy 3: Extract from curly braces (find first complete JSON object)
+        () => {
+            const start = text.indexOf('{')
+            if (start === -1) throw new Error('No opening brace found')
+
+            let braceCount = 0
+            let end = start
+
+            for (let i = start; i < text.length; i++) {
+                if (text[i] === '{') braceCount++
+                else if (text[i] === '}') braceCount--
+
+                if (braceCount === 0) {
+                    end = i + 1
+                    break
+                }
+            }
+
+            const jsonStr = text.substring(start, end)
+            return JSON.parse(jsonStr)
+        },
+
+        // Strategy 4: Extract from square brackets (for JSON arrays)
+        () => {
+            const start = text.indexOf('[')
+            if (start === -1) throw new Error('No opening bracket found')
+
+            let bracketCount = 0
+            let end = start
+
+            for (let i = start; i < text.length; i++) {
+                if (text[i] === '[') bracketCount++
+                else if (text[i] === ']') bracketCount--
+
+                if (bracketCount === 0) {
+                    end = i + 1
+                    break
+                }
+            }
+
+            const jsonStr = text.substring(start, end)
+            return JSON.parse(jsonStr)
+        }
+    ]
+
+    // Try each strategy until one succeeds
+    const errors: string[] = []
+    for (let i = 0; i < strategies.length; i++) {
+        try {
+            const result = strategies[i]()
+            console.log(`✅ JSON extracted using strategy ${i + 1}`, {
+                strategy: ['Direct JSON', 'Markdown block', 'Curly braces', 'Square brackets'][i],
+                resultType: typeof result,
+                resultKeys: typeof result === 'object' ? Object.keys(result) : 'N/A'
+            })
+            return result
+        } catch (error) {
+            const errorMsg = (error as Error).message
+            errors.push(`Strategy ${i + 1}: ${errorMsg}`)
+            console.log(`❌ Strategy ${i + 1} failed:`, {
+                strategy: ['Direct JSON', 'Markdown block', 'Curly braces', 'Square brackets'][i],
+                error: errorMsg,
+                textPreview: text.substring(0, 100)
+            })
+            continue
+        }
+    }
+
+    // If all strategies fail, throw a detailed error with all attempts
+    console.error('🚨 All JSON extraction strategies failed:', {
+        textLength: text.length,
+        textPreview: text.substring(0, 300),
+        allErrors: errors,
+        containsCodeBlock: text.includes('```'),
+        containsBraces: text.includes('{'),
+        containsBrackets: text.includes('[')
+    })
+    throw new Error(`Failed to extract JSON from response after ${strategies.length} attempts. All errors: ${errors.join('; ')}. Text preview: ${text.substring(0, 200)}...`)
+}
+
+/**
+ * Safe JSON extraction with fallback value
+ */
+export const safeExtractJSON = <T>(text: string, fallback: T): T => {
+    try {
+        return extractJSONFromResponse<T>(text)
+    } catch (error) {
+        console.warn('JSON extraction failed, using fallback:', (error as Error).message)
+        return fallback
+    }
 } 
