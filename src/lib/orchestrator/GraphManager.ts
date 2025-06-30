@@ -11,7 +11,7 @@
 import { OrchestratorGraphBuilder } from './graphBuilder'
 
 // Use generic type for compiled graph
-type CompiledGraph = ReturnType<OrchestratorGraphBuilder['build']>
+type CompiledGraph = Awaited<ReturnType<OrchestratorGraphBuilder['build']>>
 
 interface GraphInstance {
     graph: CompiledGraph
@@ -85,7 +85,7 @@ export class GraphManager {
             participants
         })
 
-        const graph = builder.build()
+        const graph = await builder.build()
         const version = ++this.versionCounter
 
         // Store graph instance

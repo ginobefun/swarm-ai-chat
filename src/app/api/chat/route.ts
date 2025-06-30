@@ -138,7 +138,7 @@ async function handleMultiAgentChat({
             participants: agentIds
         })
 
-        graph = builder.build()
+        graph = await builder.build()
         storeActiveGraph(sessionId, graph)
 
         const turnIndex = await getLatestTurnIndex(sessionId) + 1
@@ -148,7 +148,9 @@ async function handleMultiAgentChat({
     // Execute graph
     console.log('🎬 Running orchestrator graph...')
     const startTime = Date.now()
-    const finalState = await graph.invoke(state)
+    const finalState = await graph.invoke(state, {
+        recursionLimit: 50
+    })
     const executionTime = Date.now() - startTime
 
     console.log('✅ Graph execution completed:', {
@@ -265,9 +267,9 @@ async function handleSingleAgentChat({
         }
     })
 
-    const modelName = getModelForAgent(agentId)
+    const modelName = await getModelForAgent(agentId)
     const model = openrouter.chat(modelName)
-    const systemPrompt = getAgentSystemPrompt(agentId)
+    const systemPrompt = await getAgentSystemPrompt(agentId)
 
     const startTime = Date.now()
 
@@ -405,26 +407,55 @@ async function analyzeSession(sessionId: string, userId: string): Promise<Sessio
     }
 }
 
-function getModelForAgent(agentId: string): string {
-    const modelMap: Record<string, string> = {
-        'gemini-flash': 'google/gemini-flash-1.5',
-        'gpt-4o': 'openai/gpt-4o',
-        'claude-sonnet': 'anthropic/claude-3.5-sonnet',
-        'llama-3': 'meta-llama/llama-3.1-70b-instruct',
-        'qwen-coder': 'qwen/qwen-2.5-coder-32b-instruct'
+async function getModelForAgent(agentId: string): Promise<string> {
+    try {
+        const agent = await prisma.swarmAIAgent.findUnique({
+            where: {
+                id: agentId,
+                isActive: true
+            },
+            include: {
+                model: true
+            }
+        })
+
+        if (agent?.model) {
+            console.log(`📋 Retrieved model for agent ${agentId}: ${agent.model.modelName}`)
+            return agent.model.modelName
+        }
+
+        console.warn(`⚠️ Agent ${agentId} not found, using fallback model`)
+        return 'google/gemini-flash-1.5' // Fallback
+    } catch (error) {
+        console.error(`❌ Error getting model for agent ${agentId}:`, error)
+        return 'google/gemini-flash-1.5' // Fallback
     }
-    return modelMap[agentId] || modelMap['gemini-flash']
 }
 
-function getAgentSystemPrompt(agentId: string): string {
-    const prompts: Record<string, string> = {
-        'gemini-flash': 'You are a helpful and knowledgeable AI assistant.',
-        'gpt-4o': 'You are GPT-4o, a large language model trained by OpenAI.',
-        'claude-sonnet': 'You are Claude, an AI assistant created by Anthropic.',
-        'llama-3': 'You are Llama 3, a helpful AI assistant.',
-        'qwen-coder': 'You are Qwen Coder, specialized in programming and development.'
+async function getAgentSystemPrompt(agentId: string): Promise<string> {
+    try {
+        const agent = await prisma.swarmAIAgent.findUnique({
+            where: {
+                id: agentId,
+                isActive: true
+            },
+            select: {
+                systemPrompt: true,
+                name: true
+            }
+        })
+
+        if (agent?.systemPrompt) {
+            console.log(`📋 Retrieved system prompt for agent ${agentId}: ${agent.name}`)
+            return agent.systemPrompt
+        }
+
+        console.warn(`⚠️ Agent ${agentId} not found, using fallback prompt`)
+        return 'You are a helpful and knowledgeable AI assistant.' // Fallback
+    } catch (error) {
+        console.error(`❌ Error getting system prompt for agent ${agentId}:`, error)
+        return 'You are a helpful and knowledgeable AI assistant.' // Fallback
     }
-    return prompts[agentId] || prompts['gemini-flash']
 }
 
 function calculateCost(tokenCount: number): number {

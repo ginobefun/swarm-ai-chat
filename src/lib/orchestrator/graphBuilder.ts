@@ -7,7 +7,7 @@ import { StateGraph } from '@langchain/langgraph'
 import { ModeratorNode } from './nodes/moderator'
 import { TaskRouterNode } from './nodes/taskRouter'
 import { agentCatalog } from './agentCatalog'
-import type { OrchestratorState, ModeratorContext, AgentCapability } from './types'
+import type { OrchestratorState, ModeratorContext } from './types'
 import { nanoid } from 'nanoid'
 
 export interface GraphBuilderOptions {
@@ -40,25 +40,38 @@ export class OrchestratorGraphBuilder {
     constructor(options: GraphBuilderOptions) {
         this.options = options
 
-        // Build moderator context from participants
-        const capabilities = options.participants
-            .map(id => agentCatalog.getAgentCapability(id))
-            .filter((cap): cap is AgentCapability => cap !== undefined)
+        // Initialize with empty context - will be populated during build
+        this.moderatorContext = {
+            sessionId: options.sessionId,
+            participants: []
+        }
+    }
+
+    async build() {
+        console.log('🏗️ Starting graph build process...')
+
+        // Build moderator context from participants (async)
+        const capabilities = []
+        for (const agentId of this.options.participants) {
+            const capability = await agentCatalog.getAgentCapability(agentId)
+            if (capability) {
+                capabilities.push(capability)
+            } else {
+                console.warn(`⚠️ Agent ${agentId} not found in database catalog`)
+            }
+        }
 
         console.log('📋 Building graph with capabilities:', {
-            requestedAgents: options.participants,
+            requestedAgents: this.options.participants,
             foundCapabilities: capabilities.length,
             capabilities: capabilities.map(c => ({ agentId: c.agentId, name: c.name }))
         })
 
+        // Update moderator context
         this.moderatorContext = {
-            sessionId: options.sessionId,
+            sessionId: this.options.sessionId,
             participants: capabilities
         }
-    }
-
-    build() {
-        console.log('🏗️ Starting graph build process...')
 
         // Initialize the graph with simple state definition
         const workflow = new StateGraph<GraphState>({
@@ -188,10 +201,8 @@ export class OrchestratorGraphBuilder {
 
             // Task router decides which agent to route to
             ; (workflow as any).addConditionalEdges('taskRouter', (state: GraphState) => {
-                const inFlightTasks = Object.values(state.inFlight || {})
-
                 console.log('🔀 TaskRouter routing decision:', {
-                    inFlightTasksCount: inFlightTasks.length,
+                    inFlightTasksCount: Object.keys(state.inFlight || {}).length,
                     availableAgents: this.options.participants,
                     shouldProceedToSummary: state.shouldProceedToSummary,
                     tasksCount: state.tasks?.length || 0,
@@ -204,27 +215,33 @@ export class OrchestratorGraphBuilder {
                     return 'moderator'
                 }
 
-                if (inFlightTasks.length === 0) {
-                    // Check if there are pending tasks
-                    const pendingTasks = (state.tasks || []).filter((t: any) => t.status === 'pending')
-                    if (pendingTasks.length === 0) {
-                        console.log('🎯 No pending tasks, routing to moderator for summary')
-                        return 'moderator'
-                    }
+                // Use TaskRouter's getNextNode method for proper routing logic
+                const nextNode = taskRouter.getNextNode(state as OrchestratorState)
 
-                    console.log('🔄 No in-flight tasks but have pending, might be waiting for dependencies')
-                    return '__end__'  // End here to avoid infinite loop
+                if (nextNode) {
+                    console.log(`🎯 TaskRouter determined next node: ${nextNode}`)
+                    return nextNode
                 }
 
-                // Route to the first agent with a task
-                const agentId = (inFlightTasks[0] as any)?.assignedTo
-                if (agentId && this.options.participants.includes(agentId)) {
-                    console.log(`🎯 Routing to agent: ${agentId}`)
-                    return `agent-${agentId}`
+                // If no next node, check if we should proceed to summary or end
+                const allCompleted = (state.tasks || []).every((task: any) =>
+                    task.status === 'completed' || state.results?.some((r: any) => r.taskId === task.id)
+                )
+
+                if (allCompleted) {
+                    console.log('🎯 All tasks completed, routing to moderator for summary')
+                    return 'moderator'
                 }
 
-                console.log('🔄 No valid agent found, ending execution')
-                return '__end__'
+                // Check if there are any pending tasks that might become ready later
+                const pendingTasks = (state.tasks || []).filter((t: any) => t.status === 'pending')
+                if (pendingTasks.length > 0) {
+                    console.log('🔄 No ready tasks now, but pending tasks exist - ending to avoid infinite loop')
+                    return '__end__'
+                }
+
+                console.log('🎯 No more tasks to process, routing to moderator for summary')
+                return 'moderator'
             })
 
         // Each agent goes back to task router after processing
@@ -236,11 +253,9 @@ export class OrchestratorGraphBuilder {
         }
 
         console.log('⚙️ Compiling workflow...')
-
-        // Compile the graph
         const compiledGraph = workflow.compile()
-
         console.log('✅ Graph compilation completed')
+
         return compiledGraph
     }
 }

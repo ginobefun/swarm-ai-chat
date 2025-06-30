@@ -7,7 +7,7 @@ import { BaseAgentNode } from '../agentNode'
 import type { AgentCapability } from '../../types'
 
 export const researcherCapability: AgentCapability = {
-    agentId: 'article-summarizer',
+    agentId: 'researcher',
     name: 'Research Analyst',
     description: 'Expert at gathering information, analyzing documents, and extracting key insights',
     skills: ['information retrieval', 'document analysis', 'fact checking', 'summarization'],

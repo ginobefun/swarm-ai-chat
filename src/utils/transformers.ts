@@ -36,8 +36,8 @@ export function convertPrismaSessionToSession(session: SessionWithIncludes): Fro
                     id: p.agent.id,
                     type: 'agent',
                     name: p.agent.name,
-                    avatar: p.agent.avatar || `bg-gradient-to-br from-indigo-500 to-purple-600`,
-                    avatarStyle: p.agent.avatarStyle || undefined
+                    avatar: p.agent.icon || `bg-gradient-to-br from-indigo-500 to-purple-600`,
+                    avatarStyle: undefined // SwarmAIAgent doesn't have avatarStyle in new schema
                 })
             }
             // 添加用户参与者
@@ -59,8 +59,8 @@ export function convertPrismaSessionToSession(session: SessionWithIncludes): Fro
             id: session.primaryAgent.id,
             type: 'agent',
             name: session.primaryAgent.name,
-            avatar: session.primaryAgent.avatar || `bg-gradient-to-br from-indigo-500 to-purple-600`,
-            avatarStyle: session.primaryAgent.avatarStyle || undefined
+            avatar: session.primaryAgent.icon || `bg-gradient-to-br from-indigo-500 to-purple-600`,
+            avatarStyle: undefined // SwarmAIAgent doesn't have avatarStyle in new schema
         })
     }
 

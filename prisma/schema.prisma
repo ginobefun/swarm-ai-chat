@@ -61,33 +61,102 @@ model SwarmTool {
   @@map("swarm_tools")
 }
 
+// AI Model Configuration Table
+model SwarmAIModel {
+  id                String             @id @db.VarChar(50)
+  provider          SwarmModelProvider
+  modelName         String             @map("model_name") @db.VarChar(100) // API调用时使用的模型名
+  displayName       String             @map("display_name") @db.VarChar(100) // 界面显示名称
+  description       String?
+  family            String             @db.VarChar(50) // GPT, Claude, Gemini, etc.
+  version           String             @db.VarChar(20)
+  baseUrl           String             @map("base_url")
+  defaultTemperature Decimal           @default(0.7) @map("default_temperature") @db.Decimal(3, 2)
+  capabilities      SwarmModelCapability[]
+  contextWindow     Int                @map("context_window") // 上下文窗口大小
+  maxOutputTokens   Int                @map("max_output_tokens") // 最大输出tokens
+  inputPricePerK    Decimal            @map("input_price_per_k") @db.Decimal(10, 6) // 每1K输入tokens价格(USD)
+  outputPricePerK   Decimal            @map("output_price_per_k") @db.Decimal(10, 6) // 每1K输出tokens价格(USD)
+  requestsPerMinute Int?               @map("requests_per_minute") // RPM限制
+  tokensPerMinute   Int?               @map("tokens_per_minute") // TPM限制
+  intelligenceScore Int                @default(50) @map("intelligence_score") // 智商评分 0-100
+  tier              SwarmModelTier     @default(STANDARD)
+  isActive          Boolean            @default(true) @map("is_active")
+  isSystemModel     Boolean            @default(true) @map("is_system_model") // 系统预置模型
+  releaseDate       DateTime?          @map("release_date")
+  metadata          Json               @default("{}")
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @default(now()) @updatedAt @map("updated_at")
+  agents            SwarmAIAgent[]     // 使用此模型的智能体
+
+  @@map("swarm_ai_models")
+}
+
+// Enhanced AI Agent Table
 model SwarmAIAgent {
   id                  String                        @id @db.VarChar(50)
   name                String                        @db.VarChar(100)
-  avatar              String?                       @db.VarChar(10)
-  avatarStyle         String?                       @map("avatar_style")
   description         String?
-  specialty           String?                       @db.VarChar(255)
-  personality         String?
-  modelPreference     String                        @default("gpt-4") @map("model_preference") @db.VarChar(50)
-  systemPrompt        String?                       @map("system_prompt")
+  longDescription     String?                       @map("long_description") // 详细描述
+  category            SwarmAgentCategory            @default(GENERAL)
+  status              SwarmAgentStatus              @default(ACTIVE)
+  modelId             String                        @map("model_id") @db.VarChar(50) // 关联AI模型
+  systemPrompt        String                        @map("system_prompt")
+  
+  // UI Configuration
+  icon                String?                       @db.VarChar(10) // emoji图标
+  color               String?                       @db.VarChar(7) // 主题颜色
+  avatar              String?                       @db.VarChar(255) // 头像URL
+  cssClass            String?                       @map("css_class") @db.VarChar(50)
+  
+  // Capabilities
+  taskTypes           SwarmTaskType[]               @map("task_types") // 支持的任务类型
+  specializations     String[]                      // 专业领域
+  maxConcurrentTasks  Int                           @default(3) @map("max_concurrent_tasks")
+  estimatedTime       Int                           @default(30) @map("estimated_time") // 预估处理时间(秒)
+  
+  // Personality
+  communicationStyle  SwarmCommunicationStyle       @default(FRIENDLY) @map("communication_style")
+  verbosity           SwarmVerbosity                @default(BALANCED)
+  approach            SwarmApproach                 @default(PRACTICAL)
+  traits              String[]                      // 性格特征
+  
+  // Configuration
+  temperature         Decimal?                      @db.Decimal(3, 2) // 覆盖模型默认温度
+  maxTokens           Int?                          @map("max_tokens") // 覆盖最大tokens
+  functionCalling     Boolean                       @default(false) @map("function_calling")
+  customParams        Json                          @default("{}") @map("custom_params")
+  
+  // Metadata & Stats
+  difficulty          SwarmDifficulty               @default(BEGINNER)
+  pricingTier         SwarmPricingTier              @default(FREE) @map("pricing_tier")
   tags                String[]
-  capabilityLevel     Int                           @default(1) @map("capability_level")
-  averageResponseTime Int                           @default(3000) @map("average_response_time")
-  costPerMessage      Decimal                       @default(0) @map("cost_per_message") @db.Decimal(10, 4)
-  isActive            Boolean                       @default(true) @map("is_active")
-  isPublic            Boolean                       @default(true) @map("is_public")
-  isFeatured          Boolean                       @default(false) @map("is_featured")
-  createdById         String?                       @map("created_by") @db.Uuid
   version             String                        @default("1.0.0") @db.VarChar(20)
-  usageCount          Int                           @default(0) @map("usage_count")
-  rating              Decimal                       @default(0.0) @db.Decimal(3, 2)
+  
+  // Statistics
+  totalTasks          Int                           @default(0) @map("total_tasks")
+  successRate         Decimal                       @default(0.95) @map("success_rate") @db.Decimal(3, 2)
+  averageRating       Decimal                       @default(0.0) @map("average_rating") @db.Decimal(3, 2)
+  totalUsageTime      Int                           @default(0) @map("total_usage_time") // 总使用时间(秒)
+  lastUsed            DateTime?                     @map("last_used")
+  
+  // System & User Management
+  isSystemAgent       Boolean                       @default(true) @map("is_system_agent") // 系统预置智能体
+  isActive            Boolean                       @default(true) @map("is_active")
+  isPublic            Boolean                       @default(true) @map("is_public") // 是否公开可见
+  isFeatured          Boolean                       @default(false) @map("is_featured") // 是否推荐
+  createdById         String?                       @map("created_by") @db.Uuid // 创建者
+  requiredPermissions String[]                      @map("required_permissions") // 所需权限
+  
   createdAt           DateTime                      @default(now()) @map("created_at")
   updatedAt           DateTime                      @default(now()) @updatedAt @map("updated_at")
+  
+  // Relationships
+  model               SwarmAIModel                  @relation(fields: [modelId], references: [id])
+  createdBy           SwarmUser?                    @relation(fields: [createdById], references: [id])
   agentSkills         SwarmAIAgentSkill[]
   agentTools          SwarmAIAgentTool[]
   usageExamples       SwarmAIAgentUsageExample[]
-  createdBy           SwarmUser?                    @relation(fields: [createdById], references: [id])
   sessionParticipants SwarmChatSessionParticipant[]
   primarySessions     SwarmChatSession[]
 
@@ -333,4 +402,98 @@ enum SwarmMessageStatus {
   DELIVERED @map("delivered")
   READ      @map("read")
   FAILED    @map("failed")
+}
+
+// AI Model Related Enums
+enum SwarmModelProvider {
+  OPENROUTER @map("openrouter")
+  OPENAI     @map("openai")
+  ANTHROPIC  @map("anthropic")
+  GOOGLE     @map("google")
+  CUSTOM     @map("custom")
+}
+
+enum SwarmModelCapability {
+  TEXT_GENERATION  @map("text_generation")
+  CODE_GENERATION  @map("code_generation")
+  REASONING        @map("reasoning")
+  ANALYSIS         @map("analysis")
+  CREATIVE_WRITING @map("creative_writing")
+  MULTILINGUAL     @map("multilingual")
+  FUNCTION_CALLING @map("function_calling")
+  VISION           @map("vision")
+  LONG_CONTEXT     @map("long_context")
+}
+
+enum SwarmModelTier {
+  BASIC    @map("basic")
+  STANDARD @map("standard")
+  PREMIUM  @map("premium")
+}
+
+// AI Agent Related Enums
+enum SwarmAgentCategory {
+  GENERAL      @map("general")
+  CODING       @map("coding")
+  RESEARCH     @map("research")
+  CREATIVE     @map("creative")
+  ANALYSIS     @map("analysis")
+  EDUCATION    @map("education")
+  BUSINESS     @map("business")
+  SPECIALIZED  @map("specialized")
+}
+
+enum SwarmAgentStatus {
+  ACTIVE      @map("active")
+  INACTIVE    @map("inactive")
+  MAINTENANCE @map("maintenance")
+  DEPRECATED  @map("deprecated")
+}
+
+enum SwarmTaskType {
+  RESEARCH   @map("research")
+  ANALYZE    @map("analyze")
+  SUMMARIZE  @map("summarize")
+  DEVELOP    @map("develop")
+  REVIEW     @map("review")
+  CREATE     @map("create")
+  TRANSLATE  @map("translate")
+  OPTIMIZE   @map("optimize")
+}
+
+enum SwarmCommunicationStyle {
+  FORMAL       @map("formal")
+  CASUAL       @map("casual")
+  FRIENDLY     @map("friendly")
+  PROFESSIONAL @map("professional")
+  ACADEMIC     @map("academic")
+  CREATIVE     @map("creative")
+}
+
+enum SwarmVerbosity {
+  CONCISE       @map("concise")
+  BALANCED      @map("balanced")
+  DETAILED      @map("detailed")
+  COMPREHENSIVE @map("comprehensive")
+}
+
+enum SwarmApproach {
+  ANALYTICAL  @map("analytical")
+  CREATIVE    @map("creative")
+  PRACTICAL   @map("practical")
+  METHODICAL  @map("methodical")
+  INNOVATIVE  @map("innovative")
+}
+
+enum SwarmDifficulty {
+  BEGINNER     @map("beginner")
+  INTERMEDIATE @map("intermediate")
+  ADVANCED     @map("advanced")
+  EXPERT       @map("expert")
+}
+
+enum SwarmPricingTier {
+  FREE     @map("free")
+  STANDARD @map("standard")
+  PREMIUM  @map("premium")
 }

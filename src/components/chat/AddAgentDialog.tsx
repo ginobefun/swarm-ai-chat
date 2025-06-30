@@ -1,19 +1,11 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { useTranslation } from '@/contexts/AppContext'
-import { Plus, X, Search } from 'lucide-react'
-import { aiAgents } from '@/constants/agents'
-
-interface Agent {
-    id: string
-    name: string
-    description: string
-    avatar: string
-    category: string
-}
+import { Plus, X, Search, Loader2 } from 'lucide-react'
+import { databaseConfigAdapter, type LegacyAgent } from '@/lib/services/DatabaseConfigAdapter'
 
 interface AddAgentDialogProps {
     isOpen: boolean
@@ -27,7 +19,7 @@ interface AddAgentDialogProps {
  * 添加智能体弹窗组件
  * 
  * 功能：
- * 1. 展示可添加的智能体列表
+ * 1. 展示可添加的智能体列表（从数据库加载）
  * 2. 搜索过滤功能
  * 3. 分类展示
  * 4. 防止重复添加
@@ -41,37 +33,43 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
 }) => {
     const { t } = useTranslation()
     const [searchQuery, setSearchQuery] = useState('')
+    const [availableAgents, setAvailableAgents] = useState<LegacyAgent[]>([])
+    const [isLoading, setIsLoading] = useState(false)
+    const [error, setError] = useState<string>('')
+
+    const loadAgents = useCallback(async () => {
+        setIsLoading(true)
+        setError('')
+        try {
+            const agents = await databaseConfigAdapter.getAgents()
+            setAvailableAgents(agents)
+            console.log('📊 Loaded agents for dialog:', agents.length)
+        } catch (error) {
+            console.error('Error loading agents:', error)
+            setError(t('chat.failedToLoadAgents') || 'Failed to load agents')
+        } finally {
+            setIsLoading(false)
+        }
+    }, [t])
+
+    // Load agents from database when dialog opens
+    useEffect(() => {
+        if (isOpen) {
+            loadAgents()
+        }
+    }, [isOpen, loadAgents])
 
     // 获取智能体分类的函数
-    const getAgentCategory = (specialty: string): string => {
-        const specialtyLower = specialty.toLowerCase()
-        if (specialtyLower.includes('分析') || specialtyLower.includes('研究')) {
-            return 'analysis'
-        } else if (specialtyLower.includes('创意') || specialtyLower.includes('设计')) {
-            return 'creative'
-        } else if (specialtyLower.includes('技术') || specialtyLower.includes('代码')) {
-            return 'technical'
-        } else if (specialtyLower.includes('商业') || specialtyLower.includes('市场')) {
-            return 'business'
-        } else {
-            return 'general'
-        }
+    const getAgentCategory = (category: string): string => {
+        return category.toLowerCase()
     }
-
-    // 转换 aiAgents 常量为组件需要的格式
-    const availableAgents: Agent[] = aiAgents.map((agent) => ({
-        id: agent.id,
-        name: agent.name,
-        description: agent.description,
-        avatar: agent.avatar,
-        category: getAgentCategory(agent.specialty)
-    }))
 
     // 过滤已添加的智能体和搜索结果
     const filteredAgents = availableAgents.filter(agent => {
         const matchesSearch = !searchQuery ||
             agent.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            agent.description.toLowerCase().includes(searchQuery.toLowerCase())
+            agent.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            agent.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
 
         const notAlreadyAdded = !currentAgentIds.includes(agent.id)
 
@@ -80,13 +78,13 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
 
     // 按分类分组
     const groupedAgents = filteredAgents.reduce((acc, agent) => {
-        const category = agent.category || 'general'
+        const category = getAgentCategory(agent.category) || 'general'
         if (!acc[category]) {
             acc[category] = []
         }
         acc[category].push(agent)
         return acc
-    }, {} as Record<string, Agent[]>)
+    }, {} as Record<string, LegacyAgent[]>)
 
     const handleAddAgent = (agentId: string) => {
         onAddAgent(agentId)
@@ -97,9 +95,12 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
     const categoryTitles: Record<string, string> = {
         analysis: t('agents.category.analysis') || '分析类',
         creative: t('agents.category.creative') || '创意类',
-        technical: t('agents.category.technical') || '技术类',
+        coding: t('agents.category.coding') || '编程类',
+        research: t('agents.category.research') || '研究类',
         business: t('agents.category.business') || '商务类',
-        general: t('agents.category.general') || '通用类'
+        education: t('agents.category.education') || '教育类',
+        general: t('agents.category.general') || '通用类',
+        specialized: t('agents.category.specialized') || '专业类'
     }
 
     return (
@@ -158,19 +159,44 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
                                     placeholder={t('session.searchAgents') || '搜索智能体...'}
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
+                                    disabled={isLoading}
                                     className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-700 
                                              border border-slate-200 dark:border-slate-600 rounded-xl
                                              text-sm text-slate-900 dark:text-slate-100 
                                              placeholder-slate-500 dark:placeholder-slate-400
                                              focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent
-                                             transition-all duration-200"
+                                             transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                 />
                             </div>
                         </div>
 
                         {/* 智能体列表 */}
                         <div className="flex-1 overflow-y-auto p-6">
-                            {Object.keys(groupedAgents).length === 0 ? (
+                            {isLoading ? (
+                                <div className="text-center py-12">
+                                    <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center mx-auto mb-4">
+                                        <Loader2 className="w-6 h-6 text-slate-400 animate-spin" />
+                                    </div>
+                                    <p className="text-slate-500 dark:text-slate-400">
+                                        {t('common.loading') || '加载中...'}
+                                    </p>
+                                </div>
+                            ) : error ? (
+                                <div className="text-center py-12">
+                                    <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mx-auto mb-4">
+                                        <X className="w-6 h-6 text-red-500" />
+                                    </div>
+                                    <p className="text-red-600 dark:text-red-400 mb-4">{error}</p>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={loadAgents}
+                                        className="text-sm"
+                                    >
+                                        {t('common.retry') || '重试'}
+                                    </Button>
+                                </div>
+                            ) : Object.keys(groupedAgents).length === 0 ? (
                                 <div className="text-center py-12">
                                     <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center mx-auto mb-4">
                                         <Search className="w-6 h-6 text-slate-400" />
@@ -189,6 +215,7 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
                                             {/* 分类标题 */}
                                             <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
                                                 {categoryTitles[category] || category}
+                                                <span className="ml-2 text-xs text-slate-500">({agents.length})</span>
                                             </h3>
 
                                             {/* 智能体网格 */}
@@ -198,36 +225,45 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
                                                         key={agent.id}
                                                         whileHover={{ scale: 1.02 }}
                                                         whileTap={{ scale: 0.98 }}
-                                                        className="p-4 border border-slate-200 dark:border-slate-600 
-                                                                 rounded-xl hover:border-indigo-300 dark:hover:border-indigo-500
-                                                                 bg-white dark:bg-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700
-                                                                 cursor-pointer transition-all duration-200 group"
+                                                        className="group p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-200 dark:border-slate-600 hover:border-indigo-300 dark:hover:border-indigo-600 transition-all duration-200 cursor-pointer"
                                                         onClick={() => handleAddAgent(agent.id)}
                                                     >
                                                         <div className="flex items-start gap-3">
                                                             {/* 智能体头像 */}
-                                                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 
-                                                                          flex items-center justify-center text-white text-lg flex-shrink-0">
+                                                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/40 dark:to-purple-900/40 flex items-center justify-center text-lg flex-shrink-0 group-hover:scale-110 transition-transform duration-200">
                                                                 {agent.avatar}
                                                             </div>
 
                                                             {/* 智能体信息 */}
                                                             <div className="flex-1 min-w-0">
-                                                                <h4 className="font-medium text-slate-900 dark:text-slate-100 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+                                                                <h4 className="font-medium text-slate-900 dark:text-slate-100 text-sm mb-1 truncate">
                                                                     {agent.name}
                                                                 </h4>
-                                                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">
+                                                                <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
                                                                     {agent.description}
                                                                 </p>
+                                                                {agent.tags && agent.tags.length > 0 && (
+                                                                    <div className="flex flex-wrap gap-1 mt-2">
+                                                                        {agent.tags.slice(0, 3).map((tag, index) => (
+                                                                            <span key={index} className="px-1.5 py-0.5 bg-slate-200 dark:bg-slate-600 text-xs text-slate-600 dark:text-slate-300 rounded">
+                                                                                {tag}
+                                                                            </span>
+                                                                        ))}
+                                                                        {agent.tags.length > 3 && (
+                                                                            <span className="text-xs text-slate-400">+{agent.tags.length - 3}</span>
+                                                                        )}
+                                                                    </div>
+                                                                )}
                                                             </div>
 
                                                             {/* 添加按钮 */}
-                                                            <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                                                <div className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/30 
-                                                                              flex items-center justify-center">
-                                                                    <Plus className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />
-                                                                </div>
-                                                            </div>
+                                                            <motion.div
+                                                                whileHover={{ scale: 1.1 }}
+                                                                whileTap={{ scale: 0.9 }}
+                                                                className="w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                                            >
+                                                                <Plus className="w-3 h-3 text-white" />
+                                                            </motion.div>
                                                         </div>
                                                     </motion.div>
                                                 ))}
@@ -236,17 +272,6 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
                                     ))}
                                 </div>
                             )}
-                        </div>
-
-                        {/* 底部 */}
-                        <div className="flex items-center justify-end gap-3 p-6 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
-                            <Button
-                                variant="ghost"
-                                onClick={onClose}
-                                className="px-6"
-                            >
-                                {t('common.cancel') || '取消'}
-                            </Button>
                         </div>
                     </motion.div>
                 </>
