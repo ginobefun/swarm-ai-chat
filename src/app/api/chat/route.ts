@@ -198,10 +198,10 @@ async function handleMultiAgentChat({
                 model: createOpenRouter({
                     apiKey: process.env.OPENROUTER_API_KEY!,
                     headers: {
-                        'HTTP-Referer': process.env.BETTER_AUTH_URL || 'http://localhost:3000',
+                        'HTTP-Referer': process.env.BETTER_AUTH_URL || 'https://swarmai.chat',
                         'X-Title': 'SwarmAI.chat'
                     }
-                }).chat('openai/gpt-3.5-turbo'),
+                }).chat('openai/gpt-4.1'),
                 messages: [
                     {
                         role: 'system',

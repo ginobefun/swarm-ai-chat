@@ -232,11 +232,20 @@ pnpm db:generate
 # 推送数据库模式
 pnpm db:push
 
+or
+
+export DATABASE_URL="postgresql://swarm_user:swarm_password@localhost:5432/swarm_ai_chat" && pnpm db:push
+
 # 运行数据库迁移
 pnpm db:migrate
 
 # 填充种子数据
 pnpm db:seed
+
+or 
+
+export DATABASE_URL="postgresql://swarm_user:swarm_password@localhost:5432/swarm_ai_chat" && pnpm db:seed
+
 
 # 打开数据库管理界面
 pnpm db:studio
