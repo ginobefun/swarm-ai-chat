@@ -1,316 +1,670 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { streamText, createDataStreamResponse } from 'ai'
 import { createOpenRouter } from '@openrouter/ai-sdk-provider'
-import { streamText } from 'ai'
+
+import prisma from '@/lib/database/prisma'
 import { addMessageToSession } from '@/lib/database/sessions-prisma'
-import { z } from 'zod'
+import { getLatestTurnIndex } from '@/lib/orchestrator/hooks'
+import { auth } from '@/lib/auth'
 
-// Types
-interface ChatMessage {
-    role: 'user' | 'assistant' | 'system'
-    content: string
-    parts?: Array<{
-        type: string
-        text: string
-    }>
-}
+// Import our new types
+import {
+    ChatMessage,
+    ChatRequestData,
+    SessionAnalysis,
+    StreamEvent,
+    EnhancedTask,
+    EnhancedOrchestratorResponse,
+    UserAction
+} from '@/types/chat'
+import { AgentConfigService } from '@/lib/services/AgentConfigService'
 
-// Request validation schema
-const ChatRequestSchema = z.object({
-    sessionId: z.string().uuid(),
-    message: z.string().min(1),
-    agentId: z.string().optional(),
-    userId: z.string()
-})
+// Active session states for handling interrupts
+const activeOrchestrations = new Map<string, {
+    controller: AbortController
+    startTime: number
+}>()
 
-/**
- * POST /api/chat
- * Handle chat messages with AI using OpenRouter's Gemini 2.5 Flash
- * 
- * Features:
- * - Stream AI responses using Vercel AI SDK + OpenRouter
- * - Save user and AI messages to SwarmChatMessage
- * - Support for different AI agents
- * - Error handling and logging
- */
 export async function POST(req: NextRequest) {
     try {
-        console.log('🔍 Chat API - Starting request processing')
-        const body = await req.json()
-        console.log('🔍 Chat API - Received body:', {
-            hasMessages: !!body.messages,
-            messagesLength: body.messages?.length,
-            sessionId: body.sessionId,
-            userId: body.userId,
-            agentId: body.agentId
+        const session = await auth.api.getSession({
+            headers: req.headers
         })
 
-        // Extract message from Vercel AI SDK format (messages array) or direct format
-        const messageContent = body.messages?.slice(-1)[0]?.content || body.message
-        console.log('🔍 Chat API - Extracted message content:', messageContent?.substring(0, 100) + '...')
-
-        // Get all messages for context (required by AI SDK)
-        const allMessages = body.messages || []
-        console.log('🔍 Chat API - All messages count:', allMessages.length)
-
-        // Validate request data (message field is not required since it comes from messages array)
-        const { sessionId, agentId = 'gemini-flash', userId } = ChatRequestSchema.omit({ message: true }).parse(body)
-        console.log('🔍 Chat API - Validation passed:', { sessionId, agentId, userId })
-
-        // Validate message content
-        if (!messageContent || typeof messageContent !== 'string') {
-            throw new Error('Message content is required')
+        if (!session?.user?.id) {
+            return new Response('Unauthorized', { status: 401 })
         }
 
-        // Save user message to database first
-        console.log('🔍 Chat API - Saving user message to database')
-        try {
-            await addMessageToSession({
+        const { messages, data } = await req.json()
+        const requestData = data as ChatRequestData
+
+        // Check for user actions (interrupt, retry, feedback)
+        if (requestData.userAction) {
+            return handleUserAction(requestData.userAction, requestData.sessionId)
+        }
+
+        if (!messages?.length || !requestData?.sessionId) {
+            return new Response('Invalid request: missing messages or sessionId', { status: 400 })
+        }
+
+        const userId = session.user.id
+        const sessionId = requestData.sessionId
+        const messageContent = messages[messages.length - 1]?.content
+
+        if (!messageContent) {
+            return new Response('Invalid request: empty message', { status: 400 })
+        }
+
+        console.log('📥 Unified chat request:', {
+            sessionId,
+            messageLength: messageContent.length,
+            requestMode: requestData.mode,
+            confirmedIntent: requestData.confirmedIntent,
+            userId
+        })
+
+        // Analyze session to determine mode
+        const sessionAnalysis = await analyzeSession(sessionId, userId)
+
+        // Determine final mode
+        const finalMode = requestData.mode === 'auto' || !requestData.mode
+            ? (sessionAnalysis.isMultiAgent ? 'multi' : 'single')
+            : requestData.mode
+
+        console.log('🎯 Mode decision:', {
+            requestMode: requestData.mode,
+            analysisResult: sessionAnalysis.isMultiAgent ? 'multi' : 'single',
+            finalMode,
+            agentCount: sessionAnalysis.agentIds.length
+        })
+
+        if (finalMode === 'multi') {
+            return handleEnhancedMultiAgentChat({
+                messages,
                 sessionId,
-                senderType: 'user',
-                senderId: userId,
-                content: messageContent,
-                contentType: 'text'
+                messageContent,
+                userId,
+                sessionAnalysis
             })
-            console.log('✅ Chat API - User message saved successfully')
-        } catch (dbError) {
-            console.error('❌ Chat API - Database error:', dbError)
-            throw new Error(`Database error: ${dbError instanceof Error ? dbError.message : 'Unknown database error'}`)
-        }
-
-        // Create OpenRouter provider instance
-        console.log('🔍 Chat API - Creating OpenRouter provider')
-        if (!process.env.OPENROUTER_API_KEY) {
-            throw new Error('OPENROUTER_API_KEY is not configured')
-        }
-
-        const openrouter = createOpenRouter({
-            apiKey: process.env.OPENROUTER_API_KEY,
-            headers: {
-                'HTTP-Referer': process.env.BETTER_AUTH_URL || 'http://localhost:3000',
-                'X-Title': 'SwarmAI.chat'
-            }
-        })
-
-        // Select model based on agent
-        const modelName = getModelForAgent(agentId)
-        const model = openrouter.chat(modelName)
-        console.log('🔍 Chat API - Selected model:', modelName)
-
-        // Create system prompt based on agent
-        const systemPrompt = getAgentSystemPrompt(agentId)
-        console.log('🔍 Chat API - Created system prompt for agent:', agentId)
-
-        const startTime = Date.now()
-
-        // Prepare messages for AI model
-        console.log('🔍 Chat API - Preparing messages for AI model')
-        const aiMessages = [
-            {
-                role: 'system' as const,
-                content: systemPrompt
-            },
-            ...allMessages.map((msg: ChatMessage) => ({
-                role: msg.role,
-                content: msg.content
-            }))
-        ]
-        console.log('🔍 Chat API - AI messages prepared, count:', aiMessages.length)
-
-        // Stream AI response
-        console.log('🔍 Chat API - Starting AI stream text generation')
-        try {
-            const result = await streamText({
-                model,
-                messages: aiMessages,
-                temperature: 0.7,
-                maxTokens: 2048,
-                // Callback to save AI response chunks as they come
-                onFinish: async (completion) => {
-                    console.log('🔍 Chat API - onFinish callback triggered')
-                    console.log('🔍 Chat API - Completion object:', {
-                        hasText: !!completion.text,
-                        textLength: completion.text?.length,
-                        hasUsage: !!completion.usage,
-                        usage: completion.usage
-                    })
-
-                    try {
-                        const processingTime = Date.now() - startTime
-                        const tokenCount = completion.usage?.totalTokens || 0
-                        const cost = calculateCost(tokenCount, modelName)
-
-                        console.log('🔍 Chat API - Calculated metrics:', {
-                            processingTime,
-                            tokenCount,
-                            cost
-                        })
-
-                        // Save AI response to database
-                        await addMessageToSession({
-                            sessionId,
-                            senderType: 'agent',
-                            senderId: agentId,
-                            content: completion.text,
-                            contentType: 'text',
-                            tokenCount,
-                            processingTime,
-                            cost
-                        })
-
-                        console.log(`✅ AI Response saved for session ${sessionId}:`, {
-                            agentId,
-                            modelName,
-                            tokenCount,
-                            processingTime: `${processingTime}ms`,
-                            cost: `$${cost.toFixed(4)}`
-                        })
-                    } catch (error) {
-                        console.error('❌ Error saving AI response:', error)
-                        console.error('❌ Error details:', {
-                            name: error instanceof Error ? error.name : 'Unknown',
-                            message: error instanceof Error ? error.message : String(error),
-                            stack: error instanceof Error ? error.stack : undefined
-                        })
-                    }
-                },
-                onError: (error) => {
-                    console.error('❌ Chat API - Stream error:', error)
-                }
+        } else {
+            return handleSingleAgentChat({
+                messages,
+                sessionId,
+                messageContent,
+                userId,
+                agentId: sessionAnalysis.primaryAgentId
             })
-
-            console.log('✅ Chat API - AI stream created successfully')
-            // Return streaming response
-            return result.toDataStreamResponse()
-        } catch (aiError) {
-            console.error('❌ Chat API - AI generation error:', aiError)
-            throw new Error(`AI generation error: ${aiError instanceof Error ? aiError.message : 'Unknown AI error'}`)
         }
 
     } catch (error) {
-        console.error('❌ Chat API Error:', error)
+        console.error('❌ Chat API error:', error)
+        return new Response(`Server error: ${(error as Error).message}`, { status: 500 })
+    }
+}
 
-        if (error instanceof z.ZodError) {
-            return NextResponse.json(
-                {
-                    success: false,
-                    error: 'Invalid request data',
-                    details: error.errors
-                },
-                { status: 400 }
-            )
+/**
+ * Handle user actions (interrupt, retry, feedback)
+ */
+async function handleUserAction(action: UserAction, sessionId: string) {
+    console.log('🎮 Handling user action:', action)
+
+    switch (action.type) {
+        case 'interrupt':
+            const orchestration = activeOrchestrations.get(sessionId)
+            if (orchestration) {
+                orchestration.controller.abort()
+                activeOrchestrations.delete(sessionId)
+                return new Response(JSON.stringify({ success: true, message: 'Process interrupted' }), {
+                    headers: { 'Content-Type': 'application/json' }
+                })
+            }
+            break
+
+        case 'like':
+        case 'dislike':
+            // Store feedback in database
+            // TODO: Implement feedback storage
+            return new Response(JSON.stringify({ success: true }), {
+                headers: { 'Content-Type': 'application/json' }
+            })
+
+        case 'retry':
+            // TODO: Implement retry logic
+            break
+
+        case 'suggest':
+            // TODO: Handle suggestion for improvement
+            break
+    }
+
+    return new Response(JSON.stringify({ success: false, message: 'Action not implemented' }), {
+        headers: { 'Content-Type': 'application/json' }
+    })
+}
+
+/**
+ * Enhanced multi-agent chat with natural streaming output
+ */
+async function handleEnhancedMultiAgentChat({
+    sessionId,
+    messageContent,
+    userId,
+    sessionAnalysis
+}: {
+    messages: ChatMessage[]
+    sessionId: string
+    messageContent: string
+    userId: string
+    sessionAnalysis: SessionAnalysis
+}) {
+    console.log('🤖 Starting enhanced multi-agent orchestration...')
+
+    // Create abort controller for interrupts
+    const controller = new AbortController()
+    activeOrchestrations.set(sessionId, {
+        controller,
+        startTime: Date.now()
+    })
+
+    // Save user message to database
+    await addMessageToSession({
+        sessionId,
+        senderType: 'user',
+        senderId: userId,
+        content: messageContent,
+        contentType: 'text'
+    })
+
+    const openrouter = createOpenRouter({
+        apiKey: process.env.OPENROUTER_API_KEY!,
+        headers: {
+            'HTTP-Referer': process.env.BETTER_AUTH_URL || 'https://swarmai.chat',
+            'X-Title': 'SwarmAI.chat'
+        }
+    })
+
+    // Get agent configurations
+    const agentConfigService = AgentConfigService.getInstance()
+    const agentConfigs = new Map()
+    for (const agentId of sessionAnalysis.agentIds) {
+        const config = await agentConfigService.getAgentConfiguration(agentId)
+        agentConfigs.set(agentId, config)
+    }
+
+    return createDataStreamResponse({
+        execute: async (dataStream) => {
+            const streamEvents: StreamEvent[] = []
+            const tasks: EnhancedTask[] = []
+
+            try {
+                // Step 1: Moderator understands and plans
+                const planningEvent: StreamEvent = {
+                    id: crypto.randomUUID(),
+                    type: 'task_planning',
+                    timestamp: new Date(),
+                    agentId: 'moderator',
+                    content: '正在理解您的需求并制定计划...'
+                }
+                streamEvents.push(planningEvent)
+                dataStream.writeData(JSON.parse(JSON.stringify(planningEvent)))
+
+                // Stream moderator's thinking process
+                const moderatorStream = streamText({
+                    model: openrouter.chat('openai/gpt-4o-mini'),
+                    messages: [
+                        {
+                            role: 'system',
+                            content: `你是一个多智能体系统的主持人。请用自然、友好的语言分析用户的需求，并制定任务计划。
+
+当前可用的智能体：
+${sessionAnalysis.agentIds.map(id => {
+                                const config = agentConfigs.get(id)
+                                return `- @${config.name} (${id}): ${config.systemPrompt.substring(0, 100)}...`
+                            }).join('\n')}
+
+要求：
+1. 首先用简洁的语言说明你对用户需求的理解
+2. 列出需要完成的主要任务（2-4个）
+3. 使用 @智能体名称 的格式分配任务
+4. 用友好的语气解释为什么这样分配
+
+示例输出：
+"我理解您想要深度分析这篇文章。让我为您安排几位专家来协助：
+
+📋 任务分解：
+1. 文章核心内容提取 - @文章摘要师 将为您提取关键信息
+2. 批判性分析 - @批判性思考者 将评估论点的逻辑性
+3. 实用建议总结 - @研究分析师 将提炼可行动的见解
+
+现在开始执行..."`
+                        },
+                        {
+                            role: 'user',
+                            content: messageContent
+                        }
+                    ],
+                    onFinish: async (result) => {
+                        // Parse tasks from moderator's response
+                        const taskMatches = result.text.matchAll(/@(\S+)\s+将/g)
+                        let taskIndex = 0
+                        for (const match of taskMatches) {
+                            const agentName = match[1]
+                            const agentId = sessionAnalysis.agentIds.find(id =>
+                                agentConfigs.get(id)?.name === agentName
+                            ) || sessionAnalysis.agentIds[taskIndex % sessionAnalysis.agentIds.length]
+
+                            const task: EnhancedTask = {
+                                id: crypto.randomUUID(),
+                                title: `任务 ${taskIndex + 1}`,
+                                description: '',
+                                assignedTo: agentId,
+                                status: 'pending',
+                                priority: 'medium',
+                                createdAt: new Date(),
+                                progress: 0
+                            }
+                            tasks.push(task)
+                            taskIndex++
+
+                            // Send task created event
+                            const taskEvent: StreamEvent = {
+                                id: crypto.randomUUID(),
+                                type: 'task_created',
+                                timestamp: new Date(),
+                                taskId: task.id,
+                                agentId: task.assignedTo,
+                                content: `任务已分配给 @${agentConfigs.get(agentId)?.name}`
+                            }
+                            streamEvents.push(taskEvent)
+                            dataStream.writeData(JSON.parse(JSON.stringify(taskEvent)))
+                        }
+                    }
+                })
+
+                // Merge moderator stream
+                moderatorStream.mergeIntoDataStream(dataStream)
+                await moderatorStream
+
+                // Step 2: Execute tasks with each agent
+                for (const task of tasks) {
+                    if (controller.signal.aborted) break
+
+                    const agentConfig = agentConfigs.get(task.assignedTo)
+                    if (!agentConfig) continue
+
+                    // Task started event
+                    const startEvent: StreamEvent = {
+                        id: crypto.randomUUID(),
+                        type: 'task_started',
+                        timestamp: new Date(),
+                        taskId: task.id,
+                        agentId: task.assignedTo,
+                        content: `@${agentConfig.name} 开始处理任务...`
+                    }
+                    streamEvents.push(startEvent)
+                    dataStream.writeData(JSON.parse(JSON.stringify(startEvent)))
+
+                    // Update task status
+                    task.status = 'in_progress'
+                    task.startedAt = new Date()
+
+                    // Stream agent's response
+                    const agentStream = streamText({
+                        model: openrouter.chat(agentConfig.modelName),
+                        messages: [
+                            {
+                                role: 'system',
+                                content: agentConfig.systemPrompt
+                            },
+                            {
+                                role: 'user',
+                                content: `${messageContent}\n\n请根据你的专长完成分配给你的任务。使用 Markdown 格式输出。`
+                            }
+                        ],
+                        temperature: agentConfig.temperature,
+                        maxTokens: agentConfig.maxTokens,
+                        onFinish: async (result) => {
+                            // Task completed
+                            task.status = 'completed'
+                            task.completedAt = new Date()
+                            task.progress = 100
+                            task.output = result.text
+
+                            const completeEvent: StreamEvent = {
+                                id: crypto.randomUUID(),
+                                type: 'task_completed',
+                                timestamp: new Date(),
+                                taskId: task.id,
+                                agentId: task.assignedTo,
+                                content: `@${agentConfig.name} 已完成任务`
+                            }
+                            streamEvents.push(completeEvent)
+                            dataStream.writeData(JSON.parse(JSON.stringify(completeEvent)))
+
+                            // Save to database
+                            await addMessageToSession({
+                                sessionId,
+                                senderType: 'agent',
+                                senderId: task.assignedTo,
+                                content: result.text,
+                                contentType: 'text'
+                            })
+                        }
+                    })
+
+                    agentStream.mergeIntoDataStream(dataStream)
+                    await agentStream
+                }
+
+                // Step 3: Final summary
+                if (!controller.signal.aborted && tasks.length > 0) {
+                    const summaryEvent: StreamEvent = {
+                        id: crypto.randomUUID(),
+                        type: 'summary_started',
+                        timestamp: new Date(),
+                        agentId: 'moderator',
+                        content: '\n\n📊 正在为您整理最终结果...'
+                    }
+                    streamEvents.push(summaryEvent)
+                    dataStream.writeData(JSON.parse(JSON.stringify(summaryEvent)))
+
+                    // Create summary with structured results
+                    const summaryStream = streamText({
+                        model: openrouter.chat('openai/gpt-4o-mini'),
+                        messages: [
+                            {
+                                role: 'system',
+                                content: `作为主持人，请基于各智能体的输出创建一个结构化的总结。
+
+使用以下格式：
+
+## 📖 执行摘要
+[简要总结主要发现]
+
+## 🎯 关键要点
+- 要点1
+- 要点2
+- ...
+
+## 💭 批判性思考
+[如果有批判性分析的内容]
+
+## 💡 行动建议
+[可执行的建议]
+
+## 📌 精彩引述
+[如果有值得记住的句子]`
+                            },
+                            {
+                                role: 'user',
+                                content: tasks.map(t =>
+                                    `@${agentConfigs.get(t.assignedTo)?.name} 的分析：\n${t.output}`
+                                ).join('\n\n---\n\n')
+                            }
+                        ],
+                        onFinish: async (result) => {
+                            const summaryCompleteEvent: StreamEvent = {
+                                id: crypto.randomUUID(),
+                                type: 'summary_completed',
+                                timestamp: new Date(),
+                                agentId: 'moderator',
+                                content: '✅ 分析完成！'
+                            }
+                            streamEvents.push(summaryCompleteEvent)
+                            dataStream.writeData(JSON.parse(JSON.stringify(summaryCompleteEvent)))
+
+                            // Save summary
+                            await addMessageToSession({
+                                sessionId,
+                                senderType: 'agent',
+                                senderId: 'moderator',
+                                content: result.text,
+                                contentType: 'text'
+                            })
+                        }
+                    })
+
+                    summaryStream.mergeIntoDataStream(dataStream)
+                    await summaryStream
+                }
+
+                // Send final orchestrator response
+                const orchestratorResponse: EnhancedOrchestratorResponse = {
+                    type: 'orchestrator',
+                    success: true,
+                    turnIndex: await getLatestTurnIndex(sessionId) + 1,
+                    phase: 'completed',
+                    events: streamEvents.map(e => ({
+                        id: e.id,
+                        type: e.type,
+                        timestamp: e.timestamp.toISOString(),
+                        content: e.content,
+                        agentId: e.agentId
+                    })),
+                    tasks,
+                    results: tasks.filter(t => t.status === 'completed').map(t => ({
+                        taskId: t.id,
+                        agentId: t.assignedTo,
+                        content: t.output || ''
+                    })),
+                    costUSD: 0, // TODO: Calculate actual cost
+                    streamEvents,
+                    isStreaming: false,
+                    canInterrupt: false,
+                    canRetry: true
+                }
+
+                dataStream.writeData(JSON.parse(JSON.stringify(orchestratorResponse)))
+
+            } catch (error) {
+                console.error('❌ Orchestration error:', error)
+                const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+
+                if (error instanceof Error && error.name === 'AbortError') {
+                    dataStream.writeData({
+                        type: 'error',
+                        message: 'Process interrupted by user'
+                    })
+                } else {
+                    dataStream.writeData({
+                        type: 'error',
+                        message: errorMessage
+                    })
+                }
+            } finally {
+                activeOrchestrations.delete(sessionId)
+            }
+        },
+        headers: {
+            'X-Chat-Mode': 'multi-enhanced',
+            'X-Agent-Count': sessionAnalysis.agentIds.length.toString()
+        },
+        onError: (error) => {
+            console.error('🔴 Multi-agent streaming error:', error)
+            activeOrchestrations.delete(sessionId)
+            return error instanceof Error ? error.message : 'Multi-agent collaboration failed'
+        }
+    })
+}
+
+/**
+ * Handle single-agent streaming
+ */
+async function handleSingleAgentChat({
+    messages,
+    sessionId,
+    messageContent,
+    userId,
+    agentId
+}: {
+    messages: ChatMessage[]
+    sessionId: string
+    messageContent: string
+    userId: string
+    agentId: string
+}) {
+    console.log('⚡ Starting single-agent streaming...')
+
+    // Save user message to database
+    await addMessageToSession({
+        sessionId,
+        senderType: 'user',
+        senderId: userId,
+        content: messageContent,
+        contentType: 'text'
+    })
+
+    if (!process.env.OPENROUTER_API_KEY) {
+        throw new Error('OPENROUTER_API_KEY is not configured')
+    }
+
+    const openrouter = createOpenRouter({
+        apiKey: process.env.OPENROUTER_API_KEY,
+        headers: {
+            'HTTP-Referer': process.env.BETTER_AUTH_URL || 'https://swarmai.chat',
+            'X-Title': 'SwarmAI.chat'
+        }
+    })
+
+    const agentConfigService = AgentConfigService.getInstance()
+    const agentConfig = await agentConfigService.getAgentConfiguration(agentId)
+    const model = openrouter.chat(agentConfig.modelName)
+
+    const startTime = Date.now()
+
+    // Prepare messages for AI model
+    const aiMessages = [
+        { role: 'system' as const, content: agentConfig.systemPrompt },
+        ...messages.map((msg: ChatMessage) => ({
+            role: msg.role,
+            content: msg.content
+        }))
+    ]
+
+    // Stream AI response
+    const result = streamText({
+        model,
+        messages: aiMessages,
+        temperature: agentConfig.temperature,
+        maxTokens: agentConfig.maxTokens,
+        onFinish: async (completion) => {
+            try {
+                const processingTime = Date.now() - startTime
+                const inputTokens = completion.usage?.promptTokens || 0
+                const outputTokens = completion.usage?.completionTokens || 0
+                const totalTokens = completion.usage?.totalTokens || (inputTokens + outputTokens)
+
+                const cost = calculateCost(
+                    inputTokens,
+                    outputTokens,
+                    agentConfig.inputPricePerK,
+                    agentConfig.outputPricePerK
+                )
+
+                await addMessageToSession({
+                    sessionId,
+                    senderType: 'agent',
+                    senderId: agentId,
+                    content: completion.text,
+                    contentType: 'text',
+                    tokenCount: totalTokens,
+                    processingTime,
+                    cost
+                })
+
+                console.log(`✅ Single-agent response saved:`, {
+                    agentId,
+                    inputTokens,
+                    outputTokens,
+                    totalTokens,
+                    processingTime: `${processingTime}ms`,
+                    cost: `$${cost.toFixed(6)}`
+                })
+            } catch (error) {
+                console.error('❌ Error saving single-agent response:', error)
+            }
+        }
+    })
+
+    return result.toDataStreamResponse({
+        headers: {
+            'X-Chat-Mode': 'single',
+            'X-Agent-Id': agentId
+        }
+    })
+}
+
+async function analyzeSession(sessionId: string, userId: string): Promise<SessionAnalysis> {
+    try {
+        // First, find the SwarmUser record
+        const swarmUser = await prisma.swarmUser.findUnique({
+            where: { userId: userId }
+        })
+
+        if (!swarmUser) {
+            throw new Error('User not found in swarm system')
         }
 
-        return NextResponse.json(
-            {
-                success: false,
-                error: 'Internal server error',
-                message: error instanceof Error ? error.message : 'Unknown error'
+        // Get session with participants
+        const session = await prisma.swarmChatSession.findUnique({
+            where: { id: sessionId },
+            include: {
+                participants: {
+                    include: {
+                        agent: true
+                    }
+                }
+            }
+        })
+
+        if (!session) {
+            throw new Error('Session not found')
+        }
+
+        // Check authorization
+        if (session.createdById !== swarmUser.id) {
+            throw new Error('Unauthorized access to session')
+        }
+
+        // Analyze agent participants
+        const agentParticipants = session.participants.filter(p => p.agentId)
+        const agentIds = agentParticipants.map(p => p.agentId!)
+
+        console.log('📊 Session analysis:', {
+            sessionId,
+            totalParticipants: session.participants.length,
+            agentParticipants: agentParticipants.length,
+            agentIds,
+            primaryAgent: session.primaryAgentId || agentIds[0]
+        })
+
+        return {
+            isMultiAgent: agentParticipants.length > 1,
+            agentIds,
+            primaryAgentId: session.primaryAgentId || agentIds[0],
+            session: {
+                id: sessionId,
+                participants: session.participants.map(p => ({ agentId: p.agentId }))
             },
-            { status: 500 }
-        )
+            swarmUser: {
+                id: swarmUser.id,
+                userId: swarmUser.userId,
+                username: swarmUser.username || ''
+            }
+        }
+    } catch (error) {
+        console.error('❌ Session analysis failed:', error)
+        throw new Error(`Failed to analyze session '${sessionId}': ${(error as Error).message}`)
     }
 }
 
-/**
- * Get OpenRouter model name based on agent ID
- */
-function getModelForAgent(agentId: string): string {
-    const agentModels: Record<string, string> = {
-        'gemini-flash': 'google/gemini-flash-1.5',
-        'article-summarizer': 'google/gemini-flash-1.5',
-        'critical-thinker': 'anthropic/claude-3.5-sonnet',
-        'creative-writer': 'anthropic/claude-3.5-sonnet',
-        'data-scientist': 'openai/gpt-4o',
-        'code-expert': 'google/gemini-flash-1.5'
-    }
-
-    return agentModels[agentId] || agentModels['gemini-flash']
-}
-
-/**
- * Get system prompt based on agent ID
- */
-function getAgentSystemPrompt(agentId: string): string {
-    const agentPrompts: Record<string, string> = {
-        'gemini-flash': `你是 SwarmAI.chat 平台上的智能助手，专门为用户提供高质量的对话支持。
-
-核心特征：
-- 友好、专业、富有洞察力
-- 能够理解上下文并提供深入的回答
-- 支持中英文交流，优先使用用户的语言
-- 关注用户体验，提供结构化的回答
-
-回答风格：
-- 清晰简洁，重点突出
-- 使用适当的格式（列表、段落等）
-- 必要时提供具体的例子
-- 保持温和且专业的语调
-
-请根据用户的问题提供有帮助的回答。`,
-
-        'article-summarizer': `你是一位专业的文章摘要师，擅长快速提取文档的核心观点和要点。
-
-专长能力：
-- 快速理解长篇文档的主要内容
-- 提取关键信息和核心论点
-- 生成结构化的摘要报告
-- 识别重要的数据和结论
-
-工作方式：
-- 首先概述文档的主题和范围
-- 列出 3-5 个核心要点
-- 提供具体的数据支持
-- 总结主要结论和建议`,
-
-        'critical-thinker': `你是一位批判性思维专家，专门分析论点的逻辑性和可靠性。
-
-分析重点：
-- 论证的逻辑结构和推理过程
-- 证据的可靠性和相关性
-- 潜在的偏见和假设
-- 论点的局限性和反驳观点
-
-分析框架：
-1. 论点强度分析
-2. 证据质量评估
-3. 逻辑漏洞识别
-4. 替代观点探讨
-5. 改进建议`,
-
-        'code-expert': `你是一位编程专家，擅长多种编程语言和技术栈。
-
-专长能力：
-- 精通 Java、Python、JavaScript、TypeScript、Go 等多种编程语言
-- 熟悉前端、后端、移动端开发
-- 代码审查和性能优化
-- 架构设计和最佳实践
-
-回答风格：
-- 提供清晰的代码示例
-- 解释关键概念和原理
-- 给出最佳实践建议
-- 包含完整的实现步骤
-
-请根据用户的编程问题提供专业的技术解答。`
-    }
-
-    return agentPrompts[agentId] || agentPrompts['gemini-flash']
-}
-
-/**
- * Calculate cost based on token usage and model
- * OpenRouter pricing varies by model
- */
-function calculateCost(tokenCount: number, modelName: string): number {
-    // OpenRouter pricing per 1M tokens (approximate)
-    const modelPricing: Record<string, number> = {
-        'google/gemini-flash-1.5': 0.075,     // $0.075 per 1M tokens (input)
-        'google/gemini-2.0-flash-001': 0.10,  // $0.10 per 1M tokens (input)
-        'google/gemini-2.0-flash-exp:free': 0, // Free tier
-        'anthropic/claude-3.5-sonnet': 3.0,   // $3.00 per 1M tokens  
-        'openai/gpt-4o': 2.5                  // $2.50 per 1M tokens
-    }
-
-    const pricePerMillion = modelPricing[modelName] || 0.075
-    return (tokenCount / 1000000) * pricePerMillion
+function calculateCost(
+    inputTokens: number,
+    outputTokens: number,
+    inputPricePerK: number,
+    outputPricePerK: number
+): number {
+    const inputCost = (inputTokens / 1000) * inputPricePerK
+    const outputCost = (outputTokens / 1000) * outputPricePerK
+    return inputCost + outputCost
 }

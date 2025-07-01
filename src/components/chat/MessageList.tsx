@@ -1,14 +1,22 @@
 'use client'
 
 import React, { useEffect, useRef } from 'react'
+import Image from 'next/image'
 import { Message } from '@/types'
+import { StreamEvent, UserActionType } from '@/types/chat'
 import { useTranslation } from '@/contexts/AppContext'
+import { MessageActions } from '@/components/ui/message-actions'
+import { MarkdownRenderer } from '@/components/ui/markdown-renderer'
+import { Badge } from '@/components/ui/badge'
+import { Bot, CheckCircle, Clock, AlertCircle } from 'lucide-react'
 
 interface MessageListProps {
     messages: Message[]
     isTyping?: boolean
     typingUser?: string
     typingAvatar?: string
+    streamEvents?: StreamEvent[]
+    onUserAction?: (action: UserActionType, metadata?: Record<string, unknown>) => void
 }
 
 const TypingIndicator: React.FC<{
@@ -17,13 +25,32 @@ const TypingIndicator: React.FC<{
     avatarStyle?: string
 }> = ({ user, avatar, avatarStyle }) => {
     const { t } = useTranslation()
+
+    // Render avatar (image or text)
+    const renderAvatar = () => {
+        const isImageUrl = avatar.startsWith('http://') || avatar.startsWith('https://')
+
+        if (isImageUrl) {
+            return (
+                <Image
+                    src={avatar}
+                    alt={user}
+                    width={36}
+                    height={36}
+                    className="w-full h-full object-cover"
+                />
+            )
+        }
+        return avatar
+    }
+
     return (
         <div className="flex gap-3 group animate-pulse">
             <div
-                className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0 shadow-sm bg-gradient-to-br from-emerald-500 to-emerald-600 text-white ring-2 ring-white dark:ring-slate-800"
+                className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0 shadow-sm bg-gradient-to-br from-emerald-500 to-emerald-600 text-white ring-2 ring-white dark:ring-slate-800 overflow-hidden"
                 style={avatarStyle ? { background: avatarStyle } : undefined}
             >
-                {avatar}
+                {renderAvatar()}
             </div>
             <div className="flex flex-col gap-1 max-w-[85%] sm:max-w-[80%] lg:max-w-[70%] min-w-0">
                 <div className="text-xs font-medium text-slate-600 dark:text-slate-400 px-2">{user}</div>
@@ -46,6 +73,7 @@ const TypingIndicator: React.FC<{
 }
 
 const MessageItem: React.FC<{ message: Message }> = ({ message }) => {
+    const { t } = useTranslation()
     const formatTime = (timestamp: Date) => {
         return timestamp.toLocaleTimeString('zh-CN', {
             hour: '2-digit',
@@ -53,28 +81,90 @@ const MessageItem: React.FC<{ message: Message }> = ({ message }) => {
         })
     }
 
-    const renderMessageContent = (content: string) => {
-        // Enhanced markdown support for AI responses
-        const processMarkdown = (text: string) => {
-            // Bold text
-            text = text.replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold">$1</strong>')
-            text = text.replace(/\*(.*?)\*/g, '<em class="italic">$1</em>')
+    // Message metadata interface
+    interface MessageMetadata {
+        senderType?: string
+        senderId?: string
+        contentType?: string
+        rawMetadata?: {
+            taskId?: string
+            assignedTo?: string
+            turnIndex?: number
+            originalContent?: string
+            [key: string]: string | number | boolean | undefined
+        }
+    }
 
-            // Code blocks with syntax highlighting style
-            text = text.replace(/```([\s\S]*?)```/g, '<pre class="bg-slate-900 dark:bg-slate-950 text-slate-100 p-4 rounded-xl overflow-x-auto text-sm font-mono my-3 border border-slate-700"><code>$1</code></pre>')
-            text = text.replace(/`([^`]+)`/g, '<code class="bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 px-2 py-1 rounded-md text-sm font-mono">$1</code>')
+    // Extended message interface for collaboration
+    interface ExtendedMessage extends Message {
+        metadata?: MessageMetadata
+    }
 
-            // Lists with better styling
-            text = text.replace(/^\d+\.\s+(.+)$/gm, '<li class="ml-4 mb-1">$1</li>')
-            text = text.replace(/^[-*]\s+(.+)$/gm, '<li class="ml-4 mb-1">$1</li>')
-            text = text.replace(/(<li.*?<\/li>)/g, '<ul class="list-disc pl-4 space-y-1 my-2">$1</ul>')
+    // Check if this is a collaboration message
+    const isCollaborationMessage = (message: ExtendedMessage) => {
+        return message.metadata?.contentType === 'SYSTEM' && message.metadata?.senderId === 'orchestrator'
+    }
 
-            // Line breaks
-            text = text.replace(/\n/g, '<br />')
+    const isTaskMessage = (message: ExtendedMessage) => {
+        return message.metadata?.rawMetadata?.taskId
+    }
 
-            return text
+    const isResultMessage = (message: ExtendedMessage) => {
+        return message.metadata?.senderType === 'AGENT' && message.metadata?.contentType === 'TEXT' && message.metadata?.rawMetadata?.taskId
+    }
+
+    // Render collaboration-specific message styles
+    const renderCollaborationMessage = (content: string, message: ExtendedMessage) => {
+        if (isTaskMessage(message)) {
+            const metadata = message.metadata?.rawMetadata
+            return (
+                <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/50 rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                        <span className="text-blue-600 dark:text-blue-400">🎯</span>
+                        <span className="font-medium text-blue-900 dark:text-blue-300">{t('collaboration.newTaskAssigned')}</span>
+                        {metadata?.assignedTo && (
+                            <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full">
+                                {metadata.assignedTo}
+                            </span>
+                        )}
+                    </div>
+                    <div className="text-sm text-blue-800 dark:text-blue-200 whitespace-pre-wrap">{content}</div>
+                </div>
+            )
         }
 
+        if (isResultMessage(message)) {
+            const metadata = message.metadata?.rawMetadata
+            return (
+                <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800/50 rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                        <span className="text-green-600 dark:text-green-400">✅</span>
+                        <span className="font-medium text-green-900 dark:text-green-300">{t('collaboration.taskCompleted')}</span>
+                        {metadata?.taskId && (
+                            <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-1 rounded-full">
+                                {metadata.taskId.substring(0, 8)}
+                            </span>
+                        )}
+                    </div>
+                    <div className="text-sm text-green-800 dark:text-green-200 whitespace-pre-wrap">{content}</div>
+                </div>
+            )
+        }
+
+        // Default system message styling
+        return (
+            <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/50 rounded-lg p-3">
+                <div className="flex items-center gap-2 mb-2">
+                    <span className="text-amber-600 dark:text-amber-400">🔄</span>
+                    <span className="font-medium text-amber-900 dark:text-amber-300">{t('collaboration.progress')}</span>
+                </div>
+                <div className="text-sm text-amber-800 dark:text-amber-200 whitespace-pre-wrap">{content}</div>
+            </div>
+        )
+    }
+
+    // Enhanced markdown rendering with react-markdown
+    const renderMessageContent = (content: string) => {
         const isUser = message.senderType === 'user'
 
         if (isUser) {
@@ -86,18 +176,44 @@ const MessageItem: React.FC<{ message: Message }> = ({ message }) => {
                 </React.Fragment>
             ))
         } else {
-            // Enhanced markdown for AI responses
-            const processedContent = processMarkdown(content)
+            // Use enhanced MarkdownRenderer for AI responses
+            return <MarkdownRenderer content={content} />
+        }
+    }
+
+    // Render avatar (image or text)
+    const renderAvatar = () => {
+        const avatarContent = message.avatar || (message.senderType === 'user' ? '👤' : '🤖')
+        const isImageUrl = avatarContent.startsWith('http://') || avatarContent.startsWith('https://')
+
+        if (isImageUrl) {
             return (
-                <div
-                    className="prose prose-sm max-w-none dark:prose-invert prose-pre:bg-slate-900 prose-pre:text-slate-100 
-                              prose-p:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-1 
-                              prose-headings:my-2 prose-h1:my-2 prose-h2:my-2 prose-h3:my-2 
-                              prose-h4:my-1 prose-h5:my-1 prose-h6:my-1"
-                    dangerouslySetInnerHTML={{ __html: processedContent }}
+                <Image
+                    src={avatarContent}
+                    alt={message.sender}
+                    width={36}
+                    height={36}
+                    className="w-full h-full object-cover"
                 />
             )
         }
+        return avatarContent
+    }
+
+    // Message action handlers
+    const handleLike = (messageId: string) => {
+        console.log('Liked message:', messageId)
+        // TODO: Implement like functionality
+    }
+
+    const handleDislike = (messageId: string) => {
+        console.log('Disliked message:', messageId)
+        // TODO: Implement dislike functionality
+    }
+
+    const handleCopy = () => {
+        console.log('Copied message content')
+        // Message actions component handles the clipboard operation
     }
 
     const isUser = message.senderType === 'user'
@@ -109,11 +225,11 @@ const MessageItem: React.FC<{ message: Message }> = ({ message }) => {
                 className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0 shadow-sm ${isUser
                     ? 'bg-gradient-to-br from-indigo-500 to-indigo-600'
                     : 'bg-gradient-to-br from-emerald-500 to-emerald-600'
-                    } text-white ring-2 ring-white dark:ring-slate-800`}
+                    } text-white ring-2 ring-white dark:ring-slate-800 overflow-hidden`}
                 style={message.avatarStyle ? { background: message.avatarStyle } : undefined}
                 title={message.sender}
             >
-                {message.avatar || (isUser ? '👤' : '🤖')}
+                {renderAvatar()}
             </div>
 
             {/* Message Content - Responsive */}
@@ -126,19 +242,41 @@ const MessageItem: React.FC<{ message: Message }> = ({ message }) => {
                 )}
 
                 {/* Message bubble - Responsive */}
-                <div className={`relative px-3 py-2 sm:px-4 sm:py-3 text-sm break-words shadow-sm ${isUser
-                    ? 'bg-indigo-600 text-white rounded-2xl rounded-tr-md'
-                    : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-700 rounded-2xl rounded-tl-md'
-                    }`}>
-                    {renderMessageContent(message.content)}
+                {/* Check for collaboration messages and render accordingly */}
+                {isCollaborationMessage(message) || isTaskMessage(message) || isResultMessage(message) ? (
+                    // Collaboration message (no bubble, special styling)
+                    <div className="w-full">
+                        {renderCollaborationMessage(message.content, message)}
+                    </div>
+                ) : (
+                    // Regular message bubble
+                    <div className={`relative px-3 py-2 sm:px-4 sm:py-3 text-sm break-words shadow-sm ${isUser
+                        ? 'bg-indigo-600 text-white rounded-2xl rounded-tr-md'
+                        : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-700 rounded-2xl rounded-tl-md'
+                        }`}>
+                        {renderMessageContent(message.content)}
 
-                    {/* Message tail for bubble effect */}
-                    <div className={`absolute top-0 w-3 h-3 ${isUser
-                        ? 'right-0 bg-indigo-600 rounded-tl-full'
-                        : 'left-0 bg-white dark:bg-slate-800 border-l border-t border-slate-200 dark:border-slate-700 rounded-br-full'
-                        } transform ${isUser ? 'translate-x-2 -translate-y-1' : '-translate-x-2 -translate-y-1'}`}
-                    />
-                </div>
+                        {/* Message tail for bubble effect */}
+                        <div className={`absolute top-0 w-3 h-3 ${isUser
+                            ? 'right-0 bg-indigo-600 rounded-tl-full'
+                            : 'left-0 bg-white dark:bg-slate-800 border-l border-t border-slate-200 dark:border-slate-700 rounded-br-full'
+                            } transform ${isUser ? 'translate-x-2 -translate-y-1' : '-translate-x-2 -translate-y-1'}`}
+                        />
+                    </div>
+                )}
+
+                {/* Message actions - only show for AI messages */}
+                {!isUser && (
+                    <div className={`px-2 ${isUser ? 'text-right' : 'text-left'}`}>
+                        <MessageActions
+                            messageId={message.id}
+                            content={message.content}
+                            onLike={handleLike}
+                            onDislike={handleDislike}
+                            onCopy={handleCopy}
+                        />
+                    </div>
+                )}
 
                 {/* Timestamp - show on hover */}
                 <div className={`text-xs text-slate-500 dark:text-slate-400 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${isUser ? 'text-right' : 'text-left'}`}>
@@ -153,7 +291,8 @@ const MessageList: React.FC<MessageListProps> = ({
     messages,
     isTyping = false,
     typingUser = "AI 助手",
-    typingAvatar = "🤖"
+    typingAvatar = "🤖",
+    streamEvents
 }) => {
     const { t } = useTranslation()
     const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -243,6 +382,55 @@ const MessageList: React.FC<MessageListProps> = ({
                                     )}
                                     <MessageItem message={message} />
                                 </React.Fragment>
+                            )
+                        })}
+                    </div>
+                )}
+
+                {/* Stream Events Display */}
+                {streamEvents && streamEvents.length > 0 && (
+                    <div className="space-y-2 px-4">
+                        {streamEvents.map((event, index) => {
+                            const showEvent = index === streamEvents.length - 1 ||
+                                ['task_created', 'task_started', 'task_completed', 'task_failed'].includes(event.type)
+
+                            if (!showEvent) return null
+
+                            return (
+                                <div key={event.id} className="flex items-center gap-2 text-sm animate-message-slide-in">
+                                    {event.type === 'task_planning' && (
+                                        <>
+                                            <Bot className="w-4 h-4 text-blue-500" />
+                                            <span className="text-slate-600 dark:text-slate-400">{event.content}</span>
+                                        </>
+                                    )}
+                                    {event.type === 'task_created' && (
+                                        <>
+                                            <Badge variant="secondary" className="text-xs">
+                                                {t('chat.taskCreated')}
+                                            </Badge>
+                                            <span className="text-slate-600 dark:text-slate-400">{event.content}</span>
+                                        </>
+                                    )}
+                                    {event.type === 'task_started' && (
+                                        <>
+                                            <Clock className="w-4 h-4 text-amber-500 animate-spin" />
+                                            <span className="text-slate-600 dark:text-slate-400">{event.content}</span>
+                                        </>
+                                    )}
+                                    {event.type === 'task_completed' && (
+                                        <>
+                                            <CheckCircle className="w-4 h-4 text-green-500" />
+                                            <span className="text-slate-600 dark:text-slate-400">{event.content}</span>
+                                        </>
+                                    )}
+                                    {event.type === 'task_failed' && (
+                                        <>
+                                            <AlertCircle className="w-4 h-4 text-red-500" />
+                                            <span className="text-slate-600 dark:text-slate-400">{event.content}</span>
+                                        </>
+                                    )}
+                                </div>
                             )
                         })}
                     </div>

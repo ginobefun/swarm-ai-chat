@@ -24,7 +24,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
     const textareaRef = useRef<HTMLTextAreaElement>(null)
     const mentionPopupRef = useRef<HTMLDivElement>(null)
 
-    // 自动调整 textarea 高度
+    // Auto-adjust textarea height
     const adjustTextareaHeight = () => {
         if (textareaRef.current) {
             textareaRef.current.style.height = 'auto'
@@ -32,19 +32,19 @@ const MessageInput: React.FC<MessageInputProps> = ({
         }
     }
 
-    // 处理输入变化
+    // Handle input changes
     const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const value = e.target.value
         setInputValue(value)
 
-        // 检测@符号
+        // Detect @ symbol
         const atIndex = value.lastIndexOf('@')
         if (atIndex !== -1) {
             const query = value.substring(atIndex + 1)
             if (!query.includes(' ')) {
                 setShowMentionPopup(true)
 
-                // 过滤提及项
+                // Filter mention items
                 const filtered = mentionItems.filter(item =>
                     item.name.toLowerCase().includes(query.toLowerCase())
                 )
@@ -57,7 +57,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
         }
     }
 
-    // 选择提及项
+    // Select mention item
     const handleMentionSelect = (mention: MentionItem) => {
         const atIndex = inputValue.lastIndexOf('@')
         const newValue = inputValue.substring(0, atIndex) + `@${mention.name} `
@@ -66,7 +66,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
         textareaRef.current?.focus()
     }
 
-    // 处理@按钮点击
+    // Handle @ button click
     const handleMentionButtonClick = () => {
         setInputValue(prev => prev + '@')
         setShowMentionPopup(true)
@@ -74,7 +74,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
         textareaRef.current?.focus()
     }
 
-    // 发送消息
+    // Send message
     const handleSendMessage = () => {
         const trimmedMessage = inputValue.trim()
         if (trimmedMessage && !disabled) {
@@ -87,7 +87,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
         }
     }
 
-    // 处理键盘事件
+    // Handle keyboard events
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault()
@@ -95,7 +95,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
         }
     }
 
-    // 点击外部关闭提及弹窗
+    // Close mention popup when clicking outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (
@@ -114,7 +114,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
         }
     }, [])
 
-    // 自动调整高度
+    // Auto-adjust height
     useEffect(() => {
         adjustTextareaHeight()
     }, [inputValue])
@@ -181,7 +181,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
                     </div>
                 </div>
 
-                {/* @提及弹窗 - Responsive */}
+                {/* Mention popup - Responsive */}
                 {showMentionPopup && (
                     <div
                         ref={mentionPopupRef}

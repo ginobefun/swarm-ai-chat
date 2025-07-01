@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/database/prisma'
-import type { Prisma } from '@prisma/client'
+import type { Prisma, SwarmAgentCategory } from '@prisma/client'
 
 // GET: 获取 AI 智能体列表
 export async function GET(request: Request) {
@@ -14,46 +14,35 @@ export async function GET(request: Request) {
         const where: Prisma.SwarmAIAgentWhereInput = {}
 
         if (category) {
-            where.tags = { has: category }
+            where.category = category as SwarmAgentCategory
         }
 
         if (featured === 'true') {
-            where.isFeatured = true
+            where.averageRating = { gte: 4.0 } // 高评分作为推荐
         }
 
         if (search) {
             where.OR = [
                 { name: { contains: search, mode: 'insensitive' } },
                 { description: { contains: search, mode: 'insensitive' } },
-                { specialty: { contains: search, mode: 'insensitive' } }
+                { longDescription: { contains: search, mode: 'insensitive' } },
+                { tags: { has: search } }
             ]
         }
 
-        // 只获取激活的公开智能体
+        // 只获取激活的系统智能体
         where.isActive = true
-        where.isPublic = true
+        where.isSystemAgent = true
 
         const agents = await prisma.swarmAIAgent.findMany({
             where,
             include: {
-                agentSkills: {
-                    include: {
-                        skill: true
-                    }
-                },
-                agentTools: {
-                    include: {
-                        tool: true
-                    }
-                },
-                usageExamples: {
-                    orderBy: { orderIndex: 'asc' }
-                }
+                model: true
             },
             orderBy: [
-                { isFeatured: 'desc' },
-                { rating: 'desc' },
-                { usageCount: 'desc' }
+                { averageRating: 'desc' },
+                { totalTasks: 'desc' },
+                { name: 'asc' }
             ]
         })
 
@@ -61,40 +50,43 @@ export async function GET(request: Request) {
         const transformedAgents = agents.map(agent => ({
             id: agent.id,
             name: agent.name,
-            avatar: agent.avatar,
-            avatarStyle: agent.avatarStyle,
-            description: agent.description,
-            specialty: agent.specialty,
-            personality: agent.personality,
+            avatar: agent.icon || '🤖',
+            description: agent.description || '',
+            longDescription: agent.longDescription || '',
+            category: agent.category,
+            taskTypes: agent.taskTypes,
+            specializations: agent.specializations,
             tags: agent.tags,
-            capabilityLevel: agent.capabilityLevel,
-            averageResponseTime: agent.averageResponseTime,
-            rating: Number(agent.rating),
-            usageCount: agent.usageCount,
-            isFeatured: agent.isFeatured,
-            skills: agent.agentSkills.map(as => ({
-                id: as.skill.id,
-                name: as.skill.name,
-                category: as.skill.category.toLowerCase(),
-                color: as.skill.color,
-                isPrimary: as.isPrimary,
-                proficiencyLevel: as.proficiencyLevel
-            })),
-            tools: agent.agentTools.filter(at => at.isEnabled).map(at => ({
-                id: at.tool.id,
-                name: at.tool.name,
-                icon: at.tool.icon,
-                category: at.tool.category,
-                isPrimary: at.isPrimary
-            })),
-            examples: agent.usageExamples.map(ex => ({
-                id: ex.id,
-                title: ex.title,
-                prompt: ex.prompt,
-                description: ex.description,
-                category: ex.category,
-                difficultyLevel: ex.difficultyLevel
-            }))
+            systemPrompt: agent.systemPrompt,
+            communicationStyle: agent.communicationStyle,
+            verbosity: agent.verbosity,
+            approach: agent.approach,
+            traits: agent.traits,
+            difficulty: agent.difficulty,
+            color: agent.color || '#3B82F6',
+            temperature: agent.temperature ? Number(agent.temperature) : undefined,
+            maxTokens: agent.maxTokens,
+            functionCalling: agent.functionCalling,
+            averageRating: Number(agent.averageRating),
+            totalTasks: agent.totalTasks,
+            totalUsageTime: agent.totalUsageTime,
+            lastUsed: agent.lastUsed,
+            isActive: agent.isActive,
+            model: {
+                id: agent.model.id,
+                displayName: agent.model.displayName,
+                modelName: agent.model.modelName,
+                provider: agent.model.provider,
+                baseUrl: agent.model.baseUrl,
+                defaultTemperature: Number(agent.model.defaultTemperature),
+                intelligenceScore: agent.model.intelligenceScore,
+                capabilities: agent.model.capabilities,
+                contextWindow: agent.model.contextWindow,
+                maxOutputTokens: agent.model.maxOutputTokens,
+                inputPricePerK: Number(agent.model.inputPricePerK),
+                outputPricePerK: Number(agent.model.outputPricePerK),
+                tier: agent.model.tier
+            }
         }))
 
         return NextResponse.json({
@@ -121,9 +113,9 @@ export async function POST(request: Request) {
         const body = await request.json()
 
         // 验证必要字段
-        if (!body.id || !body.name) {
+        if (!body.id || !body.name || !body.modelId) {
             return NextResponse.json(
-                { success: false, error: '缺少必要字段：id 和 name' },
+                { success: false, error: '缺少必要字段：id, name, 和 modelId' },
                 { status: 400 }
             )
         }
@@ -131,37 +123,32 @@ export async function POST(request: Request) {
         const agentData = {
             id: body.id,
             name: body.name,
-            avatar: body.avatar,
-            avatarStyle: body.avatarStyle,
             description: body.description,
-            specialty: body.specialty,
-            personality: body.personality,
-            modelPreference: body.modelPreference || 'gpt-4',
+            longDescription: body.longDescription,
+            category: body.category || 'GENERAL',
+            modelId: body.modelId,
             systemPrompt: body.systemPrompt,
+            icon: body.icon || '🤖',
+            color: body.color || '#3B82F6',
+            taskTypes: body.taskTypes || [],
+            specializations: body.specializations || [],
+            communicationStyle: body.communicationStyle || 'FRIENDLY',
+            verbosity: body.verbosity || 'BALANCED',
+            approach: body.approach || 'PRACTICAL',
+            traits: body.traits || [],
+            difficulty: body.difficulty || 'BEGINNER',
+            temperature: body.temperature,
+            maxTokens: body.maxTokens,
+            functionCalling: body.functionCalling || false,
             tags: body.tags || [],
-            capabilityLevel: body.capabilityLevel || 1,
-            averageResponseTime: body.averageResponseTime || 3000,
-            costPerMessage: body.costPerMessage || 0,
             isActive: body.isActive !== false,
-            isPublic: body.isPublic !== false,
-            isFeatured: body.isFeatured || false,
-            createdById: body.createdById,
-            version: body.version || '1.0.0'
+            isSystemAgent: false // 用户创建的不是系统智能体
         }
 
         const agent = await prisma.swarmAIAgent.create({
             data: agentData,
             include: {
-                agentSkills: {
-                    include: {
-                        skill: true
-                    }
-                },
-                agentTools: {
-                    include: {
-                        tool: true
-                    }
-                }
+                model: true
             }
         })
 
@@ -199,16 +186,7 @@ export async function PUT(request: Request) {
             where: { id },
             data: updates,
             include: {
-                agentSkills: {
-                    include: {
-                        skill: true
-                    }
-                },
-                agentTools: {
-                    include: {
-                        tool: true
-                    }
-                }
+                model: true
             }
         })
 

@@ -110,6 +110,82 @@
     }
 }
 
+/* Enhanced code highlight styles */
+.prose code[class*="language-"],
+.prose pre[class*="language-"] {
+    text-shadow: none !important;
+}
+
+/* Override highlight.js styles for better chat UI integration */
+.prose .hljs {
+    background: rgb(15 23 42) !important;
+    color: rgb(241 245 249) !important;
+}
+
+.prose .hljs-keyword {
+    color: rgb(192 132 252) !important;
+    font-weight: 600;
+}
+
+.prose .hljs-string {
+    color: rgb(34 197 94) !important;
+}
+
+.prose .hljs-number {
+    color: rgb(251 146 60) !important;
+}
+
+.prose .hljs-comment {
+    color: rgb(148 163 184) !important;
+    font-style: italic;
+}
+
+.prose .hljs-function {
+    color: rgb(59 130 246) !important;
+}
+
+.prose .hljs-variable {
+    color: rgb(239 68 68) !important;
+}
+
+.prose .hljs-type {
+    color: rgb(168 85 247) !important;
+}
+
+.prose .hljs-built_in {
+    color: rgb(20 184 166) !important;
+}
+
+/* Dark mode adjustments */
+.dark .prose .hljs {
+    background: rgb(2 6 23) !important;
+}
+
+/* KaTeX math formula styling */
+.prose .katex {
+    font-size: 1.1em;
+}
+
+.prose .katex-display {
+    margin: 1.5rem 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+.prose .katex-display>.katex {
+    display: inline-block;
+    white-space: nowrap;
+}
+
+/* Better math formula colors in dark mode */
+.dark .prose .katex {
+    color: rgb(241 245 249);
+}
+
+.dark .prose .katex .base {
+    color: rgb(241 245 249);
+}
+
 /* Reduce motion for accessibility - let TailwindCSS handle animations */
 @media (prefers-reduced-motion: reduce) {
 
@@ -188,4 +264,108 @@
 
 .dark .focus-ring:focus {
     box-shadow: 0 0 0 2px rgb(99 102 241 / 0.3), 0 0 0 4px rgb(30 41 59);
+}
+
+/* Code copy button animation */
+@keyframes copy-success {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+.copy-success {
+    animation: copy-success 0.3s ease-in-out;
+}
+
+/* Better list styling for markdown */
+.prose ul li::marker {
+    color: rgb(99 102 241);
+    font-size: 1em;
+}
+
+.prose ol li::marker {
+    color: rgb(99 102 241);
+    font-weight: 600;
+    font-size: 1em;
+}
+
+/* Ensure list markers are visible */
+.prose ul {
+    list-style-type: disc;
+    list-style-position: outside;
+}
+
+.prose ol {
+    list-style-type: decimal;
+    list-style-position: outside;
+}
+
+/* Task list styling */
+.prose input[type="checkbox"] {
+    margin-right: 0.5rem;
+    color: rgb(99 102 241);
+}
+
+/* Better table responsive behavior */
+.prose .table-container {
+    max-width: 100%;
+}
+
+/* Code highlight fine-tuning */
+.prose pre code {
+    background: transparent !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    font-size: 0.875rem !important;
+    line-height: 1.6 !important;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'SF Mono', 'Courier New', monospace !important;
+}
+
+/* Enhanced styling for plain code blocks (like directory structures) */
+.prose pre:not([class*="language-"]) code,
+.prose pre code:not([class*="language-"]) {
+    color: rgb(226 232 240) !important;
+    font-weight: 400 !important;
+    white-space: pre !important;
+    border: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Source Code Pro', monospace !important;
+    line-height: 1.7 !important;
+    letter-spacing: 0.025em !important;
+}
+
+.dark .prose pre:not([class*="language-"]) code,
+.dark .prose pre code:not([class*="language-"]) {
+    color: rgb(226 232 240) !important;
+}
+
+/* Remove borders from directory structure code blocks */
+.prose pre:not([class*="language-"]) {
+    border: none !important;
+    background: rgb(15 23 42) !important;
+}
+
+.dark .prose pre:not([class*="language-"]) {
+    background: rgb(2 6 23) !important;
+}
+
+/* Inline code in dark mode */
+.dark .prose code {
+    background-color: rgb(30 41 59) !important;
+    color: rgb(226 232 240) !important;
+}
+
+/* Blockquote enhancements */
+.prose blockquote p {
+    margin: 0;
+    color: inherit;
 }
