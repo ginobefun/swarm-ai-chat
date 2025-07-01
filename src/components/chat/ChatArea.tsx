@@ -20,10 +20,22 @@ import {
     Users,
     Bot,
     RefreshCw,
-    AlertCircle
+    AlertCircle,
+    StopCircle,
+    ThumbsUp,
+    ThumbsDown
 } from 'lucide-react'
 import { useAgentInfo, AgentInfo } from '@/hooks/useAgentInfo'
-import { ChatRequestData, OrchestratorResponse } from '@/types/chat'
+import { 
+    ChatRequestData, 
+    OrchestratorResponse,
+    StreamEvent,
+    EnhancedOrchestratorResponse,
+    UserAction,
+    UserActionType,
+    WorkspaceData,
+    EnhancedTask
+} from '@/types/chat'
 
 interface ChatAreaProps {
     session: Session | null
@@ -33,15 +45,14 @@ interface ChatAreaProps {
 }
 
 /**
- * ChatArea component - Unified chat interface
+ * ChatArea component - Enhanced unified chat interface
  * 
  * Features:
- * - Unified interface for both single-agent and multi-agent modes
- * - Server-side mode detection and routing
- * - Traditional streaming for single agents
- * - LangGraph orchestration for multi-agent sessions
- * - Database-driven agent configuration
- * - Seamless user experience regardless of mode
+ * - Natural streaming display of multi-agent collaboration
+ * - Real-time task progress visualization
+ * - User interaction controls (interrupt, retry, feedback)
+ * - Enhanced workspace panel with structured results
+ * - Improved UX with @ mentions and task assignments
  */
 const ChatArea: React.FC<ChatAreaProps> = ({
     session,
@@ -60,9 +71,18 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     const [showAddAgentDialog, setShowAddAgentDialog] = useState(false)
     const [showSettingsDialog, setShowSettingsDialog] = useState(false)
 
-    // Orchestrator response state for workspace
-    const [orchestratorResponse, setOrchestratorResponse] = useState<OrchestratorResponse | null>(null)
+    // Enhanced orchestrator state
+    const [orchestratorResponse, setOrchestratorResponse] = useState<EnhancedOrchestratorResponse | null>(null)
+    const [streamEvents, setStreamEvents] = useState<StreamEvent[]>([])
     const [confirmedIntent, setConfirmedIntent] = useState<string>('')
+    const [isOrchestrating, setIsOrchestrating] = useState(false)
+    const [currentTasks, setCurrentTasks] = useState<EnhancedTask[]>([])
+
+    // Workspace data for real-time display
+    const [workspaceData, setWorkspaceData] = useState<WorkspaceData>({
+        taskList: [],
+        lastUpdated: new Date()
+    })
 
     // Enhanced state management for error handling and reliability
     const [sendingState, setSendingState] = useState<'idle' | 'sending' | 'error'>('idle')
@@ -174,6 +194,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         setLastFailedMessage('')
         setUserErrorMessage('')
         setOrchestratorResponse(null)
+        setStreamEvents([])
+        setCurrentTasks([])
+        setIsOrchestrating(false)
         pendingRequests.current.clear()
 
         console.log('🔄 Session changed, states reset')
@@ -202,6 +225,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             setLastError(null)
             setLastFailedMessage('')
             setUserErrorMessage('')
+            setIsOrchestrating(false)
 
             // For single-agent mode, update session message count
             if (session && onSessionUpdate) {
@@ -251,7 +275,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         }
     }, [session?.id, setMessages])
 
-    // Monitor data changes for orchestrator responses with memory management
+    // Monitor data changes for stream events and orchestrator responses
     useEffect(() => {
         if (data && data.length > 0) {
             // Memory management: Limit data array size to prevent memory leaks
@@ -259,31 +283,165 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                 console.warn(`🧹 Data array size (${data.length}) exceeds limit (${MAX_DATA_ITEMS}), cleanup recommended`)
             }
 
-            const latestData = data[data.length - 1] as unknown as OrchestratorResponse
-            if (latestData?.type === 'orchestrator') {
-                console.log('🤖 Received orchestrator response via StreamData:', {
-                    turnIndex: latestData.turnIndex,
-                    shouldClarify: latestData.shouldClarify,
-                    hasQuestion: !!latestData.clarificationQuestion,
-                    tasksCount: latestData.tasks?.length || 0,
-                    resultsCount: latestData.results?.length || 0
-                })
+            const latestData = data[data.length - 1] as unknown
 
-                setOrchestratorResponse(latestData)
+            // Handle stream events
+            if (latestData && typeof latestData === 'object' && 'type' in latestData) {
+                const eventData = latestData as StreamEvent
+                if (eventData.type && eventData.timestamp) {
+                    console.log('🔔 Received stream event:', eventData.type)
+                    setStreamEvents(prev => [...prev, eventData])
 
-                // Delayed cleanup of orchestrator response to prevent memory leaks
-                setTimeout(() => {
-                    setOrchestratorResponse(prev =>
-                        prev?.turnIndex === latestData.turnIndex ? null : prev
-                    )
-                }, ORCHESTRATOR_RESPONSE_CLEANUP_DELAY)
+                    // Update task list for workspace
+                    if (eventData.type === 'task_created' && eventData.taskId) {
+                        const newTask: EnhancedTask = {
+                            id: eventData.taskId,
+                            title: eventData.content || '',
+                            description: '',
+                            assignedTo: eventData.agentId || '',
+                            status: 'pending',
+                            priority: 'medium',
+                            createdAt: new Date(eventData.timestamp),
+                            progress: 0
+                        }
+                        setCurrentTasks(prev => [...prev, newTask])
+                        setWorkspaceData(prev => ({
+                            ...prev,
+                            taskList: [...prev.taskList, newTask],
+                            lastUpdated: new Date()
+                        }))
+                    } else if (eventData.type === 'task_started' && eventData.taskId) {
+                        setCurrentTasks(prev => prev.map(task => 
+                            task.id === eventData.taskId 
+                                ? { ...task, status: 'in_progress', startedAt: new Date(), progress: 30 }
+                                : task
+                        ))
+                        setWorkspaceData(prev => ({
+                            ...prev,
+                            taskList: prev.taskList.map(task => 
+                                task.id === eventData.taskId 
+                                    ? { ...task, status: 'in_progress', startedAt: new Date(), progress: 30 }
+                                    : task
+                            ),
+                            lastUpdated: new Date()
+                        }))
+                    } else if (eventData.type === 'task_completed' && eventData.taskId) {
+                        setCurrentTasks(prev => prev.map(task => 
+                            task.id === eventData.taskId 
+                                ? { ...task, status: 'completed', completedAt: new Date(), progress: 100 }
+                                : task
+                        ))
+                        setWorkspaceData(prev => ({
+                            ...prev,
+                            taskList: prev.taskList.map(task => 
+                                task.id === eventData.taskId 
+                                    ? { ...task, status: 'completed', completedAt: new Date(), progress: 100 }
+                                    : task
+                            ),
+                            lastUpdated: new Date()
+                        }))
+                    } else if (eventData.type === 'task_planning') {
+                        setIsOrchestrating(true)
+                        setWorkspaceData(prev => ({
+                            ...prev,
+                            taskSummary: eventData.content,
+                            lastUpdated: new Date()
+                        }))
+                    } else if (eventData.type === 'summary_completed') {
+                        setIsOrchestrating(false)
+                        // Parse structured results if available
+                        // This would typically come from the final orchestrator response
+                    }
+                }
+            }
 
-                // Reload messages to show collaboration results
-                console.log('🔄 Reloading messages to display collaboration results')
-                reloadMessages()
+            // Handle orchestrator response
+            if (latestData && typeof latestData === 'object' && 'type' in latestData) {
+                const response = latestData as any
+                if (response.type === 'orchestrator') {
+                    const orchResponse = response as EnhancedOrchestratorResponse
+                    console.log('🤖 Received enhanced orchestrator response:', {
+                        turnIndex: orchResponse.turnIndex,
+                        streamEventsCount: orchResponse.streamEvents?.length || 0,
+                        tasksCount: orchResponse.tasks?.length || 0,
+                        isStreaming: orchResponse.isStreaming,
+                        canInterrupt: orchResponse.canInterrupt
+                    })
+
+                    setOrchestratorResponse(orchResponse)
+
+                    // Update workspace with final results
+                    if (orchResponse.tasks) {
+                        setCurrentTasks(orchResponse.tasks)
+                        setWorkspaceData(prev => ({
+                            ...prev,
+                            taskList: orchResponse.tasks,
+                            lastUpdated: new Date()
+                        }))
+                    }
+
+                    // Delayed cleanup of orchestrator response to prevent memory leaks
+                    setTimeout(() => {
+                        setOrchestratorResponse(prev =>
+                            prev?.turnIndex === orchResponse.turnIndex ? null : prev
+                        )
+                    }, ORCHESTRATOR_RESPONSE_CLEANUP_DELAY)
+
+                    // Reload messages to show collaboration results
+                    console.log('🔄 Reloading messages to display collaboration results')
+                    reloadMessages()
+                }
             }
         }
     }, [data, reloadMessages])
+
+    // Handle user actions (interrupt, retry, feedback)
+    const handleUserAction = useCallback(async (action: UserActionType, metadata?: any) => {
+        if (!session?.id) return
+
+        const userAction: UserAction = {
+            type: action,
+            sessionId: session.id,
+            timestamp: new Date(),
+            ...metadata
+        }
+
+        try {
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    messages: [],
+                    data: {
+                        sessionId: session.id,
+                        userAction
+                    }
+                })
+            })
+
+            if (response.ok) {
+                const result = await response.json()
+                console.log('✅ User action handled:', result)
+
+                if (action === 'interrupt') {
+                    setIsOrchestrating(false)
+                    setSendingState('idle')
+                    // Add system message about interruption
+                    const interruptMessage = {
+                        id: crypto.randomUUID(),
+                        role: 'system' as const,
+                        content: t('chat.processInterrupted'),
+                        createdAt: new Date()
+                    }
+                    setMessages(prev => [...prev, interruptMessage])
+                }
+            }
+        } catch (error) {
+            console.error('❌ Failed to handle user action:', error)
+        }
+    }, [session?.id, setMessages, t])
 
     // Handle unified message sending with enhanced reliability and concurrency control
     const handleSendMessage = useCallback(async (message: string) => {
@@ -294,8 +452,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         }
 
         // Prevent sending while already processing
-        if (sendingState === 'sending') {
-            console.warn('⚠️ Message already being sent, ignoring duplicate request')
+        if (sendingState === 'sending' || isOrchestrating) {
+            console.warn('⚠️ Message already being sent or orchestration in progress')
             return
         }
 
@@ -313,6 +471,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             setSendingState('sending')
             setLastFailedMessage(message)
             setLastError(null)
+            setStreamEvents([]) // Clear previous stream events
+            setCurrentTasks([]) // Clear previous tasks
+
+            // Set orchestrating state for multi-agent sessions
+            if (isMultiAgentSession) {
+                setIsOrchestrating(true)
+            }
 
             console.log('📤 Sending unified message:', {
                 requestId,
@@ -355,6 +520,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             console.error('❌ Failed to send message:', error)
             setSendingState('error')
             setLastError(error as Error)
+            setIsOrchestrating(false)
             // Error will be handled by onError callback via useChat
         } finally {
             // Always clean up the pending request
@@ -363,6 +529,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     }, [
         session?.id,
         sendingState,
+        isOrchestrating,
         agentParticipants.length,
         isMultiAgentSession,
         confirmedIntent,
@@ -478,6 +645,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                                         {t('chat.collaborationMode')}
                                     </Badge>
                                 )}
+                                {isOrchestrating && (
+                                    <Badge variant="default" className="text-xs animate-pulse">
+                                        {t('chat.orchestrating')}
+                                    </Badge>
+                                )}
                             </div>
                             <p className="text-xs text-slate-500 dark:text-slate-400">
                                 {isMultiAgentSession
@@ -487,12 +659,30 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                                 {orchestratorResponse && (
                                     <span className="ml-2">• Turn #{orchestratorResponse.turnIndex}</span>
                                 )}
+                                {currentTasks.length > 0 && (
+                                    <span className="ml-2">• {currentTasks.filter(t => t.status === 'completed').length}/{currentTasks.length} tasks</span>
+                                )}
                             </p>
                         </div>
                     </div>
 
                     {/* Header Actions */}
                     <div className="flex items-center gap-1 flex-shrink-0">
+                        {/* Interrupt button - only show when orchestrating */}
+                        {isOrchestrating && orchestratorResponse?.canInterrupt !== false && (
+                            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    className="h-8 px-3 text-xs"
+                                    title={t('chat.interrupt')}
+                                    onClick={() => handleUserAction('interrupt')}
+                                >
+                                    <StopCircle className="w-4 h-4 mr-1" />
+                                    {t('chat.interrupt')}
+                                </Button>
+                            </motion.div>
+                        )}
                         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                             <Button
                                 variant="ghost"
@@ -572,17 +762,19 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                     <div className="flex-1 overflow-hidden">
                         <MessageList
                             messages={displayMessages}
-                            isTyping={isLoading}
-                            typingUser={isLoading ? (
+                            isTyping={isLoading || isOrchestrating}
+                            typingUser={isLoading || isOrchestrating ? (
                                 isMultiAgentSession
                                     ? t('chat.agentsCollaboratingInProgress')
                                     : getAgentDisplayInfo(session?.primaryAgentId || 'gemini-flash').name
                             ) : ''}
-                            typingAvatar={isLoading ? (
+                            typingAvatar={isLoading || isOrchestrating ? (
                                 isMultiAgentSession
                                     ? '🤖'
                                     : getAgentDisplayInfo(session?.primaryAgentId || 'gemini-flash').avatar
                             ) : ''}
+                            streamEvents={streamEvents}
+                            onUserAction={handleUserAction}
                         />
                     </div>
 
@@ -610,30 +802,17 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                         </div>
                     )}
 
-                    {/* Summary Section */}
-                    {orchestratorResponse?.summary && (
-                        <div className="flex-shrink-0 p-4 bg-green-50 dark:bg-green-950/20 border-t border-green-200 dark:border-green-800/50">
-                            <p className="text-sm font-medium text-green-800 dark:text-green-300 mb-2">
-                                {t('chat.collaborationSummary')}
-                            </p>
-                            <p className="text-sm text-green-700 dark:text-green-400 whitespace-pre-wrap">
-                                {orchestratorResponse.summary}
-                            </p>
-                            {orchestratorResponse.costUSD > 0 && (
-                                <p className="text-xs text-green-600 dark:text-green-500 mt-2">
-                                    {t('chat.collaborationCost')}${orchestratorResponse.costUSD.toFixed(4)}
-                                </p>
-                            )}
-                        </div>
-                    )}
-
                     {/* Message Input */}
                     <div className="flex-shrink-0 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
                         <MessageInput
                             onSendMessage={handleSendMessage}
                             mentionItems={[]}
-                            disabled={isLoading}
-                            placeholder={t('chat.inputPlaceholder')}
+                            disabled={isLoading || isOrchestrating}
+                            placeholder={
+                                isOrchestrating 
+                                    ? t('chat.waitingForAgents') 
+                                    : t('chat.inputPlaceholder')
+                            }
                         />
                     </div>
                 </div>
@@ -657,12 +836,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                 />
             </main>
 
-            {/* Workspace Panel - Integrated */}
+            {/* Enhanced Workspace Panel */}
             {isMultiAgentSession && isWorkspaceOpen && (
                 <div className="hidden lg:flex w-[360px] min-w-[320px] max-w-[400px] border-l border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
                     <WorkspacePanel
                         session={session}
                         orchestratorResponse={orchestratorResponse}
+                        workspaceData={workspaceData}
                         isVisible={isWorkspaceOpen}
                         onClose={() => onWorkspaceToggle?.(false)}
                     />
