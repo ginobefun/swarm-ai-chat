@@ -3,15 +3,20 @@
 import React, { useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { Message } from '@/types'
+import { StreamEvent, UserActionType } from '@/types/chat'
 import { useTranslation } from '@/contexts/AppContext'
 import { MessageActions } from '@/components/ui/message-actions'
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer'
+import { Badge } from '@/components/ui/badge'
+import { Bot, CheckCircle, Clock, AlertCircle } from 'lucide-react'
 
 interface MessageListProps {
     messages: Message[]
     isTyping?: boolean
     typingUser?: string
     typingAvatar?: string
+    streamEvents?: StreamEvent[]
+    onUserAction?: (action: UserActionType, metadata?: any) => void
 }
 
 const TypingIndicator: React.FC<{
@@ -286,7 +291,9 @@ const MessageList: React.FC<MessageListProps> = ({
     messages,
     isTyping = false,
     typingUser = "AI 助手",
-    typingAvatar = "🤖"
+    typingAvatar = "🤖",
+    streamEvents,
+    onUserAction
 }) => {
     const { t } = useTranslation()
     const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -376,6 +383,55 @@ const MessageList: React.FC<MessageListProps> = ({
                                     )}
                                     <MessageItem message={message} />
                                 </React.Fragment>
+                            )
+                        })}
+                    </div>
+                )}
+
+                {/* Stream Events Display */}
+                {streamEvents && streamEvents.length > 0 && (
+                    <div className="space-y-2 px-4">
+                        {streamEvents.map((event, index) => {
+                            const showEvent = index === streamEvents.length - 1 || 
+                                             ['task_created', 'task_started', 'task_completed', 'task_failed'].includes(event.type)
+                            
+                            if (!showEvent) return null
+
+                            return (
+                                <div key={event.id} className="flex items-center gap-2 text-sm animate-message-slide-in">
+                                    {event.type === 'task_planning' && (
+                                        <>
+                                            <Bot className="w-4 h-4 text-blue-500" />
+                                            <span className="text-slate-600 dark:text-slate-400">{event.content}</span>
+                                        </>
+                                    )}
+                                    {event.type === 'task_created' && (
+                                        <>
+                                            <Badge variant="secondary" className="text-xs">
+                                                {t('chat.taskCreated')}
+                                            </Badge>
+                                            <span className="text-slate-600 dark:text-slate-400">{event.content}</span>
+                                        </>
+                                    )}
+                                    {event.type === 'task_started' && (
+                                        <>
+                                            <Clock className="w-4 h-4 text-amber-500 animate-spin" />
+                                            <span className="text-slate-600 dark:text-slate-400">{event.content}</span>
+                                        </>
+                                    )}
+                                    {event.type === 'task_completed' && (
+                                        <>
+                                            <CheckCircle className="w-4 h-4 text-green-500" />
+                                            <span className="text-slate-600 dark:text-slate-400">{event.content}</span>
+                                        </>
+                                    )}
+                                    {event.type === 'task_failed' && (
+                                        <>
+                                            <AlertCircle className="w-4 h-4 text-red-500" />
+                                            <span className="text-slate-600 dark:text-slate-400">{event.content}</span>
+                                        </>
+                                    )}
+                                </div>
                             )
                         })}
                     </div>

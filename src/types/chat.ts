@@ -17,6 +17,7 @@ export interface ChatRequestData {
         excludeAgents?: string[]
         includeAgents?: string[]
     }
+    userAction?: UserAction  // Add support for user actions
 }
 
 export interface ChatMetadata {
@@ -98,4 +99,91 @@ export interface AgentConfiguration {
     // Model pricing information
     inputPricePerK: number   // Price per 1K input tokens in USD
     outputPricePerK: number  // Price per 1K output tokens in USD
+}
+
+/**
+ * Enhanced task interface with more details
+ */
+export interface EnhancedTask extends Task {
+    createdAt: Date
+    startedAt?: Date
+    completedAt?: Date
+    progress?: number  // 0-100
+    estimatedTime?: number  // in seconds
+    dependencies?: string[]  // task IDs this task depends on
+    output?: string  // partial or final output
+}
+
+/**
+ * Stream event types for real-time updates
+ */
+export type StreamEventType = 
+    | 'task_planning'     // Moderator is planning tasks
+    | 'task_created'      // A new task has been created
+    | 'task_assigned'     // Task assigned to an agent
+    | 'task_started'      // Agent started working on task
+    | 'task_progress'     // Progress update from agent
+    | 'task_completed'    // Task completed by agent
+    | 'task_failed'       // Task failed
+    | 'summary_started'   // Moderator started summarizing
+    | 'summary_completed' // Final summary ready
+    | 'user_feedback'     // User provided feedback
+    | 'user_interrupt'    // User interrupted the process
+
+/**
+ * Stream event for real-time updates
+ */
+export interface StreamEvent {
+    id: string
+    type: StreamEventType
+    timestamp: Date
+    agentId?: string
+    taskId?: string
+    content?: string
+    metadata?: Record<string, unknown>
+}
+
+/**
+ * User action types
+ */
+export type UserActionType = 'interrupt' | 'retry' | 'like' | 'dislike' | 'suggest'
+
+/**
+ * User action interface
+ */
+export interface UserAction {
+    type: UserActionType
+    sessionId: string
+    messageId?: string
+    taskId?: string
+    suggestion?: string
+    timestamp: Date
+}
+
+/**
+ * Enhanced orchestrator response with streaming support
+ */
+export interface EnhancedOrchestratorResponse extends OrchestratorResponse {
+    streamEvents: StreamEvent[]
+    tasks: EnhancedTask[]
+    isStreaming: boolean
+    canInterrupt: boolean
+    canRetry: boolean
+}
+
+/**
+ * Workspace data for real-time display
+ */
+export interface WorkspaceData {
+    taskSummary?: string
+    taskList: EnhancedTask[]
+    finalResults?: {
+        summary?: string
+        isRecommended?: boolean
+        keyPoints?: string[]
+        criticalThoughts?: string[]
+        quotes?: string[]
+        mindMap?: string  // Mermaid or other format
+    }
+    lastUpdated: Date
 } 

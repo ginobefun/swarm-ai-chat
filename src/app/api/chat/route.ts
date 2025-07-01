@@ -15,9 +15,20 @@ import {
     ChatMessage,
     ChatRequestData,
     OrchestratorResponse,
-    SessionAnalysis
+    SessionAnalysis,
+    StreamEvent,
+    StreamEventType,
+    EnhancedTask,
+    EnhancedOrchestratorResponse,
+    UserAction
 } from '@/types/chat'
 import { AgentConfigService } from '@/lib/services/AgentConfigService'
+
+// Active session states for handling interrupts
+const activeOrchestrations = new Map<string, {
+    controller: AbortController
+    startTime: number
+}>()
 
 export async function POST(req: NextRequest) {
     try {
@@ -31,6 +42,11 @@ export async function POST(req: NextRequest) {
 
         const { messages, data } = await req.json()
         const requestData = data as ChatRequestData
+
+        // Check for user actions (interrupt, retry, feedback)
+        if (requestData.userAction) {
+            return handleUserAction(requestData.userAction, requestData.sessionId)
+        }
 
         if (!messages?.length || !requestData?.sessionId) {
             return new Response('Invalid request: missing messages or sessionId', { status: 400 })
@@ -68,7 +84,7 @@ export async function POST(req: NextRequest) {
         })
 
         if (finalMode === 'multi') {
-            return handleMultiAgentChat({
+            return handleEnhancedMultiAgentChat({
                 messages,
                 sessionId,
                 messageContent,
@@ -93,9 +109,49 @@ export async function POST(req: NextRequest) {
 }
 
 /**
- * Handle multi-agent collaboration with StreamData
+ * Handle user actions (interrupt, retry, feedback)
  */
-async function handleMultiAgentChat({
+async function handleUserAction(action: UserAction, sessionId: string) {
+    console.log('🎮 Handling user action:', action)
+
+    switch (action.type) {
+        case 'interrupt':
+            const orchestration = activeOrchestrations.get(sessionId)
+            if (orchestration) {
+                orchestration.controller.abort()
+                activeOrchestrations.delete(sessionId)
+                return new Response(JSON.stringify({ success: true, message: 'Process interrupted' }), {
+                    headers: { 'Content-Type': 'application/json' }
+                })
+            }
+            break
+
+        case 'like':
+        case 'dislike':
+            // Store feedback in database
+            // TODO: Implement feedback storage
+            return new Response(JSON.stringify({ success: true }), {
+                headers: { 'Content-Type': 'application/json' }
+            })
+
+        case 'retry':
+            // TODO: Implement retry logic
+            break
+
+        case 'suggest':
+            // TODO: Handle suggestion for improvement
+            break
+    }
+
+    return new Response(JSON.stringify({ success: false, message: 'Action not implemented' }), {
+        headers: { 'Content-Type': 'application/json' }
+    })
+}
+
+/**
+ * Enhanced multi-agent chat with natural streaming output
+ */
+async function handleEnhancedMultiAgentChat({
     sessionId,
     messageContent,
     userId,
@@ -109,10 +165,14 @@ async function handleMultiAgentChat({
     requestData: ChatRequestData
     sessionAnalysis: SessionAnalysis
 }) {
-    console.log('🤖 Starting multi-agent orchestration...')
+    console.log('🤖 Starting enhanced multi-agent orchestration...')
 
-    const agentIds = sessionAnalysis.agentIds
-    const confirmedIntent = requestData.confirmedIntent
+    // Create abort controller for interrupts
+    const controller = new AbortController()
+    activeOrchestrations.set(sessionId, {
+        controller,
+        startTime: Date.now()
+    })
 
     // Save user message to database
     await addMessageToSession({
@@ -123,100 +183,311 @@ async function handleMultiAgentChat({
         contentType: 'text'
     })
 
-    let graph = getActiveGraph(sessionId)
-    let state
-
-    if (graph && confirmedIntent) {
-        console.log('🔄 Continuing existing graph with confirmed intent')
-        const turnIndex = await getLatestTurnIndex(sessionId)
-        state = createInitialState(sessionId, messageContent, turnIndex)
-        state.confirmedIntent = confirmedIntent
-        state.shouldClarify = false
-    } else {
-        console.log('🆕 Creating new orchestrator graph')
-        const builder = new OrchestratorGraphBuilder({
-            sessionId,
-            participants: agentIds
-        })
-
-        graph = await builder.build()
-        storeActiveGraph(sessionId, graph)
-
-        const turnIndex = await getLatestTurnIndex(sessionId) + 1
-        state = createInitialState(sessionId, messageContent, turnIndex)
-    }
-
-    // Execute graph
-    console.log('🎬 Running orchestrator graph...')
-    const startTime = Date.now()
-    const finalState = await graph.invoke(state, {
-        recursionLimit: 50
-    })
-    const executionTime = Date.now() - startTime
-
-    console.log('✅ Graph execution completed:', {
-        executionTimeMs: executionTime,
-        finalTurnIndex: finalState.turnIndex,
-        shouldClarify: finalState.shouldClarify,
-        tasksCount: finalState.tasks?.length || 0,
-        resultsCount: finalState.results?.length || 0
+    const openrouter = createOpenRouter({
+        apiKey: process.env.OPENROUTER_API_KEY!,
+        headers: {
+            'HTTP-Referer': process.env.BETTER_AUTH_URL || 'https://swarmai.chat',
+            'X-Title': 'SwarmAI.chat'
+        }
     })
 
-    // Save orchestrator result
-    await saveOrchestratorResult(finalState)
-
-    // Prepare orchestrator response for StreamData
-    const orchestratorResponse: OrchestratorResponse = {
-        type: 'orchestrator',
-        success: true,
-        turnIndex: finalState.turnIndex,
-        shouldClarify: finalState.shouldClarify,
-        clarificationQuestion: finalState.clarificationQuestion,
-        summary: finalState.summary,
-        events: finalState.events || [],
-        tasks: finalState.tasks || [],
-        results: finalState.results || [],
-        costUSD: finalState.costUSD || 0
+    // Get agent configurations
+    const agentConfigService = AgentConfigService.getInstance()
+    const agentConfigs = new Map()
+    for (const agentId of sessionAnalysis.agentIds) {
+        const config = await agentConfigService.getAgentConfiguration(agentId)
+        agentConfigs.set(agentId, config)
     }
 
-    console.log('🎉 Multi-agent orchestration completed, sending via createDataStreamResponse')
-
-    // Use createDataStreamResponse to send orchestrator data
     return createDataStreamResponse({
         execute: async (dataStream) => {
-            // Write orchestrator response as data (convert to JSON-compatible format)
-            dataStream.writeData(JSON.parse(JSON.stringify(orchestratorResponse)))
+            const streamEvents: StreamEvent[] = []
+            const tasks: EnhancedTask[] = []
 
-            // Send a simple completion message
-            const stream = streamText({
-                model: createOpenRouter({
-                    apiKey: process.env.OPENROUTER_API_KEY!,
-                    headers: {
-                        'HTTP-Referer': process.env.BETTER_AUTH_URL || 'https://swarmai.chat',
-                        'X-Title': 'SwarmAI.chat'
-                    }
-                }).chat('openai/gpt-4.1'),
-                messages: [
-                    {
-                        role: 'system',
-                        content: 'You are a helpful assistant. Simply acknowledge that the multi-agent collaboration has been completed.'
-                    },
-                    {
-                        role: 'user',
-                        content: 'Multi-agent collaboration completed'
-                    }
-                ]
-            })
+            try {
+                // Step 1: Moderator understands and plans
+                const planningEvent: StreamEvent = {
+                    id: crypto.randomUUID(),
+                    type: 'task_planning',
+                    timestamp: new Date(),
+                    agentId: 'moderator',
+                    content: '正在理解您的需求并制定计划...'
+                }
+                streamEvents.push(planningEvent)
+                dataStream.writeData(JSON.parse(JSON.stringify(planningEvent)))
 
-            // Merge the streamText result into the data stream
-            stream.mergeIntoDataStream(dataStream)
+                // Stream moderator's thinking process
+                const moderatorStream = streamText({
+                    model: openrouter.chat('openai/gpt-4o-mini'),
+                    messages: [
+                        {
+                            role: 'system',
+                            content: `你是一个多智能体系统的主持人。请用自然、友好的语言分析用户的需求，并制定任务计划。
+
+当前可用的智能体：
+${sessionAnalysis.agentIds.map(id => {
+                                const config = agentConfigs.get(id)
+                                return `- @${config.name} (${id}): ${config.systemPrompt.substring(0, 100)}...`
+                            }).join('\n')}
+
+要求：
+1. 首先用简洁的语言说明你对用户需求的理解
+2. 列出需要完成的主要任务（2-4个）
+3. 使用 @智能体名称 的格式分配任务
+4. 用友好的语气解释为什么这样分配
+
+示例输出：
+"我理解您想要深度分析这篇文章。让我为您安排几位专家来协助：
+
+📋 任务分解：
+1. 文章核心内容提取 - @文章摘要师 将为您提取关键信息
+2. 批判性分析 - @批判性思考者 将评估论点的逻辑性
+3. 实用建议总结 - @研究分析师 将提炼可行动的见解
+
+现在开始执行..."`
+                        },
+                        {
+                            role: 'user',
+                            content: messageContent
+                        }
+                    ],
+                    onFinish: async (result) => {
+                        // Parse tasks from moderator's response
+                        const taskMatches = result.text.matchAll(/@(\S+)\s+将/g)
+                        let taskIndex = 0
+                        for (const match of taskMatches) {
+                            const agentName = match[1]
+                            const agentId = sessionAnalysis.agentIds.find(id => 
+                                agentConfigs.get(id)?.name === agentName
+                            ) || sessionAnalysis.agentIds[taskIndex % sessionAnalysis.agentIds.length]
+
+                            const task: EnhancedTask = {
+                                id: crypto.randomUUID(),
+                                title: `任务 ${taskIndex + 1}`,
+                                description: '',
+                                assignedTo: agentId,
+                                status: 'pending',
+                                priority: 'medium',
+                                createdAt: new Date(),
+                                progress: 0
+                            }
+                            tasks.push(task)
+                            taskIndex++
+
+                            // Send task created event
+                            const taskEvent: StreamEvent = {
+                                id: crypto.randomUUID(),
+                                type: 'task_created',
+                                timestamp: new Date(),
+                                taskId: task.id,
+                                agentId: task.assignedTo,
+                                content: `任务已分配给 @${agentConfigs.get(agentId)?.name}`
+                            }
+                            streamEvents.push(taskEvent)
+                            dataStream.writeData(JSON.parse(JSON.stringify(taskEvent)))
+                        }
+                    }
+                })
+
+                // Merge moderator stream
+                moderatorStream.mergeIntoDataStream(dataStream)
+                await moderatorStream
+
+                // Step 2: Execute tasks with each agent
+                for (const task of tasks) {
+                    if (controller.signal.aborted) break
+
+                    const agentConfig = agentConfigs.get(task.assignedTo)
+                    if (!agentConfig) continue
+
+                    // Task started event
+                    const startEvent: StreamEvent = {
+                        id: crypto.randomUUID(),
+                        type: 'task_started',
+                        timestamp: new Date(),
+                        taskId: task.id,
+                        agentId: task.assignedTo,
+                        content: `@${agentConfig.name} 开始处理任务...`
+                    }
+                    streamEvents.push(startEvent)
+                    dataStream.writeData(JSON.parse(JSON.stringify(startEvent)))
+
+                    // Update task status
+                    task.status = 'in_progress'
+                    task.startedAt = new Date()
+
+                    // Stream agent's response
+                    const agentStream = streamText({
+                        model: openrouter.chat(agentConfig.modelName),
+                        messages: [
+                            {
+                                role: 'system',
+                                content: agentConfig.systemPrompt
+                            },
+                            {
+                                role: 'user',
+                                content: `${messageContent}\n\n请根据你的专长完成分配给你的任务。使用 Markdown 格式输出。`
+                            }
+                        ],
+                        temperature: agentConfig.temperature,
+                        maxTokens: agentConfig.maxTokens,
+                        onFinish: async (result) => {
+                            // Task completed
+                            task.status = 'completed'
+                            task.completedAt = new Date()
+                            task.progress = 100
+                            task.output = result.text
+
+                            const completeEvent: StreamEvent = {
+                                id: crypto.randomUUID(),
+                                type: 'task_completed',
+                                timestamp: new Date(),
+                                taskId: task.id,
+                                agentId: task.assignedTo,
+                                content: `@${agentConfig.name} 已完成任务`
+                            }
+                            streamEvents.push(completeEvent)
+                            dataStream.writeData(JSON.parse(JSON.stringify(completeEvent)))
+
+                            // Save to database
+                            await addMessageToSession({
+                                sessionId,
+                                senderType: 'agent',
+                                senderId: task.assignedTo,
+                                content: result.text,
+                                contentType: 'text'
+                            })
+                        }
+                    })
+
+                    agentStream.mergeIntoDataStream(dataStream)
+                    await agentStream
+                }
+
+                // Step 3: Final summary
+                if (!controller.signal.aborted && tasks.length > 0) {
+                    const summaryEvent: StreamEvent = {
+                        id: crypto.randomUUID(),
+                        type: 'summary_started',
+                        timestamp: new Date(),
+                        agentId: 'moderator',
+                        content: '\n\n📊 正在为您整理最终结果...'
+                    }
+                    streamEvents.push(summaryEvent)
+                    dataStream.writeData(JSON.parse(JSON.stringify(summaryEvent)))
+
+                    // Create summary with structured results
+                    const summaryStream = streamText({
+                        model: openrouter.chat('openai/gpt-4o-mini'),
+                        messages: [
+                            {
+                                role: 'system',
+                                content: `作为主持人，请基于各智能体的输出创建一个结构化的总结。
+
+使用以下格式：
+
+## 📖 执行摘要
+[简要总结主要发现]
+
+## 🎯 关键要点
+- 要点1
+- 要点2
+- ...
+
+## 💭 批判性思考
+[如果有批判性分析的内容]
+
+## 💡 行动建议
+[可执行的建议]
+
+## 📌 精彩引述
+[如果有值得记住的句子]`
+                            },
+                            {
+                                role: 'user',
+                                content: tasks.map(t => 
+                                    `@${agentConfigs.get(t.assignedTo)?.name} 的分析：\n${t.output}`
+                                ).join('\n\n---\n\n')
+                            }
+                        ],
+                        onFinish: async (result) => {
+                            const summaryCompleteEvent: StreamEvent = {
+                                id: crypto.randomUUID(),
+                                type: 'summary_completed',
+                                timestamp: new Date(),
+                                agentId: 'moderator',
+                                content: '✅ 分析完成！'
+                            }
+                            streamEvents.push(summaryCompleteEvent)
+                            dataStream.writeData(JSON.parse(JSON.stringify(summaryCompleteEvent)))
+
+                            // Save summary
+                            await addMessageToSession({
+                                sessionId,
+                                senderType: 'agent',
+                                senderId: 'moderator',
+                                content: result.text,
+                                contentType: 'text'
+                            })
+                        }
+                    })
+
+                    summaryStream.mergeIntoDataStream(dataStream)
+                    await summaryStream
+                }
+
+                // Send final orchestrator response
+                const orchestratorResponse: EnhancedOrchestratorResponse = {
+                    type: 'orchestrator',
+                    success: true,
+                    turnIndex: await getLatestTurnIndex(sessionId) + 1,
+                    events: streamEvents.map(e => ({
+                        id: e.id,
+                        type: e.type,
+                        timestamp: e.timestamp.toISOString(),
+                        content: e.content,
+                        agentId: e.agentId
+                    })),
+                    tasks,
+                    results: tasks.filter(t => t.status === 'completed').map(t => ({
+                        taskId: t.id,
+                        agentId: t.assignedTo,
+                        content: t.output || ''
+                    })),
+                    costUSD: 0, // TODO: Calculate actual cost
+                    streamEvents,
+                    isStreaming: false,
+                    canInterrupt: false,
+                    canRetry: true
+                }
+
+                dataStream.writeData(orchestratorResponse)
+
+            } catch (error) {
+                console.error('❌ Orchestration error:', error)
+                
+                if (error.name === 'AbortError') {
+                    dataStream.writeData({
+                        type: 'error',
+                        message: 'Process interrupted by user'
+                    })
+                } else {
+                    dataStream.writeData({
+                        type: 'error',
+                        message: 'An error occurred during orchestration'
+                    })
+                }
+            } finally {
+                activeOrchestrations.delete(sessionId)
+            }
         },
         headers: {
-            'X-Chat-Mode': 'multi',
-            'X-Agent-Count': agentIds.length.toString()
+            'X-Chat-Mode': 'multi-enhanced',
+            'X-Agent-Count': sessionAnalysis.agentIds.length.toString()
         },
         onError: (error) => {
             console.error('🔴 Multi-agent streaming error:', error)
+            activeOrchestrations.delete(sessionId)
             return error instanceof Error ? error.message : 'Multi-agent collaboration failed'
         }
     })
