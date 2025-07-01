@@ -3,21 +3,16 @@ import { streamText, createDataStreamResponse } from 'ai'
 import { createOpenRouter } from '@openrouter/ai-sdk-provider'
 
 import prisma from '@/lib/database/prisma'
-import { getLatestTurnIndex, storeActiveGraph, getActiveGraph } from '@/lib/orchestrator/hooks'
-import { OrchestratorGraphBuilder } from '@/lib/orchestrator/graphBuilder'
-import { createInitialState } from '@/lib/orchestrator/graphBuilder'
 import { addMessageToSession } from '@/lib/database/sessions-prisma'
-import { saveOrchestratorResult } from '@/lib/orchestrator/hooks'
+import { getLatestTurnIndex } from '@/lib/orchestrator/hooks'
 import { auth } from '@/lib/auth'
 
 // Import our new types
 import {
     ChatMessage,
     ChatRequestData,
-    OrchestratorResponse,
     SessionAnalysis,
     StreamEvent,
-    StreamEventType,
     EnhancedTask,
     EnhancedOrchestratorResponse,
     UserAction
@@ -89,7 +84,6 @@ export async function POST(req: NextRequest) {
                 sessionId,
                 messageContent,
                 userId,
-                requestData,
                 sessionAnalysis
             })
         } else {
@@ -155,14 +149,12 @@ async function handleEnhancedMultiAgentChat({
     sessionId,
     messageContent,
     userId,
-    requestData,
     sessionAnalysis
 }: {
     messages: ChatMessage[]
     sessionId: string
     messageContent: string
     userId: string
-    requestData: ChatRequestData
     sessionAnalysis: SessionAnalysis
 }) {
     console.log('🤖 Starting enhanced multi-agent orchestration...')
@@ -257,7 +249,7 @@ ${sessionAnalysis.agentIds.map(id => {
                         let taskIndex = 0
                         for (const match of taskMatches) {
                             const agentName = match[1]
-                            const agentId = sessionAnalysis.agentIds.find(id => 
+                            const agentId = sessionAnalysis.agentIds.find(id =>
                                 agentConfigs.get(id)?.name === agentName
                             ) || sessionAnalysis.agentIds[taskIndex % sessionAnalysis.agentIds.length]
 
@@ -405,7 +397,7 @@ ${sessionAnalysis.agentIds.map(id => {
                             },
                             {
                                 role: 'user',
-                                content: tasks.map(t => 
+                                content: tasks.map(t =>
                                     `@${agentConfigs.get(t.assignedTo)?.name} 的分析：\n${t.output}`
                                 ).join('\n\n---\n\n')
                             }
@@ -441,6 +433,7 @@ ${sessionAnalysis.agentIds.map(id => {
                     type: 'orchestrator',
                     success: true,
                     turnIndex: await getLatestTurnIndex(sessionId) + 1,
+                    phase: 'completed',
                     events: streamEvents.map(e => ({
                         id: e.id,
                         type: e.type,
@@ -461,12 +454,13 @@ ${sessionAnalysis.agentIds.map(id => {
                     canRetry: true
                 }
 
-                dataStream.writeData(orchestratorResponse)
+                dataStream.writeData(JSON.parse(JSON.stringify(orchestratorResponse)))
 
             } catch (error) {
                 console.error('❌ Orchestration error:', error)
-                
-                if (error.name === 'AbortError') {
+                const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+
+                if (error instanceof Error && error.name === 'AbortError') {
                     dataStream.writeData({
                         type: 'error',
                         message: 'Process interrupted by user'
@@ -474,7 +468,7 @@ ${sessionAnalysis.agentIds.map(id => {
                 } else {
                     dataStream.writeData({
                         type: 'error',
-                        message: 'An error occurred during orchestration'
+                        message: errorMessage
                     })
                 }
             } finally {

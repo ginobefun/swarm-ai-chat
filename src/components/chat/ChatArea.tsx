@@ -21,14 +21,11 @@ import {
     Bot,
     RefreshCw,
     AlertCircle,
-    StopCircle,
-    ThumbsUp,
-    ThumbsDown
+    StopCircle
 } from 'lucide-react'
 import { useAgentInfo, AgentInfo } from '@/hooks/useAgentInfo'
-import { 
-    ChatRequestData, 
-    OrchestratorResponse,
+import {
+    ChatRequestData,
     StreamEvent,
     EnhancedOrchestratorResponse,
     UserAction,
@@ -81,7 +78,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     // Workspace data for real-time display
     const [workspaceData, setWorkspaceData] = useState<WorkspaceData>({
         taskList: [],
-        lastUpdated: new Date()
+        lastUpdated: new Date(),
+        phase: 'idle'
     })
 
     // Enhanced state management for error handling and reliability
@@ -311,30 +309,30 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                             lastUpdated: new Date()
                         }))
                     } else if (eventData.type === 'task_started' && eventData.taskId) {
-                        setCurrentTasks(prev => prev.map(task => 
-                            task.id === eventData.taskId 
+                        setCurrentTasks(prev => prev.map(task =>
+                            task.id === eventData.taskId
                                 ? { ...task, status: 'in_progress', startedAt: new Date(), progress: 30 }
                                 : task
                         ))
                         setWorkspaceData(prev => ({
                             ...prev,
-                            taskList: prev.taskList.map(task => 
-                                task.id === eventData.taskId 
+                            taskList: prev.taskList.map(task =>
+                                task.id === eventData.taskId
                                     ? { ...task, status: 'in_progress', startedAt: new Date(), progress: 30 }
                                     : task
                             ),
                             lastUpdated: new Date()
                         }))
                     } else if (eventData.type === 'task_completed' && eventData.taskId) {
-                        setCurrentTasks(prev => prev.map(task => 
-                            task.id === eventData.taskId 
+                        setCurrentTasks(prev => prev.map(task =>
+                            task.id === eventData.taskId
                                 ? { ...task, status: 'completed', completedAt: new Date(), progress: 100 }
                                 : task
                         ))
                         setWorkspaceData(prev => ({
                             ...prev,
-                            taskList: prev.taskList.map(task => 
-                                task.id === eventData.taskId 
+                            taskList: prev.taskList.map(task =>
+                                task.id === eventData.taskId
                                     ? { ...task, status: 'completed', completedAt: new Date(), progress: 100 }
                                     : task
                             ),
@@ -357,9 +355,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
             // Handle orchestrator response
             if (latestData && typeof latestData === 'object' && 'type' in latestData) {
-                const response = latestData as any
+                const response = latestData as EnhancedOrchestratorResponse
                 if (response.type === 'orchestrator') {
-                    const orchResponse = response as EnhancedOrchestratorResponse
+                    const orchResponse = response
                     console.log('🤖 Received enhanced orchestrator response:', {
                         turnIndex: orchResponse.turnIndex,
                         streamEventsCount: orchResponse.streamEvents?.length || 0,
@@ -396,7 +394,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     }, [data, reloadMessages])
 
     // Handle user actions (interrupt, retry, feedback)
-    const handleUserAction = useCallback(async (action: UserActionType, metadata?: any) => {
+    const handleUserAction = useCallback(async (action: UserActionType, metadata?: Record<string, unknown>) => {
         if (!session?.id) return
 
         const userAction: UserAction = {
@@ -809,8 +807,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                             mentionItems={[]}
                             disabled={isLoading || isOrchestrating}
                             placeholder={
-                                isOrchestrating 
-                                    ? t('chat.waitingForAgents') 
+                                isOrchestrating
+                                    ? t('chat.waitingForAgents')
                                     : t('chat.inputPlaceholder')
                             }
                         />

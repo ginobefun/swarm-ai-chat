@@ -18,6 +18,7 @@ export interface ChatRequestData {
         includeAgents?: string[]
     }
     userAction?: UserAction  // Add support for user actions
+    improvementRequest?: string  // For user improvement suggestions
 }
 
 export interface ChatMetadata {
@@ -115,20 +116,48 @@ export interface EnhancedTask extends Task {
 }
 
 /**
+ * Collaboration phase types for UI display
+ */
+export type CollaborationPhase =
+    | 'idle'              // No active collaboration
+    | 'clarifying'        // Moderator asking for clarification
+    | 'planning'          // Moderator planning tasks
+    | 'executing'         // Agents executing tasks
+    | 'summarizing'       // Moderator summarizing results
+    | 'completed'         // Collaboration completed
+    | 'interrupted'       // User interrupted the process
+
+/**
+ * Message types for collaboration display
+ */
+export type CollaborationMessageType =
+    | 'user_request'      // User's initial request
+    | 'clarification'     // Moderator's clarification question
+    | 'user_clarification' // User's clarification response
+    | 'task_planning'     // Moderator's task planning
+    | 'task_assignment'   // Task assigned to an agent
+    | 'agent_response'    // Agent's task response
+    | 'final_summary'     // Moderator's final summary
+    | 'improvement_request' // User's improvement request
+
+/**
  * Stream event types for real-time updates
  */
-export type StreamEventType = 
-    | 'task_planning'     // Moderator is planning tasks
-    | 'task_created'      // A new task has been created
-    | 'task_assigned'     // Task assigned to an agent
-    | 'task_started'      // Agent started working on task
-    | 'task_progress'     // Progress update from agent
-    | 'task_completed'    // Task completed by agent
-    | 'task_failed'       // Task failed
-    | 'summary_started'   // Moderator started summarizing
-    | 'summary_completed' // Final summary ready
-    | 'user_feedback'     // User provided feedback
-    | 'user_interrupt'    // User interrupted the process
+export type StreamEventType =
+    | 'collaboration_started'  // Collaboration process started
+    | 'intent_clarification'   // Moderator needs intent clarification
+    | 'task_planning'          // Moderator is planning tasks
+    | 'task_created'           // A new task has been created
+    | 'task_assigned'          // Task assigned to an agent
+    | 'task_started'           // Agent started working on task
+    | 'task_progress'          // Progress update from agent
+    | 'task_completed'         // Task completed by agent
+    | 'task_failed'            // Task failed
+    | 'summary_started'        // Moderator started summarizing
+    | 'summary_completed'      // Final summary ready
+    | 'collaboration_completed' // Entire collaboration completed
+    | 'user_feedback'          // User provided feedback
+    | 'user_interrupt'         // User interrupted the process
 
 /**
  * Stream event for real-time updates
@@ -146,7 +175,7 @@ export interface StreamEvent {
 /**
  * User action types
  */
-export type UserActionType = 'interrupt' | 'retry' | 'like' | 'dislike' | 'suggest'
+export type UserActionType = 'interrupt' | 'retry' | 'like' | 'dislike' | 'suggest' | 'improve'
 
 /**
  * User action interface
@@ -169,21 +198,95 @@ export interface EnhancedOrchestratorResponse extends OrchestratorResponse {
     isStreaming: boolean
     canInterrupt: boolean
     canRetry: boolean
+    phase: CollaborationPhase
+    structuredResult?: StructuredCollaborationResult
 }
 
 /**
- * Workspace data for real-time display
+ * Structured collaboration result for better output organization
+ */
+export interface StructuredCollaborationResult {
+    title: string
+    summary: string
+    isRecommended?: boolean
+    confidence?: number  // 0-100
+    keyPoints: string[]
+    criticalThoughts: string[]
+    quotes: string[]
+    pros: string[]
+    cons: string[]
+    actionItems: string[]
+    mindMap?: string  // Mermaid format
+    references?: string[]
+    tags?: string[]
+    metadata?: {
+        analysisType: string
+        complexity: 'simple' | 'medium' | 'complex'
+        processingTime: number
+        agentsInvolved: string[]
+    }
+}
+
+/**
+ * Workspace data for real-time collaboration tracking
  */
 export interface WorkspaceData {
+    phase: CollaborationPhase
     taskSummary?: string
     taskList: EnhancedTask[]
-    finalResults?: {
-        summary?: string
-        isRecommended?: boolean
-        keyPoints?: string[]
-        criticalThoughts?: string[]
-        quotes?: string[]
-        mindMap?: string  // Mermaid or other format
-    }
+    currentTask?: string  // ID of currently active task
+    finalResults?: StructuredCollaborationResult
     lastUpdated: Date
+    stats?: {
+        totalTasks: number
+        completedTasks: number
+        activeAgents: number
+        estimatedTimeRemaining?: number
+    }
+}
+
+/**
+ * Collaboration message for natural conversation flow
+ */
+export interface CollaborationMessage {
+    id: string
+    type: CollaborationMessageType
+    content: string
+    sender: string
+    senderType: 'moderator' | 'agent' | 'user'
+    agentId?: string
+    taskId?: string
+    timestamp: Date
+    isStreaming?: boolean
+    metadata?: {
+        phase: CollaborationPhase
+        relatedTasks?: string[]
+        confidence?: number
+    }
+}
+
+/**
+ * Agent activity status for real-time updates
+ */
+export interface AgentActivity {
+    agentId: string
+    name: string
+    avatar: string
+    status: 'idle' | 'thinking' | 'working' | 'completed'
+    currentTask?: string
+    progress?: number
+    lastActivity?: Date
+    estimatedCompletion?: Date
+}
+
+/**
+ * Collaboration controls for user interaction
+ */
+export interface CollaborationControls {
+    canPause: boolean
+    canResume: boolean
+    canInterrupt: boolean
+    canRetry: boolean
+    canImprove: boolean
+    canFeedback: boolean
 } 

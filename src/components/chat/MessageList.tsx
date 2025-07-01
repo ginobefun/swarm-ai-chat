@@ -16,7 +16,7 @@ interface MessageListProps {
     typingUser?: string
     typingAvatar?: string
     streamEvents?: StreamEvent[]
-    onUserAction?: (action: UserActionType, metadata?: any) => void
+    onUserAction?: (action: UserActionType, metadata?: Record<string, unknown>) => void
 }
 
 const TypingIndicator: React.FC<{
@@ -292,8 +292,7 @@ const MessageList: React.FC<MessageListProps> = ({
     isTyping = false,
     typingUser = "AI 助手",
     typingAvatar = "🤖",
-    streamEvents,
-    onUserAction
+    streamEvents
 }) => {
     const { t } = useTranslation()
     const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -392,9 +391,9 @@ const MessageList: React.FC<MessageListProps> = ({
                 {streamEvents && streamEvents.length > 0 && (
                     <div className="space-y-2 px-4">
                         {streamEvents.map((event, index) => {
-                            const showEvent = index === streamEvents.length - 1 || 
-                                             ['task_created', 'task_started', 'task_completed', 'task_failed'].includes(event.type)
-                            
+                            const showEvent = index === streamEvents.length - 1 ||
+                                ['task_created', 'task_started', 'task_completed', 'task_failed'].includes(event.type)
+
                             if (!showEvent) return null
 
                             return (

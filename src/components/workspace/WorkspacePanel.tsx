@@ -4,37 +4,7 @@ import React, { useState } from 'react'
 import { WorkspaceModule, Session } from '@/types'
 import { EnhancedOrchestratorResponse, WorkspaceData } from '@/types/chat'
 
-/**
- * Orchestrator response interface for workspace display
- */
-interface OrchestratorResponse {
-    success: boolean
-    turnIndex: number
-    shouldClarify?: boolean
-    clarificationQuestion?: string
-    summary?: string
-    events: Array<{
-        id: string
-        type: string
-        timestamp: string | Date
-        content?: string
-        agentId?: string
-    }>
-    tasks: Array<{
-        id: string
-        title: string
-        description: string
-        assignedTo: string
-        status: 'pending' | 'in_progress' | 'completed' | 'failed'
-        priority: string
-    }>
-    results: Array<{
-        taskId: string
-        agentId: string
-        content: string
-    }>
-    costUSD: number
-}
+
 
 /**
  * Props interface for Workspace component

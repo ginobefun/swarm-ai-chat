@@ -243,6 +243,10 @@ export interface Messages {
         collaborationSummary: string
         collaborationCost: string
         retry: string
+        waitingForAgents: string
+        orchestrating: string
+        interrupt: string
+        processInterrupted: string
         // Error messages
         sendMessageFailed: string
         networkTimeout: string
@@ -268,6 +272,9 @@ export interface Messages {
     // 工作区
     workspace: {
         title: string
+        overview: string
+        results: string
+        insights: string
         summary: string
         keyPoints: string
         mindMap: string
@@ -484,6 +491,69 @@ export interface Messages {
         createFirstSession: string
         loginToUnlock: string
         freeToUse: string
+    }
+
+    // 协作系统 (新增)
+    collaboration: {
+        // 模式和状态
+        multiAgentMode: string
+        clarifying: string
+        planning: string
+        executing: string
+        summarizing: string
+        completed: string
+        interrupted: string
+        idle: string
+
+        // 任务和进度
+        taskProgress: string
+        tasksCompleted: string
+
+        // 智能体状态
+        agentStatus: {
+            idle: string
+            thinking: string
+            working: string
+            completed: string
+        }
+
+        // 协作过程
+        agentsCollaborating: string
+        agentsCollaboratingInProgress: string
+        needsClarification: string
+        pleaseReply: string
+        collaborationSummary: string
+        collaborationCost: string
+        waitingForAgents: string
+        orchestrating: string
+        processInterrupted: string
+
+        // 用户反馈
+        feedback: string
+        helpful: string
+        notHelpful: string
+        suggest: string
+        improvementPlaceholder: string
+        submitSuggestion: string
+
+        // 控制按钮
+        interrupt: string
+        retry: string
+        pause: string
+        resume: string
+
+        // 消息类型
+        clarificationRequest: string
+        taskPlanning: string
+        taskAssignment: string
+        agentResponse: string
+        finalSummary: string
+
+        // 其他
+        estimatedTime: string
+        remainingTime: string
+        currentTask: string
+        allTasksCompleted: string
     }
 }
 
@@ -723,6 +793,10 @@ export const locales: Record<LocaleKey, Messages> = {
             collaborationSummary: '协作总结：',
             collaborationCost: '本次协作成本：',
             retry: '重试',
+            waitingForAgents: '等待智能体响应...',
+            orchestrating: '正在协调...',
+            interrupt: '中断',
+            processInterrupted: '处理中断',
             // Error messages
             sendMessageFailed: '发送消息失败，请重试',
             networkTimeout: '网络连接超时，请检查网络后重试',
@@ -746,20 +820,23 @@ export const locales: Record<LocaleKey, Messages> = {
         },
         workspace: {
             title: '工作区',
-            summary: '对话概要',
+            overview: '概览',
+            results: '结果',
+            insights: '洞察',
+            summary: '摘要',
             keyPoints: '关键要点',
             mindMap: '思维导图',
-            tasks: '后续行动',
+            tasks: '任务',
             pin: '置顶',
             unpin: '取消置顶',
             expand: '展开',
             export: '导出',
             close: '关闭',
             settings: '设置',
-            mindMapDescription: '知识结构可视化',
-            mindMapSubtitle: '点击查看完整思维导图',
+            mindMapDescription: '基于对话内容自动生成的思维导图',
+            mindMapSubtitle: '可视化关键概念和关系',
             viewFullMindMap: '查看完整思维导图',
-            nextActions: '后续行动',
+            nextActions: '下一步行动',
         },
         agents: {
             requirementAnalyst: '需求分析师',
@@ -952,6 +1029,67 @@ export const locales: Record<LocaleKey, Messages> = {
             loginToUnlock: '登录解锁所有功能',
             freeToUse: '完全免费使用',
             justNow: '刚刚',
+        },
+        collaboration: {
+            // 模式和状态
+            multiAgentMode: '多智能体协作',
+            clarifying: '澄清意图',
+            planning: '规划任务',
+            executing: '执行中',
+            summarizing: '总结中',
+            completed: '已完成',
+            interrupted: '已中断',
+            idle: '待命中',
+
+            // 任务和进度
+            taskProgress: '任务进度',
+            tasksCompleted: '任务完成',
+
+            // 智能体状态
+            agentStatus: {
+                idle: '空闲',
+                thinking: '思考中',
+                working: '工作中',
+                completed: '已完成'
+            },
+
+            // 协作过程
+            agentsCollaborating: '智能体协作中',
+            agentsCollaboratingInProgress: '多个智能体正在协作处理您的请求',
+            needsClarification: '需要澄清',
+            pleaseReply: '请回复以继续',
+            collaborationSummary: '协作总结',
+            collaborationCost: '协作成本',
+            waitingForAgents: '等待智能体响应...',
+            orchestrating: '协调中...',
+            processInterrupted: '过程已中断',
+
+            // 用户反馈
+            feedback: '反馈',
+            helpful: '有帮助',
+            notHelpful: '无帮助',
+            suggest: '建议改进',
+            improvementPlaceholder: '请描述您希望如何改进这个结果...',
+            submitSuggestion: '提交建议',
+
+            // 控制按钮
+            interrupt: '中断',
+            retry: '重试',
+            pause: '暂停',
+            resume: '继续',
+
+            // 消息类型
+            clarificationRequest: '澄清请求',
+            taskPlanning: '任务规划',
+            taskAssignment: '任务分配',
+            agentResponse: '智能体响应',
+            finalSummary: '最终总结',
+
+            // 其他
+            estimatedTime: '预计时间',
+            remainingTime: '剩余时间',
+            currentTask: '当前任务',
+            allTasksCompleted: '所有任务已完成'
         },
     },
     'en': {
@@ -1189,6 +1327,10 @@ export const locales: Record<LocaleKey, Messages> = {
             collaborationSummary: 'Collaboration Summary:',
             collaborationCost: 'Collaboration cost:',
             retry: 'Retry',
+            waitingForAgents: 'Waiting for agents...',
+            orchestrating: 'Orchestrating...',
+            interrupt: 'Interrupt',
+            processInterrupted: 'Process interrupted',
             // Error messages
             sendMessageFailed: 'Failed to send message, please retry',
             networkTimeout: 'Network timeout, please check your connection and retry',
@@ -1212,20 +1354,23 @@ export const locales: Record<LocaleKey, Messages> = {
         },
         workspace: {
             title: 'Workspace',
-            summary: 'Conversation Summary',
+            overview: 'Overview',
+            results: 'Results',
+            insights: 'Insights',
+            summary: 'Summary',
             keyPoints: 'Key Points',
             mindMap: 'Mind Map',
-            tasks: 'Next Actions',
+            tasks: 'Tasks',
             pin: 'Pin',
             unpin: 'Unpin',
             expand: 'Expand',
             export: 'Export',
             close: 'Close',
             settings: 'Settings',
-            mindMapDescription: 'Knowledge Structure Visualization',
-            mindMapSubtitle: 'Click to view full mind map',
+            mindMapDescription: 'Auto-generated mind map based on conversation content',
+            mindMapSubtitle: 'Visualize key concepts and relationships',
             viewFullMindMap: 'View Full Mind Map',
-            nextActions: 'Next Actions',
+            nextActions: 'Next Actions'
         },
         agents: {
             requirementAnalyst: 'Requirement Analyst',
@@ -1418,6 +1563,67 @@ export const locales: Record<LocaleKey, Messages> = {
             loginToUnlock: 'Login to unlock all features',
             freeToUse: 'Fully free to use',
             justNow: 'Just now',
+        },
+        collaboration: {
+            // 模式和状态
+            multiAgentMode: 'Multi-Agent Collaboration',
+            clarifying: 'Clarifying Intent',
+            planning: 'Planning Tasks',
+            executing: 'Executing',
+            summarizing: 'Summarizing',
+            completed: 'Completed',
+            interrupted: 'Interrupted',
+            idle: 'Idle',
+
+            // 任务和进度
+            taskProgress: 'Task Progress',
+            tasksCompleted: 'Tasks Completed',
+
+            // 智能体状态
+            agentStatus: {
+                idle: 'Idle',
+                thinking: 'Thinking',
+                working: 'Working',
+                completed: 'Completed'
+            },
+
+            // 协作过程
+            agentsCollaborating: 'Agents Collaborating',
+            agentsCollaboratingInProgress: 'Multiple agents are collaborating on your request',
+            needsClarification: 'Needs Clarification',
+            pleaseReply: 'Please reply to continue',
+            collaborationSummary: 'Collaboration Summary',
+            collaborationCost: 'Collaboration Cost',
+            waitingForAgents: 'Waiting for agents...',
+            orchestrating: 'Orchestrating...',
+            processInterrupted: 'Process interrupted',
+
+            // 用户反馈
+            feedback: 'Feedback',
+            helpful: 'Helpful',
+            notHelpful: 'Not Helpful',
+            suggest: 'Suggest Improvement',
+            improvementPlaceholder: 'Please describe how you\'d like to improve this result...',
+            submitSuggestion: 'Submit Suggestion',
+
+            // 控制按钮
+            interrupt: 'Interrupt',
+            retry: 'Retry',
+            pause: 'Pause',
+            resume: 'Resume',
+
+            // 消息类型
+            clarificationRequest: 'Clarification Request',
+            taskPlanning: 'Task Planning',
+            taskAssignment: 'Task Assignment',
+            agentResponse: 'Agent Response',
+            finalSummary: 'Final Summary',
+
+            // 其他
+            estimatedTime: 'Estimated Time',
+            remainingTime: 'Remaining Time',
+            currentTask: 'Current Task',
+            allTasksCompleted: 'All tasks completed'
         },
     },
 } 
