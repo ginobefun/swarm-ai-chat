@@ -26,6 +26,8 @@ export interface Messages {
         yesterday: string
         saving: string
         close: string
+        copied: string
+        copyCode: string
     }
 
     // 认证系统
@@ -254,6 +256,12 @@ export interface Messages {
             dislike: string
             copy: string
             copied: string
+        }
+        // Collaboration messages
+        collaboration: {
+            newTaskAssigned: string
+            taskCompleted: string
+            progress: string
         }
     }
 
@@ -504,6 +512,8 @@ export const locales: Record<LocaleKey, Messages> = {
             yesterday: '昨天',
             saving: '保存中...',
             close: '关闭',
+            copied: '已复制!',
+            copyCode: '复制代码',
         },
 
         // Authentication system
@@ -726,6 +736,12 @@ export const locales: Record<LocaleKey, Messages> = {
                 dislike: '点踩',
                 copy: '复制',
                 copied: '已复制',
+            },
+            // Collaboration messages
+            collaboration: {
+                newTaskAssigned: '新任务分配',
+                taskCompleted: '任务完成',
+                progress: '协作进度',
             },
         },
         workspace: {
@@ -962,6 +978,8 @@ export const locales: Record<LocaleKey, Messages> = {
             yesterday: 'Yesterday',
             saving: 'Saving...',
             close: 'Close',
+            copied: 'Copied!',
+            copyCode: 'Copy Code',
         },
 
         // Authentication system
@@ -1184,6 +1202,12 @@ export const locales: Record<LocaleKey, Messages> = {
                 dislike: 'Dislike',
                 copy: 'Copy',
                 copied: 'Copied',
+            },
+            // Collaboration messages
+            collaboration: {
+                newTaskAssigned: 'New Task Assigned',
+                taskCompleted: 'Task Completed',
+                progress: 'Collaboration Progress',
             },
         },
         workspace: {

@@ -4,10 +4,8 @@ import React, { useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { Message } from '@/types'
 import { useTranslation } from '@/contexts/AppContext'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
-import rehypeHighlight from 'rehype-highlight'
 import { MessageActions } from '@/components/ui/message-actions'
+import { MarkdownRenderer } from '@/components/ui/markdown-renderer'
 
 interface MessageListProps {
     messages: Message[]
@@ -70,6 +68,7 @@ const TypingIndicator: React.FC<{
 }
 
 const MessageItem: React.FC<{ message: Message }> = ({ message }) => {
+    const { t } = useTranslation()
     const formatTime = (timestamp: Date) => {
         return timestamp.toLocaleTimeString('zh-CN', {
             hour: '2-digit',
@@ -117,7 +116,7 @@ const MessageItem: React.FC<{ message: Message }> = ({ message }) => {
                 <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/50 rounded-lg p-3">
                     <div className="flex items-center gap-2 mb-2">
                         <span className="text-blue-600 dark:text-blue-400">🎯</span>
-                        <span className="font-medium text-blue-900 dark:text-blue-300">新任务分配</span>
+                        <span className="font-medium text-blue-900 dark:text-blue-300">{t('collaboration.newTaskAssigned')}</span>
                         {metadata?.assignedTo && (
                             <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full">
                                 {metadata.assignedTo}
@@ -135,7 +134,7 @@ const MessageItem: React.FC<{ message: Message }> = ({ message }) => {
                 <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800/50 rounded-lg p-3">
                     <div className="flex items-center gap-2 mb-2">
                         <span className="text-green-600 dark:text-green-400">✅</span>
-                        <span className="font-medium text-green-900 dark:text-green-300">任务完成</span>
+                        <span className="font-medium text-green-900 dark:text-green-300">{t('collaboration.taskCompleted')}</span>
                         {metadata?.taskId && (
                             <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-1 rounded-full">
                                 {metadata.taskId.substring(0, 8)}
@@ -152,7 +151,7 @@ const MessageItem: React.FC<{ message: Message }> = ({ message }) => {
             <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/50 rounded-lg p-3">
                 <div className="flex items-center gap-2 mb-2">
                     <span className="text-amber-600 dark:text-amber-400">🔄</span>
-                    <span className="font-medium text-amber-900 dark:text-amber-300">协作进度</span>
+                    <span className="font-medium text-amber-900 dark:text-amber-300">{t('collaboration.progress')}</span>
                 </div>
                 <div className="text-sm text-amber-800 dark:text-amber-200 whitespace-pre-wrap">{content}</div>
             </div>
@@ -172,69 +171,8 @@ const MessageItem: React.FC<{ message: Message }> = ({ message }) => {
                 </React.Fragment>
             ))
         } else {
-            // Use react-markdown for AI responses with enhanced styling
-            return (
-                <div className="prose prose-sm max-w-none dark:prose-invert
-                              prose-pre:bg-slate-900 dark:prose-pre:bg-slate-950 
-                              prose-pre:text-slate-100 prose-pre:border prose-pre:border-slate-700
-                              prose-code:bg-slate-200 dark:prose-code:bg-slate-700 
-                              prose-code:text-slate-800 dark:prose-code:text-slate-200
-                              prose-code:px-1 prose-code:py-0.5 prose-code:rounded
-                              prose-p:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-1
-                              prose-headings:my-3 prose-h1:text-xl prose-h2:text-lg prose-h3:text-base
-                              prose-blockquote:border-l-indigo-500 prose-blockquote:bg-slate-50 dark:prose-blockquote:bg-slate-800/50
-                              prose-blockquote:pl-4 prose-blockquote:py-2 prose-blockquote:my-4
-                              prose-table:text-sm prose-th:bg-slate-100 dark:prose-th:bg-slate-700
-                              prose-td:border-slate-300 dark:prose-td:border-slate-600
-                              prose-a:text-indigo-600 dark:prose-a:text-indigo-400 prose-a:no-underline hover:prose-a:underline">
-                    <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
-                        rehypePlugins={[rehypeHighlight]}
-                        components={{
-                            // Custom code block styling
-                            pre: ({ children, ...props }) => (
-                                <pre
-                                    className="bg-slate-900 dark:bg-slate-950 text-slate-100 p-4 rounded-xl overflow-x-auto text-sm font-mono my-3 border border-slate-700"
-                                    {...props}
-                                >
-                                    {children}
-                                </pre>
-                            ),
-                            // Custom inline code styling
-                            code: ({ children, className, ...props }) => {
-                                const isInline = !className?.includes('language-')
-                                if (isInline) {
-                                    return (
-                                        <code
-                                            className="bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 px-2 py-1 rounded-md text-sm font-mono"
-                                            {...props}
-                                        >
-                                            {children}
-                                        </code>
-                                    )
-                                }
-                                return <code className={className} {...props}>{children}</code>
-                            },
-                            // Custom table styling
-                            table: ({ children, ...props }) => (
-                                <div className="overflow-x-auto my-4">
-                                    <table className="min-w-full border-collapse border border-slate-300 dark:border-slate-600" {...props}>
-                                        {children}
-                                    </table>
-                                </div>
-                            ),
-                            // Custom blockquote styling
-                            blockquote: ({ children, ...props }) => (
-                                <blockquote className="border-l-4 border-indigo-500 bg-slate-50 dark:bg-slate-800/50 pl-4 py-2 my-4 italic" {...props}>
-                                    {children}
-                                </blockquote>
-                            )
-                        }}
-                    >
-                        {content}
-                    </ReactMarkdown>
-                </div>
-            )
+            // Use enhanced MarkdownRenderer for AI responses
+            return <MarkdownRenderer content={content} />
         }
     }
 
