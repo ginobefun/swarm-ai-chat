@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { useTranslation } from '../contexts/AppContext'
 import { useSession } from '@/components/providers/AuthProvider'
 import { LanguageToggle } from './LanguageToggle'
+import { ThemeToggle } from './ThemeToggle'
 import { SwarmLogo } from './SwarmLogo'
 import { LoginDialog } from './auth/LoginDialog'
 import UserMenu from '@/components/profile/UserMenu'
@@ -92,12 +93,12 @@ const Navbar: React.FC = () => {
             <div className="flex items-center gap-2 flex-shrink-0 min-w-fit">
                 {/* Theme and Language Controls - Clean Layout */}
                 <div className="flex items-center gap-1.5">
+                    <div className="scale-90 sm:scale-100">
+                        <ThemeToggle />
+                    </div>
                     <div>
                         <LanguageToggle />
                     </div>
-                    {/* <div className="scale-90 sm:scale-100">
-                        <ThemeToggle />
-                    </div> */}
                 </div>
 
                 {/* User Profile Menu */}

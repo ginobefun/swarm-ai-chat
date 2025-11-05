@@ -74,45 +74,46 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({ className = '' }) => {
         <div className="relative inline-block">
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className={`flex items-center gap-2 px-3 py-2 text-slate-700 cursor-pointer text-sm font-medium transition-all duration-200 hover:border-indigo-500 dark:text-slate-200 ${className}`}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-slate-700 dark:text-slate-200 cursor-pointer text-sm font-medium transition-all duration-200 hover:bg-slate-100 dark:hover:bg-slate-700 active:scale-95 ${className}`}
                 title={t('navbar.theme')}
+                aria-label={t('navbar.theme')}
             >
-                <span className="text-base">{getThemeIcon()}</span>
+                <span className="text-lg">{getThemeIcon()}</span>
                 <span className="font-medium hidden md:inline">{getThemeLabel()}</span>
-                <span className={`text-xs text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>▼</span>
+                <span className={`text-xs text-slate-400 dark:text-slate-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>▼</span>
             </button>
 
             {isOpen && (
-                <div className="absolute top-full right-0 mt-1 min-w-40 bg-white border border-slate-300 rounded-lg shadow-lg z-[1000] overflow-hidden dark:bg-slate-800 dark:border-slate-600">
+                <div className="absolute top-full right-0 mt-2 min-w-44 bg-white border border-slate-200 dark:border-slate-600 rounded-lg shadow-lg z-[1000] overflow-hidden dark:bg-slate-800">
                     <button
                         onClick={() => handleThemeChange('light')}
-                        className={`flex items-center gap-3 w-full px-4 py-3 text-sm text-left transition-colors duration-200 hover:bg-slate-50 dark:hover:bg-slate-700 ${theme === 'light'
-                            ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                            : 'text-slate-700 dark:text-slate-200'
+                        className={`flex items-center gap-3 w-full px-4 py-3 text-sm text-left transition-colors duration-200 ${theme === 'light'
+                            ? 'bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-700'
+                            : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
                             }`}
                     >
-                        <span className="text-base">☀️</span>
-                        <span>{t('navbar.lightMode')}</span>
+                        <span className="text-lg">☀️</span>
+                        <span className="font-medium">{t('navbar.lightMode')}</span>
                     </button>
                     <button
                         onClick={() => handleThemeChange('dark')}
-                        className={`flex items-center gap-3 w-full px-4 py-3 text-sm text-left transition-colors duration-200 hover:bg-slate-50 dark:hover:bg-slate-700 ${theme === 'dark'
-                            ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                            : 'text-slate-700 dark:text-slate-200'
+                        className={`flex items-center gap-3 w-full px-4 py-3 text-sm text-left transition-colors duration-200 ${theme === 'dark'
+                            ? 'bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-700'
+                            : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
                             }`}
                     >
-                        <span className="text-base">🌙</span>
-                        <span>{t('navbar.darkMode')}</span>
+                        <span className="text-lg">🌙</span>
+                        <span className="font-medium">{t('navbar.darkMode')}</span>
                     </button>
                     <button
                         onClick={() => handleThemeChange('system')}
-                        className={`flex items-center gap-3 w-full px-4 py-3 text-sm text-left transition-colors duration-200 hover:bg-slate-50 dark:hover:bg-slate-700 ${theme === 'system'
-                            ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                            : 'text-slate-700 dark:text-slate-200'
+                        className={`flex items-center gap-3 w-full px-4 py-3 text-sm text-left transition-colors duration-200 ${theme === 'system'
+                            ? 'bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-700'
+                            : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
                             }`}
                     >
-                        <span className="text-base">💻</span>
-                        <span>{t('navbar.systemMode')}</span>
+                        <span className="text-lg">💻</span>
+                        <span className="font-medium">{t('navbar.systemMode')}</span>
                     </button>
                 </div>
             )}

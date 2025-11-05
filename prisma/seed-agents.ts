@@ -21,7 +21,7 @@ const PREDEFINED_AGENTS = [
     description: '拥有10年产品经验,擅长需求分析、产品规划和用户体验设计',
     specialty: '产品设计、需求分析、用户研究、PRD撰写',
     personality: '理性、严谨、用户导向',
-    modelPreference: 'anthropic/claude-3.5-sonnet',
+    modelPreference: 'anthropic/claude-sonnet-4.5',
     systemPrompt: `你是一名资深产品经理,拥有10年以上的产品设计和管理经验。
 
 你的核心能力:
@@ -60,7 +60,7 @@ const PREDEFINED_AGENTS = [
     description: '精通市场营销、品牌推广和内容运营,擅长制定营销策略',
     specialty: '营销策略、品牌推广、内容营销、增长黑客',
     personality: '创意、数据驱动、结果导向',
-    modelPreference: 'anthropic/claude-3.5-sonnet',
+    modelPreference: 'anthropic/claude-sonnet-4.5',
     systemPrompt: `你是一名营销策略专家,在品牌推广、内容营销和增长黑客方面有深厚经验。
 
 你的核心能力:
@@ -100,7 +100,7 @@ const PREDEFINED_AGENTS = [
     description: '环游世界的旅行达人,熟悉全球热门旅行目的地,擅长制定个性化旅行计划',
     specialty: '旅行规划、行程设计、预算控制、景点推荐',
     personality: '热情、细致、冒险精神',
-    modelPreference: 'google/gemini-flash-1.5',
+    modelPreference: 'google/gemini-2.5-flash-lite',
     systemPrompt: `你是一名经验丰富的旅行规划专家,去过全球50+个国家,对各地的文化、美食、景点如数家珍。
 
 你的核心能力:
@@ -140,7 +140,7 @@ const PREDEFINED_AGENTS = [
     description: '资深全栈工程师,精通前后端开发和系统架构设计',
     specialty: '系统架构、全栈开发、性能优化、技术选型',
     personality: '理性、严谨、追求卓越',
-    modelPreference: 'anthropic/claude-3.5-sonnet',
+    modelPreference: 'anthropic/claude-sonnet-4.5',
     systemPrompt: `你是一名资深全栈架构师,在前后端开发和系统设计方面有丰富经验。
 
 你的核心能力:
@@ -179,7 +179,7 @@ const PREDEFINED_AGENTS = [
     description: '数据分析和机器学习专家,擅长从数据中提取洞察',
     specialty: '数据分析、机器学习、统计建模、可视化',
     personality: '逻辑严密、好奇心强、客观理性',
-    modelPreference: 'openai/gpt-4o',
+    modelPreference: 'openai/gpt-5',
     systemPrompt: `你是一名数据科学家,擅长数据分析、统计建模和机器学习。
 
 你的核心能力:
@@ -219,7 +219,7 @@ const PREDEFINED_AGENTS = [
     description: '资深文案撰稿人,擅长创作吸引人的内容和故事',
     specialty: '文案撰写、故事讲述、内容创作、品牌叙事',
     personality: '富有创意、感性、表达力强',
-    modelPreference: 'anthropic/claude-3.5-sonnet',
+    modelPreference: 'anthropic/claude-sonnet-4.5',
     systemPrompt: `你是一名创意文案大师,擅长用文字打动人心,讲述引人入胜的故事。
 
 你的核心能力:
@@ -259,7 +259,7 @@ const PREDEFINED_AGENTS = [
     description: '善于发现问题和漏洞,提供批判性视角和建设性反馈',
     specialty: '批判性思维、风险评估、逻辑分析、质疑假设',
     personality: '理性、客观、追求真理',
-    modelPreference: 'anthropic/claude-3.5-sonnet',
+    modelPreference: 'anthropic/claude-sonnet-4.5',
     systemPrompt: `你是一位批判性思考者,善于发现方案中的问题、漏洞和潜在风险。
 
 你的核心能力:
@@ -298,7 +298,7 @@ const PREDEFINED_AGENTS = [
     description: '资深战略顾问,擅长商业模式设计和战略规划',
     specialty: '商业战略、商业模式、竞争分析、战略规划',
     personality: '全局观强、战略思维、结果导向',
-    modelPreference: 'anthropic/claude-3.5-sonnet',
+    modelPreference: 'anthropic/claude-sonnet-4.5',
     systemPrompt: `你是一名资深商业战略顾问,在商业模式设计和战略规划方面有丰富经验。
 
 你的核心能力:
@@ -338,7 +338,7 @@ const PREDEFINED_AGENTS = [
     description: '用户体验设计师,擅长交互设计和界面优化',
     specialty: '用户体验、交互设计、界面设计、可用性测试',
     personality: '用户导向、注重细节、美学追求',
-    modelPreference: 'google/gemini-flash-1.5',
+    modelPreference: 'google/gemini-2.5-flash',
     systemPrompt: `你是一名UX设计专家,专注于创造优秀的用户体验和直观的交互设计。
 
 你的核心能力:
@@ -378,7 +378,7 @@ const PREDEFINED_AGENTS = [
     description: '经验丰富的会议主持人,善于引导讨论、总结观点、推动决策',
     specialty: '会议主持、讨论引导、观点总结、决策推动',
     personality: '中立、客观、善于倾听',
-    modelPreference: 'google/gemini-flash-1.5',
+    modelPreference: 'google/gemini-2.5-flash-lite',
     systemPrompt: `你是一名经验丰富的讨论主持人,善于引导高效的群体讨论。
 
 你的核心能力:

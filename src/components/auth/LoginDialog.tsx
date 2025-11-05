@@ -52,15 +52,18 @@ export const LoginDialog: React.FC<LoginDialogProps> = ({
                 body: JSON.stringify({ username }),
             })
 
-            const data = await response.json()
+            const result = await response.json()
 
             if (!response.ok) {
-                setError(data.error || t('auth.checkUsernameError'))
+                setError(result.error || t('auth.checkUsernameError'))
                 return false
             }
 
-            if (!data.available) {
-                setError(data.error || t('auth.usernameUnavailable'))
+            // API returns { success: true, data: { available: true/false } }
+            const isAvailable = result.data?.available === true
+
+            if (!isAvailable) {
+                setError(result.data?.message || t('auth.usernameUnavailable'))
                 return false
             }
 
@@ -238,9 +241,9 @@ export const LoginDialog: React.FC<LoginDialogProps> = ({
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-md border-0 shadow-xl bg-white dark:bg-gray-900">
+            <DialogContent className="sm:max-w-md shadow-xl bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-600">
                 <DialogHeader>
-                    <DialogTitle className="text-center text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                    <DialogTitle className="text-center text-xl font-bold bg-linear-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">
                         {isLogin ? t('auth.loginTitle') : t('auth.registerTitle')}
                     </DialogTitle>
                 </DialogHeader>
@@ -251,11 +254,11 @@ export const LoginDialog: React.FC<LoginDialogProps> = ({
                         <Button
                             type="button"
                             variant="outline"
-                            className="w-full h-11 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                            className="w-full h-11 text-sm font-medium transition-colors"
                             onClick={() => handleSocialLogin('google')}
                             disabled={isLoading}
                         >
-                            <div className="w-5 h-5 mr-2 flex-shrink-0">
+                            <div className="w-5 h-5 mr-2 shrink-0">
                                 <svg viewBox="0 0 24 24" className="w-full h-full">
                                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
                                     <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
@@ -269,11 +272,11 @@ export const LoginDialog: React.FC<LoginDialogProps> = ({
                         <Button
                             type="button"
                             variant="outline"
-                            className="w-full h-11 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                            className="w-full h-11 text-sm font-medium transition-colors"
                             onClick={() => handleSocialLogin('github')}
                             disabled={isLoading}
                         >
-                            <div className="w-5 h-5 mr-2 flex-shrink-0">
+                            <div className="w-5 h-5 mr-2 shrink-0">
                                 <svg viewBox="0 0 24 24" className="w-full h-full" fill="currentColor">
                                     <path d="M12 .5C5.648.5.5 5.648.5 12c0 5.057 3.262 9.34 7.797 10.864.568.105.775-.247.775-.548 0-.271-.01-.987-.015-1.937-3.198.694-3.875-1.541-3.875-1.541-.517-1.313-1.264-1.663-1.264-1.663-1.033-.707.078-.693.078-.693 1.143.08 1.745 1.174 1.745 1.174 1.015 1.738 2.664 1.235 3.312.944.103-.734.397-1.235.722-1.518-2.525-.287-5.18-1.263-5.18-5.62 0-1.241.444-2.256 1.173-3.051-.118-.288-.508-1.444.111-3.01 0 0 .956-.306 3.133 1.166.91-.253 1.885-.38 2.854-.384.968.004 1.944.131 2.854.384 2.175-1.472 3.131-1.166 3.131-1.166.62 1.566.23 2.722.112 3.01.73.795 1.172 1.81 1.172 3.051 0 4.368-2.66 5.329-5.193 5.61.408.352.772 1.047.772 2.11 0 1.523-.014 2.751-.014 3.124 0 .304.204.658.782.547C20.236 21.336 23.5 17.055 23.5 12c0-6.352-5.148-11.5-11.5-11.5z" />
                                 </svg>
@@ -284,10 +287,10 @@ export const LoginDialog: React.FC<LoginDialogProps> = ({
 
                     <div className="relative">
                         <div className="absolute inset-0 flex items-center">
-                            <Separator className="w-full" />
+                            <Separator className="w-full bg-gray-300 dark:bg-slate-600" />
                         </div>
                         <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-background px-2 text-muted-foreground">{t('auth.orContinueWith')}</span>
+                            <span className="bg-white dark:bg-slate-800 px-2 text-gray-600 dark:text-slate-300 font-medium">{t('auth.orContinueWith')}</span>
                         </div>
                     </div>
 
@@ -354,7 +357,7 @@ export const LoginDialog: React.FC<LoginDialogProps> = ({
                             <motion.div
                                 initial={{ opacity: 0, y: -10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="text-sm text-red-600 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg"
+                                className="text-sm text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 p-3 rounded-lg font-medium"
                             >
                                 {error}
                             </motion.div>
@@ -377,12 +380,13 @@ export const LoginDialog: React.FC<LoginDialogProps> = ({
                     </form>
 
                     {/* Toggle login/register */}
-                    <div className="text-center text-sm text-gray-600 dark:text-gray-400">
+                    <div className="text-center text-sm text-gray-700 dark:text-slate-300 font-medium">
                         {isLogin ? t('auth.noAccount') : t('auth.hasAccount')}
+                        {' '}
                         <button
                             type="button"
                             onClick={toggleMode}
-                            className="ml-1 text-indigo-600 hover:text-indigo-500 font-medium"
+                            className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-semibold transition-colors underline decoration-2 underline-offset-2"
                         >
                             {isLogin ? t('auth.createAccount') : t('auth.signInNow')}
                         </button>

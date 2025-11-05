@@ -274,15 +274,23 @@ export async function POST(req: NextRequest) {
  */
 function getModelForAgent(agentId: string): string {
     const agentModels: Record<string, string> = {
-        'gemini-flash': 'google/gemini-flash-1.5',
-        'article-summarizer': 'google/gemini-flash-1.5',
-        'critical-thinker': 'anthropic/claude-3.5-sonnet',
-        'creative-writer': 'anthropic/claude-3.5-sonnet',
-        'data-scientist': 'openai/gpt-4o',
-        'code-expert': 'google/gemini-flash-1.5'
+        'gemini-flash': 'google/gemini-2.5-flash',
+        'general-assistant': 'google/gemini-2.5-flash',
+        'article-summarizer': 'google/gemini-2.5-flash',
+        'critical-thinker': 'anthropic/claude-sonnet-4.5',
+        'creative-writer': 'anthropic/claude-sonnet-4.5',
+        'data-scientist': 'openai/gpt-5',
+        'code-expert': 'deepseek/deepseek-chat-v3-0324',
+        'product-manager': 'anthropic/claude-sonnet-4.5',
+        'marketing-strategist': 'anthropic/claude-sonnet-4.5',
+        'tech-architect': 'anthropic/claude-sonnet-4.5',
+        'business-strategist': 'anthropic/claude-sonnet-4.5',
+        'travel-planner-expert': 'google/gemini-2.5-flash-lite',
+        'ux-designer-pro': 'google/gemini-2.5-flash',
+        'general-facilitator': 'google/gemini-2.5-flash-lite'
     }
 
-    return agentModels[agentId] || agentModels['gemini-flash']
+    return agentModels[agentId] || 'google/gemini-2.5-flash'
 }
 
 /**
@@ -360,15 +368,29 @@ function getAgentSystemPrompt(agentId: string): string {
  * OpenRouter pricing varies by model
  */
 function calculateCost(tokenCount: number, modelName: string): number {
-    // OpenRouter pricing per 1M tokens (approximate)
+    // OpenRouter pricing per 1M tokens (approximate, as of 2025)
     const modelPricing: Record<string, number> = {
-        'google/gemini-flash-1.5': 0.075,     // $0.075 per 1M tokens (input)
-        'google/gemini-2.0-flash-001': 0.10,  // $0.10 per 1M tokens (input)
-        'google/gemini-2.0-flash-exp:free': 0, // Free tier
-        'anthropic/claude-3.5-sonnet': 3.0,   // $3.00 per 1M tokens  
-        'openai/gpt-4o': 2.5                  // $2.50 per 1M tokens
+        // Google Gemini 2.5 series
+        'google/gemini-2.5-flash': 0.075,            // $0.075 per 1M tokens
+        'google/gemini-2.5-flash-lite': 0.0375,      // $0.0375 per 1M tokens (half of flash)
+        
+        // Anthropic Claude 4.5 series
+        'anthropic/claude-sonnet-4.5': 3.0,          // $3.00 per 1M tokens
+        'anthropic/claude-haiku-4.5': 0.25,          // $0.25 per 1M tokens
+        
+        // OpenAI GPT-5 series
+        'openai/gpt-5': 5.0,                         // $5.00 per 1M tokens (premium)
+        'openai/gpt-5-mini': 0.30,                   // $0.30 per 1M tokens
+        
+        // DeepSeek
+        'deepseek/deepseek-chat-v3-0324': 0.14,      // $0.14 per 1M tokens
+        
+        // Legacy models (for reference)
+        'google/gemini-2.0-flash-exp': 0,            // Free experimental tier
+        'anthropic/claude-3.5-sonnet': 3.0,          // $3.00 per 1M tokens
+        'openai/gpt-4o': 2.5                         // $2.50 per 1M tokens
     }
 
-    const pricePerMillion = modelPricing[modelName] || 0.075
+    const pricePerMillion = modelPricing[modelName] || 0.10
     return (tokenCount / 1000000) * pricePerMillion
 }

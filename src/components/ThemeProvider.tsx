@@ -11,9 +11,9 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     return (
         <NextThemesProvider
             attribute="class"
-            defaultTheme="light"
-            enableSystem={false}
-            disableTransitionOnChange
+            defaultTheme="system"
+            enableSystem={true}
+            storageKey="swarm-theme"
         >
             {children}
         </NextThemesProvider>
