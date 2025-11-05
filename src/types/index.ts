@@ -42,6 +42,25 @@ export interface Message {
     timestamp: Date
     avatar?: string
     avatarStyle?: string
+    hasArtifacts?: boolean
+    artifactCount?: number
+}
+
+// Artifact类型
+export interface Artifact {
+    id: string
+    messageId: string
+    sessionId: string
+    type: 'DOCUMENT' | 'CODE' | 'MARKDOWN' | 'HTML' | 'SVG' | 'CHART' | 'IMAGE' | 'MERMAID' | 'REACT'
+    title: string
+    content: string
+    language?: string | null
+    metadata?: Record<string, any>
+    version?: number
+    isPinned?: boolean
+    isPublished?: boolean
+    createdAt?: Date
+    updatedAt?: Date
 }
 
 // 会话参与者类型

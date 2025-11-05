@@ -140,6 +140,27 @@ const MessageItem: React.FC<{ message: Message }> = ({ message }) => {
                     />
                 </div>
 
+                {/* Artifact Indicator */}
+                {message.hasArtifacts && message.artifactCount && message.artifactCount > 0 && (
+                    <div className={`px-3 py-2 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg ${isUser ? 'self-end' : 'self-start'}`}>
+                        <div className="flex items-center justify-between gap-3">
+                            <span className="text-xs text-purple-700 dark:text-purple-300 flex items-center gap-1.5 font-medium">
+                                <span className="text-base">📦</span>
+                                {message.artifactCount} artifact{message.artifactCount > 1 ? 's' : ''} generated
+                            </span>
+                            <button
+                                onClick={() => {
+                                    // TODO: Implement artifact viewer
+                                    console.log('View artifacts for message:', message.id)
+                                }}
+                                className="text-xs text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 font-medium transition-colors"
+                            >
+                                View →
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 {/* Timestamp - show on hover */}
                 <div className={`text-xs text-slate-500 dark:text-slate-400 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${isUser ? 'text-right' : 'text-left'}`}>
                     {formatTime(message.timestamp)}

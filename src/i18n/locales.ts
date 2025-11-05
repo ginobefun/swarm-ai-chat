@@ -26,6 +26,7 @@ export interface Messages {
         yesterday: string
         saving: string
         close: string
+        results: string
     }
 
     // 认证系统
@@ -221,6 +222,11 @@ export interface Messages {
         selectMember: string
         aiAgent: string
         user: string
+        mentioned: string
+        tryDifferentQuery: string
+        navigate: string
+        select: string
+        close: string
         // Dialog related
         addAgent: string
         addAgentDesc: string
@@ -481,6 +487,7 @@ export const locales: Record<LocaleKey, Messages> = {
             yesterday: '昨天',
             saving: '保存中...',
             close: '关闭',
+            results: '个结果',
         },
 
         // Authentication system
@@ -670,6 +677,11 @@ export const locales: Record<LocaleKey, Messages> = {
             selectMember: '选择成员',
             aiAgent: 'AI 助手',
             user: '用户',
+            mentioned: '已提及',
+            tryDifferentQuery: '尝试其他搜索词',
+            navigate: '导航',
+            select: '选择',
+            close: '关闭',
             // Dialog related
             addAgent: '添加智能体',
             addAgentDesc: '选择专业的 AI 智能体加入对话',
@@ -916,6 +928,7 @@ export const locales: Record<LocaleKey, Messages> = {
             yesterday: 'Yesterday',
             saving: 'Saving...',
             close: 'Close',
+            results: ' results',
         },
 
         // Authentication system
@@ -1105,6 +1118,11 @@ export const locales: Record<LocaleKey, Messages> = {
             selectMember: 'Select Member',
             aiAgent: 'AI Agent',
             user: 'User',
+            mentioned: 'Mentioned',
+            tryDifferentQuery: 'Try a different search',
+            navigate: 'Navigate',
+            select: 'Select',
+            close: 'Close',
             // Dialog related
             addAgent: 'Add Agent',
             addAgentDesc: 'Select professional AI agents to join the conversation',

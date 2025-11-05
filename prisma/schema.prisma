@@ -159,6 +159,7 @@ model SwarmChatSession {
   updatedAt      DateTime                      @default(now()) @updatedAt @map("updated_at")
   messages       SwarmChatMessage[]
   participants   SwarmChatSessionParticipant[]
+  artifacts      SwarmArtifact[]
   createdBy      SwarmUser                     @relation(fields: [createdById], references: [id])
   primaryAgent   SwarmAIAgent?                 @relation(fields: [primaryAgentId], references: [id])
 
@@ -194,12 +195,36 @@ model SwarmChatMessage {
   processingTime  Int                @default(0) @map("processing_time")
   confidenceScore Decimal?           @map("confidence_score") @db.Decimal(3, 2)
   cost            Decimal            @default(0) @db.Decimal(10, 4)
+  hasArtifacts    Boolean            @default(false) @map("has_artifacts")
   createdAt       DateTime           @default(now()) @map("created_at")
   replyTo         SwarmChatMessage?  @relation("MessageReplies", fields: [replyToId], references: [id])
   replies         SwarmChatMessage[] @relation("MessageReplies")
   session         SwarmChatSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  artifacts       SwarmArtifact[]
 
   @@map("swarm_chat_messages")
+}
+
+model SwarmArtifact {
+  id          String       @id @default(uuid()) @db.Uuid
+  messageId   String       @map("message_id") @db.Uuid
+  sessionId   String       @map("session_id") @db.Uuid
+  type        ArtifactType
+  title       String       @db.VarChar(200)
+  content     String
+  language    String?      @db.VarChar(50)
+  metadata    Json         @default("{}")
+  version     Int          @default(1)
+  isPinned    Boolean      @default(false) @map("is_pinned")
+  isPublished Boolean      @default(false) @map("is_published")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @default(now()) @updatedAt @map("updated_at")
+  message     SwarmChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  session     SwarmChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([messageId])
+  @@map("swarm_artifacts")
 }
 
 model User {
@@ -319,4 +344,16 @@ enum SwarmMessageStatus {
   DELIVERED @map("delivered")
   READ      @map("read")
   FAILED    @map("failed")
+}
+
+enum ArtifactType {
+  DOCUMENT @map("document")
+  CODE     @map("code")
+  MARKDOWN @map("markdown")
+  HTML     @map("html")
+  SVG      @map("svg")
+  CHART    @map("chart")
+  IMAGE    @map("image")
+  MERMAID  @map("mermaid")
+  REACT    @map("react")
 }

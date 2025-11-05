@@ -5,9 +5,10 @@ import Navbar from '@/components/Navbar'
 import SessionList from '@/components/session/SessionList'
 import ChatArea from '@/components/chat/ChatArea'
 import WelcomeGuide from '@/components/WelcomeGuide'
-import WorkspacePanel from '@/components/workspace/WorkspacePanel'
+import ArtifactPanel from '@/components/artifact/ArtifactPanel'
 import { useSessionManager } from '@/hooks/useSessionManager'
 import { useSession } from '@/components/providers/AuthProvider'
+import { useArtifacts } from '@/hooks/useArtifacts'
 
 /**
  * Home component - Main application page
@@ -43,8 +44,21 @@ export default function Home() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)    // Mobile sidebar visibility
     const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false) // Workspace panel visibility
 
+    // Artifacts management for current session
+    const { artifacts, isLoading: artifactsLoading, togglePin } = useArtifacts({
+        sessionId: currentSession?.id,
+        enabled: !!currentSession?.id
+    })
+
     // Determine if we should show the welcome guide
     const shouldShowWelcomeGuide = !authPending && (!user?.id || !currentSession)
+
+    // Auto-open workspace panel when artifacts are present
+    useEffect(() => {
+        if (artifacts.length > 0 && !shouldShowWelcomeGuide) {
+            setIsWorkspaceOpen(true)
+        }
+    }, [artifacts.length, shouldShowWelcomeGuide])
 
     /**
      * Responsive layout control effect
@@ -172,23 +186,30 @@ export default function Home() {
                     )}
                 </div>
 
-                {/* 
-                    Workspace Panel
-                    
+                {/*
+                    Artifact Panel
+
                     Responsive behavior:
                     - Hidden on mobile and tablet (< 1024px)
                     - Visible on desktop (>= 1024px)
                     - Can be toggled via navbar controls
+                    - Auto-opens when artifacts are generated
                     - Hidden when showing welcome guide to give more space
-                    
+
                     Features:
-                    - Session-aware content display
-                    - Modular workspace components
+                    - Display generated artifacts (code, documents, diagrams)
+                    - Support multiple artifact types
+                    - Pin/unpin artifacts
                     - Real-time updates based on current session
                 */}
                 {isWorkspaceOpen && !shouldShowWelcomeGuide && (
                     <div className="hidden lg:flex w-[360px] min-w-[320px] max-w-[400px] border-l border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800">
-                        <WorkspacePanel session={currentSession} />
+                        <ArtifactPanel
+                            artifacts={artifacts}
+                            isVisible={isWorkspaceOpen}
+                            onClose={() => setIsWorkspaceOpen(false)}
+                            onPin={togglePin}
+                        />
                     </div>
                 )}
             </div>
