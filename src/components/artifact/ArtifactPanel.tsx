@@ -5,15 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import CodeArtifact from './CodeArtifact'
 import DocumentArtifact from './DocumentArtifact'
 import MermaidArtifact from './MermaidArtifact'
-
-export interface Artifact {
-  id: string
-  type: string
-  title: string
-  content: string
-  language?: string
-  isPinned?: boolean
-}
+import { Artifact } from '@/types'
 
 interface ArtifactPanelProps {
   artifacts: Artifact[]

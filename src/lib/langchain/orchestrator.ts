@@ -191,6 +191,63 @@ export class SupervisorAgent {
   }
 
   /**
+   * Rule-based agent selection (fast path)
+   * Returns agent ID if a clear match is found based on keywords
+   */
+  private matchAgentByRules(userInput: string, availableAgents: AgentConfig[]): AgentConfig | null {
+    const input = userInput.toLowerCase();
+
+    // Define keyword patterns for common agent types
+    // Rules are checked in order - more specific rules should come first
+    const rules: Array<{ keywords: string[], agentRoles: string[] }> = [
+      {
+        // Architect - check first as it's more specific
+        keywords: ['架构', 'architecture', '系统设计', 'system design', 'design pattern', '微服务'],
+        agentRoles: ['architect', '架构师']
+      },
+      {
+        // Developer
+        keywords: ['代码', '实现', 'bug', '测试', '开发', 'code', 'implement', 'test', 'develop', 'function', 'class', '修复', 'fix'],
+        agentRoles: ['developer', 'engineer', '开发工程师', '工程师', 'dev']
+      },
+      {
+        // Product Manager
+        keywords: ['需求', 'prd', '产品', '功能', 'feature', 'requirement', 'product'],
+        agentRoles: ['pm', 'product-manager', '产品经理', 'product']
+      },
+      {
+        // Designer
+        keywords: ['ui', 'ux', '界面', '交互', 'prototype', '原型', '视觉', '设计稿'],
+        agentRoles: ['designer', 'ui-designer', '设计师']
+      },
+      {
+        // Data Analyst
+        keywords: ['数据', 'data', '分析', 'analysis', '统计', 'statistics', '报表'],
+        agentRoles: ['analyst', '数据分析师', 'data']
+      },
+    ];
+
+    // Try to match based on rules
+    for (const rule of rules) {
+      const hasKeyword = rule.keywords.some(keyword => input.includes(keyword));
+      if (hasKeyword) {
+        // Find agent matching this role
+        const agent = availableAgents.find(a =>
+          rule.agentRoles.some(role =>
+            a.role.toLowerCase().includes(role.toLowerCase()) ||
+            a.id.toLowerCase().includes(role.toLowerCase())
+          )
+        );
+        if (agent) {
+          return agent;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  /**
    * Decide which agent should respond next
    */
   async decideNextAgent(
@@ -199,10 +256,11 @@ export class SupervisorAgent {
     availableAgents: AgentConfig[],
     mentionedAgents?: string[]
   ): Promise<OrchestrationDecision> {
-    // If user mentioned specific agents, return the first one
+    // Fast path 1: User mentioned specific agents (highest priority)
     if (mentionedAgents && mentionedAgents.length > 0) {
       const mentionedAgent = availableAgents.find(a => a.id === mentionedAgents[0]);
       if (mentionedAgent) {
+        console.log(`[Supervisor] Explicit mention: ${mentionedAgent.id}`);
         return {
           nextAgentId: mentionedAgent.id,
           reasoning: `User explicitly mentioned ${mentionedAgent.name}`,
@@ -210,6 +268,20 @@ export class SupervisorAgent {
         };
       }
     }
+
+    // Fast path 2: Rule-based selection (medium priority, fast)
+    const ruleBasedAgent = this.matchAgentByRules(userInput, availableAgents);
+    if (ruleBasedAgent) {
+      console.log(`[Supervisor] Rule-based match: ${ruleBasedAgent.id}`);
+      return {
+        nextAgentId: ruleBasedAgent.id,
+        reasoning: `Rule-based match for ${ruleBasedAgent.role}`,
+        shouldContinue: false,
+      };
+    }
+
+    // Slow path: LLM-based intelligent selection
+    console.log('[Supervisor] Using LLM-based decision');
 
     // Build agent list for supervisor
     const agentDescriptions = availableAgents
