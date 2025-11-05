@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import CodeArtifact from './CodeArtifact'
 import DocumentArtifact from './DocumentArtifact'
 import MermaidArtifact from './MermaidArtifact'
+import ChartArtifact from './ChartArtifact'
 import { Artifact } from '@/types'
 
 interface ArtifactPanelProps {
@@ -61,22 +62,7 @@ const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
         return <MermaidArtifact {...commonProps} />
 
       case 'chart':
-        return (
-          <div className="flex items-center justify-center h-full p-8">
-            <div className="text-center">
-              <div className="text-4xl mb-4">📊</div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                Chart Artifact
-              </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                Install recharts or chart.js for chart rendering
-              </p>
-              <pre className="text-xs font-mono text-left bg-slate-900 text-slate-100 p-4 rounded-lg overflow-x-auto">
-                {artifact.content}
-              </pre>
-            </div>
-          </div>
-        )
+        return <ChartArtifact {...commonProps} metadata={artifact.metadata} />
 
       case 'html':
       case 'svg':
