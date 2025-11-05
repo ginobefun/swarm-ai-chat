@@ -3,12 +3,13 @@
  *
  * Features:
  * - Smart message selection based on importance
- * - Token counting and management
+ * - Accurate token counting with tiktoken
  * - Context summarization
  * - Key message identification
  */
 
 import { BaseMessage, HumanMessage, AIMessage, SystemMessage } from '@langchain/core/messages'
+import { Tiktoken, encodingForModel } from 'js-tiktoken'
 
 export interface MessageImportance {
   message: BaseMessage
@@ -37,21 +38,62 @@ export class ContextManager {
   private minMessages: number
   private preserveSystemMessages: boolean
   private preserveRecentMessages: number
+  private encoder: Tiktoken | null
 
   constructor(options: ContextManagerOptions) {
     this.maxTokens = options.maxTokens
     this.minMessages = options.minMessages || 5
     this.preserveSystemMessages = options.preserveSystemMessages !== false
     this.preserveRecentMessages = options.preserveRecentMessages || 10
+
+    // Initialize tiktoken encoder for accurate token counting
+    try {
+      this.encoder = encodingForModel('gpt-3.5-turbo')
+    } catch (error) {
+      console.warn('Failed to initialize tiktoken encoder, falling back to estimation:', error)
+      this.encoder = null
+    }
   }
 
   /**
-   * Estimate token count for a message (rough estimation)
-   * Real implementation should use tiktoken or similar
+   * Count tokens accurately using tiktoken
+   * Falls back to estimation if encoder is unavailable
    */
   private estimateTokens(text: string): number {
-    // Rough estimation: ~4 characters per token
-    return Math.ceil(text.length / 4)
+    if (this.encoder) {
+      try {
+        const tokens = this.encoder.encode(text)
+        return tokens.length
+      } catch (error) {
+        console.warn('Token encoding failed, using fallback estimation:', error)
+        // Fall through to fallback
+      }
+    }
+
+    // Fallback: improved estimation for multilingual content
+    // ASCII/Latin: ~4 chars per token
+    // CJK (Chinese/Japanese/Korean): ~1.5 chars per token
+    // Mixed content: use weighted average
+
+    const cjkRegex = /[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]/g
+    const cjkMatches = text.match(cjkRegex)
+    const cjkChars = cjkMatches ? cjkMatches.length : 0
+    const totalChars = text.length
+    const nonCjkChars = totalChars - cjkChars
+
+    // CJK: 1.5 chars/token, Non-CJK: 4 chars/token
+    const estimatedTokens = Math.ceil((cjkChars / 1.5) + (nonCjkChars / 4))
+    return estimatedTokens
+  }
+
+  /**
+   * Free up encoder resources
+   * Note: js-tiktoken handles cleanup automatically
+   */
+  dispose(): void {
+    // js-tiktoken doesn't require explicit cleanup
+    // Just set to null to allow garbage collection
+    this.encoder = null
   }
 
   /**

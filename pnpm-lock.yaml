@@ -98,6 +98,9 @@ importers:
       highlight.js:
         specifier: ^11.11.1
         version: 11.11.1
+      js-tiktoken:
+        specifier: ^1.0.21
+        version: 1.0.21
       langchain:
         specifier: ^1.0.2
         version: 1.0.2(@langchain/core@1.0.2(@opentelemetry/api@1.9.0)(openai@6.8.0(ws@8.18.3)(zod@3.25.76)))(@opentelemetry/api@1.9.0)(openai@6.8.0(ws@8.18.3)(zod@3.25.76))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(zod-to-json-schema@3.24.6(zod@3.25.76))
@@ -7958,7 +7961,7 @@ snapshots:
       isstream: 0.1.2
       jsonwebtoken: 9.0.2
       mime-types: 2.1.35
-      retry-axios: 2.6.0(axios@1.13.2(debug@4.4.3))
+      retry-axios: 2.6.0(axios@1.13.2)
       tough-cookie: 4.1.4
     transitivePeerDependencies:
       - supports-color
@@ -9235,7 +9238,7 @@ snapshots:
       path-parse: 1.0.7
       supports-preserve-symlinks-flag: 1.0.0
 
-  retry-axios@2.6.0(axios@1.13.2(debug@4.4.3)):
+  retry-axios@2.6.0(axios@1.13.2):
     dependencies:
       axios: 1.13.2(debug@4.4.3)
 

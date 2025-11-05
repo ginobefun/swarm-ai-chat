@@ -49,6 +49,7 @@
     "date-fns": "^4.1.0",
     "framer-motion": "^12.23.24",
     "highlight.js": "^11.11.1",
+    "js-tiktoken": "^1.0.21",
     "langchain": "^1.0.2",
     "lucide-react": "^0.552.0",
     "next": "15.3.4",
