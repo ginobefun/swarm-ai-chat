@@ -199,7 +199,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         id: msg.id,
         content: msg.content,
         sender: msg.role === 'user' ? 'You' : getAgentName(session?.primaryAgentId || 'gemini-flash'),
-        senderType: msg.role === 'user' ? 'user' : 'ai',
+        senderType: msg.role === 'user' ? 'user' : 'agent',
         timestamp: msg.createdAt || new Date(),
         avatar: msg.role === 'user' ? 'You' : getAgentAvatar(session?.primaryAgentId || 'gemini-flash'),
         avatarStyle: undefined

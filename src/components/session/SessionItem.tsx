@@ -60,7 +60,7 @@ interface SessionItemProps {
  * @param props - SessionItemProps containing session data and handlers
  * @returns JSX element representing a single session item with full accessibility
  */
-const SessionItem: React.FC<SessionItemProps> = ({
+const SessionItem: React.FC<SessionItemProps> = React.memo(({
     session,
     isActive = false,
     onClick,
@@ -322,6 +322,19 @@ const SessionItem: React.FC<SessionItemProps> = ({
             {renderContextMenu()}
         </ContextMenu>
     )
-}
+}, (prevProps, nextProps) => {
+    // Custom comparison: only re-render if these props change
+    return (
+        prevProps.session.id === nextProps.session.id &&
+        prevProps.session.title === nextProps.session.title &&
+        prevProps.session.updatedAt === nextProps.session.updatedAt &&
+        prevProps.session.isPinned === nextProps.session.isPinned &&
+        prevProps.session.messageCount === nextProps.session.messageCount &&
+        prevProps.session.lastMessage?.content === nextProps.session.lastMessage?.content &&
+        prevProps.session.lastMessage?.sender === nextProps.session.lastMessage?.sender &&
+        prevProps.isActive === nextProps.isActive
+        // Note: We don't compare callbacks (onClick, onAction) as they should be memoized by parent
+    )
+})
 
 export default SessionItem 

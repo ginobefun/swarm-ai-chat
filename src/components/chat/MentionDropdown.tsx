@@ -29,7 +29,7 @@ interface MentionDropdownProps {
  * - 无障碍访问支持
  * - 响应式设计
  */
-const MentionDropdown: React.FC<MentionDropdownProps> = ({
+const MentionDropdown: React.FC<MentionDropdownProps> = React.memo(({
     isOpen,
     items,
     mentionedIds = [],
@@ -250,6 +250,24 @@ const MentionDropdown: React.FC<MentionDropdownProps> = ({
             </div>
         </div>
     )
-}
+}, (prevProps, nextProps) => {
+    // Custom comparison: only re-render if these props change
+    if (prevProps.isOpen !== nextProps.isOpen) return false
+    if (prevProps.query !== nextProps.query) return false
+
+    // Compare items array
+    if (prevProps.items.length !== nextProps.items.length) return false
+    const itemsEqual = prevProps.items.every((item, index) => {
+        const nextItem = nextProps.items[index]
+        return item.id === nextItem.id && item.name === nextItem.name && item.avatar === nextItem.avatar
+    })
+    if (!itemsEqual) return false
+
+    // Compare mentionedIds array
+    if (prevProps.mentionedIds.length !== nextProps.mentionedIds.length) return false
+    if (!prevProps.mentionedIds.every((id, index) => id === nextProps.mentionedIds[index])) return false
+
+    return true // Props are equal, skip re-render
+})
 
 export default MentionDropdown

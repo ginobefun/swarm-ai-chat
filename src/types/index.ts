@@ -38,12 +38,18 @@ export interface Message {
     id: string
     content: string
     sender: string
-    senderType: 'user' | 'ai'
+    senderType: 'user' | 'agent' | 'system'  // Aligned with Prisma SwarmSenderType
     timestamp: Date
     avatar?: string
     avatarStyle?: string
     hasArtifacts?: boolean
     artifactCount?: number
+}
+
+// Helper function to normalize legacy 'ai' type to 'agent'
+export function normalizeSenderType(senderType: string): 'user' | 'agent' | 'system' {
+    if (senderType === 'ai') return 'agent'
+    return senderType as 'user' | 'agent' | 'system'
 }
 
 // Artifact类型
@@ -55,12 +61,69 @@ export interface Artifact {
     title: string
     content: string
     language?: string | null
-    metadata?: Record<string, any>
+    metadata?: ChartMetadata | Record<string, any>
     version?: number
     isPinned?: boolean
     isPublished?: boolean
     createdAt?: Date
     updatedAt?: Date
+}
+
+// Chart-specific metadata types
+export type ChartType = 'line' | 'bar' | 'pie' | 'area' | 'scatter' | 'radar'
+
+export interface ChartDataPoint {
+    [key: string]: string | number | Date
+}
+
+export interface ChartMetadata {
+    chartType: ChartType
+    data: ChartDataPoint[]
+    xAxisKey: string
+    yAxisKey: string | string[]
+    title?: string
+    description?: string
+    xAxisLabel?: string
+    yAxisLabel?: string
+    colors?: string[]
+    showLegend?: boolean
+    showGrid?: boolean
+    showTooltip?: boolean
+    width?: number
+    height?: number
+}
+
+// Type guard to check if metadata is ChartMetadata
+export function isChartMetadata(metadata: any): metadata is ChartMetadata {
+    return !!(
+        metadata &&
+        typeof metadata === 'object' &&
+        'chartType' in metadata &&
+        'data' in metadata &&
+        'xAxisKey' in metadata &&
+        'yAxisKey' in metadata &&
+        Array.isArray(metadata.data)
+    )
+}
+
+// Helper to create chart metadata
+export function createChartMetadata(
+    chartType: ChartType,
+    data: ChartDataPoint[],
+    xAxisKey: string,
+    yAxisKey: string | string[],
+    options?: Partial<Omit<ChartMetadata, 'chartType' | 'data' | 'xAxisKey' | 'yAxisKey'>>
+): ChartMetadata {
+    return {
+        chartType,
+        data,
+        xAxisKey,
+        yAxisKey,
+        showLegend: true,
+        showGrid: true,
+        showTooltip: true,
+        ...options,
+    }
 }
 
 // 会话参与者类型
@@ -72,6 +135,12 @@ export interface SessionParticipant {
     avatarStyle?: string
 }
 
+// 会话配置类型
+export interface SessionConfiguration {
+    orchestrationMode?: 'DYNAMIC' | 'SEQUENTIAL' | 'PARALLEL'
+    [key: string]: any
+}
+
 // 会话类型 (统一与数据库模型一致，使用大写枚举)
 export interface Session {
     id: string
@@ -81,7 +150,7 @@ export interface Session {
     status?: 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'ARCHIVED'
     createdById: string
     primaryAgentId?: string | null
-    configuration?: any
+    configuration?: SessionConfiguration
     isPublic?: boolean
     isTemplate?: boolean
     messageCount: number
@@ -180,6 +249,14 @@ export interface MentionItem {
     name: string
     avatar: string
     type: 'agent' | 'user'
+}
+
+// 正在输入的智能体类型
+export interface TypingAgent {
+    id: string
+    name: string
+    avatar: string
+    avatarStyle?: string
 }
 
 // 角色详情页 Props 类型
