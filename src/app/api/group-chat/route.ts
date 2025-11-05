@@ -12,6 +12,8 @@ import { createOrchestrator, createAgentConfig, OrchestrationMode } from '@/lib/
 import { HumanMessage, AIMessage, SystemMessage } from '@langchain/core/messages';
 import { prisma } from '@/lib/database/prisma';
 import { parseArtifacts } from '@/lib/artifact/parser';
+import { ContextManager } from '@/lib/langchain/context-manager';
+import { globalMetricsTracker, createMetric } from '@/lib/metrics/agent-metrics';
 
 // Stream encoder
 const encoder = new TextEncoder();
@@ -130,7 +132,18 @@ export async function POST(req: NextRequest) {
       }
     });
 
-    orchestrator.loadHistory(langchainMessages);
+    // Optimize context using ContextManager (8000 tokens limit for group chat)
+    const contextManager = new ContextManager({
+      maxTokens: 8000,
+      minMessages: 5,
+      preserveSystemMessages: true,
+      preserveRecentMessages: 10
+    });
+
+    const optimizedContext = contextManager.optimizeContext(langchainMessages);
+    console.log(`Context optimized: ${langchainMessages.length} -> ${optimizedContext.messages.length} messages, ${optimizedContext.tokenCount} tokens`);
+
+    orchestrator.loadHistory(optimizedContext.messages);
 
     // Save user message to database
     const userMessageRecord = await prisma.swarmChatMessage.create({
@@ -211,9 +224,15 @@ export async function POST(req: NextRequest) {
           // Save agent responses to database
           const savedMessages = [];
           for (const response of agentResponses) {
+            const agentStartTime = Date.now();
+
             // Parse artifacts from response
             const parseResult = parseArtifacts(response.content);
             const hasArtifacts = parseResult.artifacts.length > 0;
+
+            // Estimate token count (rough estimation: ~4 chars per token)
+            const estimatedTokens = Math.ceil(response.content.length / 4);
+            const estimatedCost = estimatedTokens * 0.00001; // Rough cost estimate
 
             // Save message with text content (artifacts removed)
             const savedMessage = await prisma.swarmChatMessage.create({
@@ -225,10 +244,28 @@ export async function POST(req: NextRequest) {
                 contentType: 'TEXT',
                 status: 'SENT',
                 hasArtifacts,
-                // TODO: Calculate token count and cost
-                tokenCount: 0,
-                cost: 0,
+                tokenCount: estimatedTokens,
+                cost: estimatedCost,
               },
+            });
+
+            // Record agent metrics
+            const agentMetric = createMetric({
+              agentId: response.agentId,
+              agentName: response.agentName,
+              sessionId,
+              messageId: savedMessage.id,
+              startTime: agentStartTime,
+              tokenCount: estimatedTokens,
+              cost: estimatedCost,
+              success: true,
+              model: mode,
+            });
+            globalMetricsTracker.record(agentMetric);
+            console.log(`✅ Recorded metrics for agent ${response.agentName}:`, {
+              processingTime: `${agentMetric.responseTimeMs}ms`,
+              tokenCount: estimatedTokens,
+              cost: `$${estimatedCost.toFixed(6)}`
             });
 
             // Save artifacts

@@ -34,6 +34,26 @@ const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
   const [showVersionHistory, setShowVersionHistory] = useState(false)
   const [artifactVersions, setArtifactVersions] = useState<Record<string, ArtifactVersion[]>>({})
 
+  // Get current artifact
+  const currentArtifact = artifacts.find(a => a.id === activeTab)
+
+  // Generate mock version for current artifact (for demo purposes)
+  // In production, this would fetch real version history from API
+  React.useEffect(() => {
+    if (currentArtifact && !artifactVersions[currentArtifact.id]) {
+      const mockVersion: ArtifactVersion = {
+        ...currentArtifact,
+        versionNumber: currentArtifact.version || 1,
+        createdBy: 'current-user',
+        changeDescription: 'Current version',
+      }
+      setArtifactVersions(prev => ({
+        ...prev,
+        [currentArtifact.id]: [mockVersion]
+      }))
+    }
+  }, [currentArtifact, artifactVersions])
+
   if (!isVisible || artifacts.length === 0) {
     return (
       <div className="flex flex-col h-full bg-gray-50 dark:bg-slate-900 items-center justify-center">

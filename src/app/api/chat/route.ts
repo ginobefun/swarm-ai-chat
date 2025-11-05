@@ -3,6 +3,9 @@ import { createOpenRouter } from '@openrouter/ai-sdk-provider'
 import { streamText } from 'ai'
 import { addMessageToSession } from '@/lib/database/sessions-prisma'
 import { z } from 'zod'
+import { ContextManager } from '@/lib/langchain/context-manager'
+import { HumanMessage, AIMessage, SystemMessage } from '@langchain/core/messages'
+import { globalMetricsTracker, createMetric } from '@/lib/metrics/agent-metrics'
 
 // Types
 interface ChatMessage {
@@ -104,24 +107,50 @@ export async function POST(req: NextRequest) {
 
         // Prepare messages for AI model
         console.log('🔍 Chat API - Preparing messages for AI model')
-        const aiMessages = [
+
+        // Convert to LangChain messages for context optimization
+        const langchainMessages = allMessages.map((msg: ChatMessage) => {
+            if (msg.role === 'user') {
+                return new HumanMessage(msg.content)
+            } else if (msg.role === 'assistant') {
+                return new AIMessage(msg.content)
+            } else {
+                return new SystemMessage(msg.content)
+            }
+        })
+
+        // Optimize context using ContextManager (4000 tokens limit for single chat)
+        const contextManager = new ContextManager({
+            maxTokens: 4000,
+            minMessages: 3,
+            preserveSystemMessages: true,
+            preserveRecentMessages: 5
+        })
+
+        const optimizedContext = contextManager.optimizeContext(langchainMessages)
+        console.log(`🔍 Chat API - Context optimized: ${langchainMessages.length} -> ${optimizedContext.messages.length} messages, ${optimizedContext.tokenCount} tokens`)
+
+        // Convert back to AI SDK format
+        const optimizedAiMessages = [
             {
                 role: 'system' as const,
                 content: systemPrompt
             },
-            ...allMessages.map((msg: ChatMessage) => ({
-                role: msg.role,
-                content: msg.content
+            ...optimizedContext.messages.map((msg) => ({
+                role: msg._getType() === 'human' ? 'user' as const :
+                     msg._getType() === 'ai' ? 'assistant' as const :
+                     'system' as const,
+                content: msg.content as string
             }))
         ]
-        console.log('🔍 Chat API - AI messages prepared, count:', aiMessages.length)
+        console.log('🔍 Chat API - AI messages prepared, count:', optimizedAiMessages.length)
 
         // Stream AI response
         console.log('🔍 Chat API - Starting AI stream text generation')
         try {
             const result = await streamText({
                 model,
-                messages: aiMessages,
+                messages: optimizedAiMessages,
                 temperature: 0.7,
                 maxTokens: 2048,
                 // Callback to save AI response chunks as they come
@@ -146,7 +175,7 @@ export async function POST(req: NextRequest) {
                         })
 
                         // Save AI response to database
-                        await addMessageToSession({
+                        const savedMessage = await addMessageToSession({
                             sessionId,
                             senderType: 'agent',
                             senderId: agentId,
@@ -157,12 +186,27 @@ export async function POST(req: NextRequest) {
                             cost
                         })
 
+                        // Record agent metrics
+                        const agentMetric = createMetric({
+                            agentId,
+                            agentName: `Agent-${agentId}`,
+                            sessionId,
+                            messageId: savedMessage?.id || 'unknown',
+                            startTime,
+                            tokenCount,
+                            cost,
+                            success: true,
+                            model: modelName,
+                        })
+                        globalMetricsTracker.record(agentMetric)
+
                         console.log(`✅ AI Response saved for session ${sessionId}:`, {
                             agentId,
                             modelName,
                             tokenCount,
                             processingTime: `${processingTime}ms`,
-                            cost: `$${cost.toFixed(4)}`
+                            cost: `$${cost.toFixed(4)}`,
+                            contextOptimization: `${langchainMessages.length} -> ${optimizedContext.messages.length} messages`
                         })
                     } catch (error) {
                         console.error('❌ Error saving AI response:', error)
@@ -171,6 +215,20 @@ export async function POST(req: NextRequest) {
                             message: error instanceof Error ? error.message : String(error),
                             stack: error instanceof Error ? error.stack : undefined
                         })
+
+                        // Record failed metric
+                        const failedMetric = createMetric({
+                            agentId,
+                            agentName: `Agent-${agentId}`,
+                            sessionId,
+                            messageId: 'failed',
+                            startTime,
+                            tokenCount: 0,
+                            cost: 0,
+                            success: false,
+                            errorType: error instanceof Error ? error.message : 'Unknown error',
+                        })
+                        globalMetricsTracker.record(failedMetric)
                     }
                 },
                 onError: (error) => {

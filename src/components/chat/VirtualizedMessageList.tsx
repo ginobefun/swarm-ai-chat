@@ -1,12 +1,15 @@
 'use client'
 
 import React, { useEffect, useRef, useCallback, useState } from 'react'
-import { VariableSizeList as List } from 'react-window'
+import { VariableSizeList } from 'react-window'
 import { Message, Artifact, TypingAgent } from '@/types'
 import { useTranslation } from '@/contexts/AppContext'
 import AgentTypingIndicator from './AgentTypingIndicator'
 import ArtifactMiniPreview from '../artifact/ArtifactMiniPreview'
 import SafeMarkdown from './SafeMarkdown'
+
+// Type alias for convenience
+type List = VariableSizeList
 
 interface VirtualizedMessageListProps {
     messages: Message[]
