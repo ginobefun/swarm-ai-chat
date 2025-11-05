@@ -268,7 +268,7 @@ const MessageList: React.FC<MessageListProps> = ({
                     <div className="mt-2">
                         <AgentTypingIndicator agents={typingAgents} />
                     </div>
-                ) : isTyping && !messages.some(msg => msg.senderType === 'ai' && msg.content === '') ? (
+                ) : isTyping && !messages.some(msg => msg.senderType === 'agent' && msg.content === '') ? (
                     <div className="mt-2">
                         <TypingIndicator
                             user={typingUser}

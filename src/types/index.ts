@@ -38,12 +38,18 @@ export interface Message {
     id: string
     content: string
     sender: string
-    senderType: 'user' | 'ai'
+    senderType: 'user' | 'agent' | 'system'  // Aligned with Prisma SwarmSenderType
     timestamp: Date
     avatar?: string
     avatarStyle?: string
     hasArtifacts?: boolean
     artifactCount?: number
+}
+
+// Helper function to normalize legacy 'ai' type to 'agent'
+export function normalizeSenderType(senderType: string): 'user' | 'agent' | 'system' {
+    if (senderType === 'ai') return 'agent'
+    return senderType as 'user' | 'agent' | 'system'
 }
 
 // Artifact类型
