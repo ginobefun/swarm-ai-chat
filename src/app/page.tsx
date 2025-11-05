@@ -6,6 +6,7 @@ import SessionList from '@/components/session/SessionList'
 import ChatArea from '@/components/chat/ChatArea'
 import WelcomeGuide from '@/components/WelcomeGuide'
 import ArtifactPanel from '@/components/artifact/ArtifactPanel'
+import ErrorBoundary from '@/components/ErrorBoundary'
 import { useSessionManager } from '@/hooks/useSessionManager'
 import { useSession } from '@/components/providers/AuthProvider'
 import { useArtifacts } from '@/hooks/useArtifacts'
@@ -179,10 +180,12 @@ export default function Home() {
                             onExploreAgents={handleExploreAgents}
                         />
                     ) : (
-                        <ChatArea
-                            session={currentSession}
-                            onSessionUpdate={updateSession}
-                        />
+                        <ErrorBoundary>
+                            <ChatArea
+                                session={currentSession}
+                                onSessionUpdate={updateSession}
+                            />
+                        </ErrorBoundary>
                     )}
                 </div>
 
@@ -204,12 +207,14 @@ export default function Home() {
                 */}
                 {isWorkspaceOpen && !shouldShowWelcomeGuide && (
                     <div className="hidden lg:flex w-[360px] min-w-[320px] max-w-[400px] border-l border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800">
-                        <ArtifactPanel
-                            artifacts={artifacts}
-                            isVisible={isWorkspaceOpen}
-                            onClose={() => setIsWorkspaceOpen(false)}
-                            onPin={togglePin}
-                        />
+                        <ErrorBoundary>
+                            <ArtifactPanel
+                                artifacts={artifacts}
+                                isVisible={isWorkspaceOpen}
+                                onClose={() => setIsWorkspaceOpen(false)}
+                                onPin={togglePin}
+                            />
+                        </ErrorBoundary>
                     </div>
                 )}
             </div>

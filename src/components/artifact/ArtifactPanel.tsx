@@ -2,11 +2,15 @@
 
 import React, { useState } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Button } from '@/components/ui/button'
 import CodeArtifact from './CodeArtifact'
 import DocumentArtifact from './DocumentArtifact'
 import MermaidArtifact from './MermaidArtifact'
 import ChartArtifact from './ChartArtifact'
+import ArtifactVersionHistory from './ArtifactVersionHistory'
 import { Artifact } from '@/types'
+import { ArtifactVersion } from '@/lib/artifact/version-control'
+import { Clock } from 'lucide-react'
 
 interface ArtifactPanelProps {
   artifacts: Artifact[]
@@ -27,6 +31,8 @@ const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
   onPin
 }) => {
   const [activeTab, setActiveTab] = useState(artifacts[0]?.id || '')
+  const [showVersionHistory, setShowVersionHistory] = useState(false)
+  const [artifactVersions, setArtifactVersions] = useState<Record<string, ArtifactVersion[]>>({})
 
   if (!isVisible || artifacts.length === 0) {
     return (
@@ -126,17 +132,28 @@ const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
             </p>
           </div>
         </div>
-        {onClose && (
-          <button
-            onClick={onClose}
-            className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-            title="Close artifacts panel"
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowVersionHistory(!showVersionHistory)}
+            className="p-2"
+            title={showVersionHistory ? "Hide version history" : "Show version history"}
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        )}
+            <Clock className="w-4 h-4" />
+          </Button>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+              title="Close artifacts panel"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Tabs */}
