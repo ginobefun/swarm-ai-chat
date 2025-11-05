@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createOrchestrator, createAgentConfig, OrchestrationMode } from '@/lib/langchain/orchestrator';
 import { HumanMessage, AIMessage, SystemMessage } from '@langchain/core/messages';
 import { prisma } from '@/lib/database/prisma';
+import { parseArtifacts } from '@/lib/artifact/parser';
 
 // Stream encoder
 const encoder = new TextEncoder();
@@ -210,29 +211,59 @@ export async function POST(req: NextRequest) {
           // Save agent responses to database
           const savedMessages = [];
           for (const response of agentResponses) {
+            // Parse artifacts from response
+            const parseResult = parseArtifacts(response.content);
+            const hasArtifacts = parseResult.artifacts.length > 0;
+
+            // Save message with text content (artifacts removed)
             const savedMessage = await prisma.swarmChatMessage.create({
               data: {
                 sessionId,
                 senderId: response.agentId,
                 senderType: 'AGENT',
-                content: response.content,
+                content: parseResult.textContent || response.content,
                 contentType: 'TEXT',
                 status: 'SENT',
+                hasArtifacts,
                 // TODO: Calculate token count and cost
                 tokenCount: 0,
                 cost: 0,
               },
             });
 
+            // Save artifacts
+            const savedArtifacts = [];
+            for (const artifact of parseResult.artifacts) {
+              const savedArtifact = await prisma.swarmArtifact.create({
+                data: {
+                  messageId: savedMessage.id,
+                  sessionId,
+                  type: artifact.type.toUpperCase() as any, // Convert to enum
+                  title: artifact.title,
+                  content: artifact.content,
+                  language: artifact.language,
+                  metadata: artifact.metadata || {},
+                },
+              });
+              savedArtifacts.push(savedArtifact);
+            }
+
             savedMessages.push(savedMessage);
 
-            // Send completion event
+            // Send completion event with artifacts
             const completeData = {
               type: 'complete',
               agentId: response.agentId,
               agentName: response.agentName,
-              content: response.content,
+              content: parseResult.textContent || response.content,
               messageId: savedMessage.id,
+              artifacts: savedArtifacts.map(a => ({
+                id: a.id,
+                type: a.type,
+                title: a.title,
+                content: a.content,
+                language: a.language,
+              })),
             };
             controller.enqueue(encoder.encode(`data: ${JSON.stringify(completeData)}\n\n`));
           }

@@ -17,6 +17,7 @@ import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts
 import { RunnableSequence } from "@langchain/core/runnables";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { z } from "zod";
+import { getArtifactInstructions } from "@/lib/artifact/parser";
 
 // ==================== Type Definitions ====================
 
@@ -619,12 +620,19 @@ export function createAgentConfig(
   systemPrompt: string,
   options?: Partial<AgentConfig>
 ): AgentConfig {
+  // Append artifact instructions to system prompt
+  const enhancedSystemPrompt = `${systemPrompt}
+
+---
+
+${getArtifactInstructions()}`;
+
   return {
     id,
     name,
     role,
     description: options?.description || role,
-    systemPrompt,
+    systemPrompt: enhancedSystemPrompt,
     modelPreference: options?.modelPreference,
     temperature: options?.temperature ?? 0.7,
     maxTokens: options?.maxTokens ?? 2000,

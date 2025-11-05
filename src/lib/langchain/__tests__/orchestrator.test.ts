@@ -29,7 +29,8 @@ describe('Agent Configuration', () => {
     expect(config.id).toBe('test-agent');
     expect(config.name).toBe('Test Agent');
     expect(config.role).toBe('Test Role');
-    expect(config.systemPrompt).toBe('You are a test agent');
+    expect(config.systemPrompt).toContain('You are a test agent');
+    expect(config.systemPrompt).toContain('artifact'); // Should include artifact instructions
     expect(config.description).toBe('Test Role');
   });
 
