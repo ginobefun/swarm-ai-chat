@@ -23,7 +23,7 @@ interface SafeMarkdownProps {
  * - Syntax highlighting for code blocks
  * - Proper styling for all markdown elements
  */
-const SafeMarkdown: React.FC<SafeMarkdownProps> = ({ content, className = '' }) => {
+const SafeMarkdown: React.FC<SafeMarkdownProps> = React.memo(({ content, className = '' }) => {
   return (
     <div className={`prose prose-sm max-w-none dark:prose-invert ${className}`}>
       <ReactMarkdown
@@ -127,6 +127,9 @@ const SafeMarkdown: React.FC<SafeMarkdownProps> = ({ content, className = '' }) 
       </ReactMarkdown>
     </div>
   )
-}
+}, (prevProps, nextProps) => {
+  // Only re-render if content or className changes
+  return prevProps.content === nextProps.content && prevProps.className === nextProps.className
+})
 
 export default SafeMarkdown

@@ -33,7 +33,7 @@ interface AgentTypingIndicatorProps {
  *   ]}
  * />
  */
-const AgentTypingIndicator: React.FC<AgentTypingIndicatorProps> = ({
+const AgentTypingIndicator: React.FC<AgentTypingIndicatorProps> = React.memo(({
     agents,
     className = ''
 }) => {
@@ -190,6 +190,22 @@ const AgentTypingIndicator: React.FC<AgentTypingIndicatorProps> = ({
             )}
         </div>
     )
-}
+}, (prevProps, nextProps) => {
+    // Custom comparison: only re-render if agents array changes
+    if (prevProps.agents.length !== nextProps.agents.length) {
+        return false // Re-render if length changes
+    }
+
+    // Compare each agent in the array
+    return prevProps.agents.every((agent, index) => {
+        const nextAgent = nextProps.agents[index]
+        return (
+            agent.id === nextAgent.id &&
+            agent.name === nextAgent.name &&
+            agent.avatar === nextAgent.avatar &&
+            agent.avatarStyle === nextAgent.avatarStyle
+        )
+    }) && prevProps.className === nextProps.className
+})
 
 export default AgentTypingIndicator
