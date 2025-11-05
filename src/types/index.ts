@@ -72,6 +72,12 @@ export interface SessionParticipant {
     avatarStyle?: string
 }
 
+// 会话配置类型
+export interface SessionConfiguration {
+    orchestrationMode?: 'DYNAMIC' | 'SEQUENTIAL' | 'PARALLEL'
+    [key: string]: any
+}
+
 // 会话类型 (统一与数据库模型一致，使用大写枚举)
 export interface Session {
     id: string
@@ -81,7 +87,7 @@ export interface Session {
     status?: 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'ARCHIVED'
     createdById: string
     primaryAgentId?: string | null
-    configuration?: any
+    configuration?: SessionConfiguration
     isPublic?: boolean
     isTemplate?: boolean
     messageCount: number
@@ -180,6 +186,14 @@ export interface MentionItem {
     name: string
     avatar: string
     type: 'agent' | 'user'
+}
+
+// 正在输入的智能体类型
+export interface TypingAgent {
+    id: string
+    name: string
+    avatar: string
+    avatarStyle?: string
 }
 
 // 角色详情页 Props 类型

@@ -1,14 +1,19 @@
 'use client'
 
 import React, { useEffect, useRef } from 'react'
-import { Message } from '@/types'
+import { Message, Artifact, TypingAgent } from '@/types'
 import { useTranslation } from '@/contexts/AppContext'
+import AgentTypingIndicator from './AgentTypingIndicator'
+import ArtifactMiniPreview from '../artifact/ArtifactMiniPreview'
 
 interface MessageListProps {
     messages: Message[]
     isTyping?: boolean
     typingUser?: string
     typingAvatar?: string
+    typingAgents?: TypingAgent[]  // Support multiple agents typing
+    messageArtifacts?: Record<string, Artifact[]>  // Map of messageId -> artifacts
+    onViewArtifact?: (artifactId: string) => void
 }
 
 const TypingIndicator: React.FC<{
@@ -45,7 +50,11 @@ const TypingIndicator: React.FC<{
     )
 }
 
-const MessageItem: React.FC<{ message: Message }> = ({ message }) => {
+const MessageItem: React.FC<{
+    message: Message
+    artifacts?: Artifact[]
+    onViewArtifact?: (artifactId: string) => void
+}> = ({ message, artifacts = [], onViewArtifact }) => {
     const formatTime = (timestamp: Date) => {
         return timestamp.toLocaleTimeString('zh-CN', {
             hour: '2-digit',
@@ -140,24 +149,31 @@ const MessageItem: React.FC<{ message: Message }> = ({ message }) => {
                     />
                 </div>
 
-                {/* Artifact Indicator */}
-                {message.hasArtifacts && message.artifactCount && message.artifactCount > 0 && (
-                    <div className={`px-3 py-2 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg ${isUser ? 'self-end' : 'self-start'}`}>
-                        <div className="flex items-center justify-between gap-3">
-                            <span className="text-xs text-purple-700 dark:text-purple-300 flex items-center gap-1.5 font-medium">
-                                <span className="text-base">📦</span>
-                                {message.artifactCount} artifact{message.artifactCount > 1 ? 's' : ''} generated
-                            </span>
-                            <button
-                                onClick={() => {
-                                    // TODO: Implement artifact viewer
-                                    console.log('View artifacts for message:', message.id)
-                                }}
-                                className="text-xs text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 font-medium transition-colors"
-                            >
-                                View →
-                            </button>
-                        </div>
+                {/* Artifact Preview - Show first artifact inline */}
+                {artifacts.length > 0 && (
+                    <div className={`w-full ${isUser ? 'self-end' : 'self-start'}`}>
+                        <ArtifactMiniPreview
+                            artifact={artifacts[0]}
+                            onFullscreen={onViewArtifact}
+                        />
+
+                        {/* Additional artifacts indicator */}
+                        {artifacts.length > 1 && (
+                            <div className="mt-2 px-3 py-2 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg">
+                                <div className="flex items-center justify-between gap-3">
+                                    <span className="text-xs text-purple-700 dark:text-purple-300 flex items-center gap-1.5 font-medium">
+                                        <span className="text-base">📦</span>
+                                        +{artifacts.length - 1} more artifact{artifacts.length - 1 > 1 ? 's' : ''}
+                                    </span>
+                                    <button
+                                        onClick={() => onViewArtifact?.(artifacts[1].id)}
+                                        className="text-xs text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 font-medium transition-colors"
+                                    >
+                                        View All →
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -174,7 +190,10 @@ const MessageList: React.FC<MessageListProps> = ({
     messages,
     isTyping = false,
     typingUser = "AI 助手",
-    typingAvatar = "🤖"
+    typingAvatar = "🤖",
+    typingAgents = [],
+    messageArtifacts = {},
+    onViewArtifact
 }) => {
     const { t } = useTranslation()
     const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -262,15 +281,23 @@ const MessageList: React.FC<MessageListProps> = ({
                                             </div>
                                         </div>
                                     )}
-                                    <MessageItem message={message} />
+                                    <MessageItem
+                                        message={message}
+                                        artifacts={messageArtifacts[message.id] || []}
+                                        onViewArtifact={onViewArtifact}
+                                    />
                                 </React.Fragment>
                             )
                         })}
                     </div>
                 )}
 
-                {/* Typing indicator - only show if no pending assistant message */}
-                {isTyping && !messages.some(msg => msg.senderType === 'ai' && msg.content === '') && (
+                {/* Enhanced Typing indicator - supports multiple agents */}
+                {typingAgents.length > 0 ? (
+                    <div className="mt-2">
+                        <AgentTypingIndicator agents={typingAgents} />
+                    </div>
+                ) : isTyping && !messages.some(msg => msg.senderType === 'ai' && msg.content === '') ? (
                     <div className="mt-2">
                         <TypingIndicator
                             user={typingUser}
@@ -278,7 +305,7 @@ const MessageList: React.FC<MessageListProps> = ({
                             avatarStyle="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
                         />
                     </div>
-                )}
+                ) : null}
 
                 {/* Scroll anchor - maintains scroll position */}
                 <div ref={messagesEndRef} className="h-1" />

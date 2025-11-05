@@ -308,9 +308,145 @@ const ChatSettingsDialog: React.FC<ChatSettingsDialogProps> = ({
                                         {t('chat.chatPreferences') || '聊天偏好'}
                                     </h3>
 
-                                    {/* 这里可以添加各种偏好设置 */}
-                                    <div className="text-sm text-slate-500 dark:text-slate-400">
-                                        {t('common.comingSoon') || '即将推出更多设置选项'}
+                                    {/* 编排模式选择 */}
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+                                                {t('chat.orchestrationMode') || '协作模式'}
+                                            </label>
+                                            <div className="space-y-3">
+                                                {/* DYNAMIC 模式 */}
+                                                <div
+                                                    className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${session.configuration?.orchestrationMode === 'DYNAMIC' || !session.configuration?.orchestrationMode
+                                                        ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                                                        : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+                                                        }`}
+                                                    onClick={() => {
+                                                        if (onUpdateSession) {
+                                                            onUpdateSession(session.id, {
+                                                                configuration: {
+                                                                    ...session.configuration,
+                                                                    orchestrationMode: 'DYNAMIC'
+                                                                }
+                                                            })
+                                                        }
+                                                    }}
+                                                >
+                                                    <div className="flex items-start gap-3">
+                                                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-lg flex-shrink-0">
+                                                            🤖
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">
+                                                                {t('chat.dynamicMode') || '智能决策模式 (DYNAMIC)'}
+                                                            </h4>
+                                                            <p className="text-sm text-slate-600 dark:text-slate-400">
+                                                                {t('chat.dynamicModeDesc') || 'AI 自动选择最合适的智能体响应。适合复杂问题和多领域协作。'}
+                                                            </p>
+                                                        </div>
+                                                        {(session.configuration?.orchestrationMode === 'DYNAMIC' || !session.configuration?.orchestrationMode) && (
+                                                            <div className="w-5 h-5 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0">
+                                                                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                                                </svg>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {/* SEQUENTIAL 模式 */}
+                                                <div
+                                                    className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${session.configuration?.orchestrationMode === 'SEQUENTIAL'
+                                                        ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
+                                                        : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+                                                        }`}
+                                                    onClick={() => {
+                                                        if (onUpdateSession) {
+                                                            onUpdateSession(session.id, {
+                                                                configuration: {
+                                                                    ...session.configuration,
+                                                                    orchestrationMode: 'SEQUENTIAL'
+                                                                }
+                                                            })
+                                                        }
+                                                    }}
+                                                >
+                                                    <div className="flex items-start gap-3">
+                                                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-lg flex-shrink-0">
+                                                            ⏭️
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">
+                                                                {t('chat.sequentialMode') || '顺序执行模式 (SEQUENTIAL)'}
+                                                            </h4>
+                                                            <p className="text-sm text-slate-600 dark:text-slate-400">
+                                                                {t('chat.sequentialModeDesc') || '智能体按照 @提及 的顺序依次响应。适合需要明确步骤和顺序的任务。'}
+                                                            </p>
+                                                        </div>
+                                                        {session.configuration?.orchestrationMode === 'SEQUENTIAL' && (
+                                                            <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
+                                                                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                                                </svg>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {/* PARALLEL 模式 */}
+                                                <div
+                                                    className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${session.configuration?.orchestrationMode === 'PARALLEL'
+                                                        ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20'
+                                                        : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+                                                        }`}
+                                                    onClick={() => {
+                                                        if (onUpdateSession) {
+                                                            onUpdateSession(session.id, {
+                                                                configuration: {
+                                                                    ...session.configuration,
+                                                                    orchestrationMode: 'PARALLEL'
+                                                                }
+                                                            })
+                                                        }
+                                                    }}
+                                                >
+                                                    <div className="flex items-start gap-3">
+                                                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white text-lg flex-shrink-0">
+                                                            ⚡
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">
+                                                                {t('chat.parallelMode') || '并行处理模式 (PARALLEL)'}
+                                                            </h4>
+                                                            <p className="text-sm text-slate-600 dark:text-slate-400">
+                                                                {t('chat.parallelModeDesc') || '所有 @提及 的智能体同时响应。适合需要多个视角和快速反馈的场景。'}
+                                                            </p>
+                                                        </div>
+                                                        {session.configuration?.orchestrationMode === 'PARALLEL' && (
+                                                            <div className="w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0">
+                                                                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                                                </svg>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* 当前模式指示器 */}
+                                        <div className="p-4 bg-slate-100 dark:bg-slate-700 rounded-lg">
+                                            <div className="flex items-center gap-2 text-sm">
+                                                <span className="text-slate-600 dark:text-slate-400">
+                                                    {t('chat.currentMode') || '当前模式：'}
+                                                </span>
+                                                <span className="font-semibold text-slate-900 dark:text-slate-100">
+                                                    {session.configuration?.orchestrationMode === 'SEQUENTIAL' && (t('chat.sequential') || '顺序执行')}
+                                                    {session.configuration?.orchestrationMode === 'PARALLEL' && (t('chat.parallel') || '并行处理')}
+                                                    {(!session.configuration?.orchestrationMode || session.configuration?.orchestrationMode === 'DYNAMIC') && (t('chat.dynamic') || '智能决策')}
+                                                </span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             )}
