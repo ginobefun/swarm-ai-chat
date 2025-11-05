@@ -25,14 +25,12 @@ import {
   ResponsiveContainer,
   Cell,
 } from 'recharts'
+import { ChartMetadata, isChartMetadata } from '@/types'
 
 interface ChartArtifactProps {
   title: string
   content: string
-  metadata?: {
-    chartType?: 'line' | 'bar' | 'pie' | 'area' | 'scatter' | 'radar'
-    [key: string]: any
-  }
+  metadata?: ChartMetadata | Record<string, any>
 }
 
 interface ChartData {

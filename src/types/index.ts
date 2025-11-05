@@ -61,12 +61,69 @@ export interface Artifact {
     title: string
     content: string
     language?: string | null
-    metadata?: Record<string, any>
+    metadata?: ChartMetadata | Record<string, any>
     version?: number
     isPinned?: boolean
     isPublished?: boolean
     createdAt?: Date
     updatedAt?: Date
+}
+
+// Chart-specific metadata types
+export type ChartType = 'line' | 'bar' | 'pie' | 'area' | 'scatter' | 'radar'
+
+export interface ChartDataPoint {
+    [key: string]: string | number | Date
+}
+
+export interface ChartMetadata {
+    chartType: ChartType
+    data: ChartDataPoint[]
+    xAxisKey: string
+    yAxisKey: string | string[]
+    title?: string
+    description?: string
+    xAxisLabel?: string
+    yAxisLabel?: string
+    colors?: string[]
+    showLegend?: boolean
+    showGrid?: boolean
+    showTooltip?: boolean
+    width?: number
+    height?: number
+}
+
+// Type guard to check if metadata is ChartMetadata
+export function isChartMetadata(metadata: any): metadata is ChartMetadata {
+    return !!(
+        metadata &&
+        typeof metadata === 'object' &&
+        'chartType' in metadata &&
+        'data' in metadata &&
+        'xAxisKey' in metadata &&
+        'yAxisKey' in metadata &&
+        Array.isArray(metadata.data)
+    )
+}
+
+// Helper to create chart metadata
+export function createChartMetadata(
+    chartType: ChartType,
+    data: ChartDataPoint[],
+    xAxisKey: string,
+    yAxisKey: string | string[],
+    options?: Partial<Omit<ChartMetadata, 'chartType' | 'data' | 'xAxisKey' | 'yAxisKey'>>
+): ChartMetadata {
+    return {
+        chartType,
+        data,
+        xAxisKey,
+        yAxisKey,
+        showLegend: true,
+        showGrid: true,
+        showTooltip: true,
+        ...options,
+    }
 }
 
 // 会话参与者类型
