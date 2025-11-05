@@ -5,6 +5,7 @@ import { Message, Artifact, TypingAgent } from '@/types'
 import { useTranslation } from '@/contexts/AppContext'
 import AgentTypingIndicator from './AgentTypingIndicator'
 import ArtifactMiniPreview from '../artifact/ArtifactMiniPreview'
+import SafeMarkdown from './SafeMarkdown'
 
 interface MessageListProps {
     messages: Message[]
@@ -63,27 +64,6 @@ const MessageItem: React.FC<{
     }
 
     const renderMessageContent = (content: string) => {
-        // Enhanced markdown support for AI responses
-        const processMarkdown = (text: string) => {
-            // Bold text
-            text = text.replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold">$1</strong>')
-            text = text.replace(/\*(.*?)\*/g, '<em class="italic">$1</em>')
-
-            // Code blocks with syntax highlighting style
-            text = text.replace(/```([\s\S]*?)```/g, '<pre class="bg-slate-900 dark:bg-slate-950 text-slate-100 p-4 rounded-xl overflow-x-auto text-sm font-mono my-3 border border-slate-700"><code>$1</code></pre>')
-            text = text.replace(/`([^`]+)`/g, '<code class="bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 px-2 py-1 rounded-md text-sm font-mono">$1</code>')
-
-            // Lists with better styling
-            text = text.replace(/^\d+\.\s+(.+)$/gm, '<li class="ml-4 mb-1">$1</li>')
-            text = text.replace(/^[-*]\s+(.+)$/gm, '<li class="ml-4 mb-1">$1</li>')
-            text = text.replace(/(<li.*?<\/li>)/g, '<ul class="list-disc pl-4 space-y-1 my-2">$1</ul>')
-
-            // Line breaks
-            text = text.replace(/\n/g, '<br />')
-
-            return text
-        }
-
         const isUser = message.senderType === 'user'
 
         if (isUser) {
@@ -95,17 +75,8 @@ const MessageItem: React.FC<{
                 </React.Fragment>
             ))
         } else {
-            // Enhanced markdown for AI responses
-            const processedContent = processMarkdown(content)
-            return (
-                <div
-                    className="prose prose-sm max-w-none dark:prose-invert prose-pre:bg-slate-900 prose-pre:text-slate-100 
-                              prose-p:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-1 
-                              prose-headings:my-2 prose-h1:my-2 prose-h2:my-2 prose-h3:my-2 
-                              prose-h4:my-1 prose-h5:my-1 prose-h6:my-1"
-                    dangerouslySetInnerHTML={{ __html: processedContent }}
-                />
-            )
+            // Safe markdown rendering for AI responses
+            return <SafeMarkdown content={content} />
         }
     }
 

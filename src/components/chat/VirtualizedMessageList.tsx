@@ -6,6 +6,7 @@ import { Message, Artifact, TypingAgent } from '@/types'
 import { useTranslation } from '@/contexts/AppContext'
 import AgentTypingIndicator from './AgentTypingIndicator'
 import ArtifactMiniPreview from '../artifact/ArtifactMiniPreview'
+import SafeMarkdown from './SafeMarkdown'
 
 interface VirtualizedMessageListProps {
     messages: Message[]
@@ -84,23 +85,8 @@ const VirtualizedMessageList: React.FC<VirtualizedMessageListProps> = ({
             ))
         }
 
-        // Simple markdown processing for AI messages
-        const processMarkdown = (text: string) => {
-            text = text.replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold">$1</strong>')
-            text = text.replace(/\*(.*?)\*/g, '<em class="italic">$1</em>')
-            text = text.replace(/```([\s\S]*?)```/g, '<pre class="bg-slate-900 dark:bg-slate-950 text-slate-100 p-4 rounded-xl overflow-x-auto text-sm font-mono my-3 border border-slate-700"><code>$1</code></pre>')
-            text = text.replace(/`([^`]+)`/g, '<code class="bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 px-2 py-1 rounded-md text-sm font-mono">$1</code>')
-            text = text.replace(/\n/g, '<br />')
-            return text
-        }
-
-        const processedContent = processMarkdown(content)
-        return (
-            <div
-                className="prose prose-sm max-w-none dark:prose-invert"
-                dangerouslySetInnerHTML={{ __html: processedContent }}
-            />
-        )
+        // Safe markdown rendering for AI messages
+        return <SafeMarkdown content={content} />
     }
 
     // Get row height
