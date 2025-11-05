@@ -49,8 +49,7 @@ export async function POST(req: NextRequest) {
     await prisma.swarmChatSessionParticipant.create({
       data: {
         sessionId: session.id,
-        participantId: userId,
-        participantType: 'USER',
+        userId: userId,
         role: 'OWNER',
       },
     });
@@ -83,9 +82,8 @@ export async function POST(req: NextRequest) {
       await prisma.swarmChatSessionParticipant.createMany({
         data: agents.map(agent => ({
           sessionId: session.id,
-          participantId: agent.id,
-          participantType: 'AGENT' as const,
-          role: 'MEMBER' as const,
+          agentId: agent.id,
+          role: 'PARTICIPANT' as const,
         })),
       });
 
@@ -196,20 +194,19 @@ export async function PUT(req: NextRequest) {
       const existingParticipants = await prisma.swarmChatSessionParticipant.findMany({
         where: {
           sessionId,
-          participantId: { in: agentIds },
+          agentId: { in: agentIds },
         },
       });
 
-      const existingIds = existingParticipants.map(p => p.participantId);
+      const existingIds = existingParticipants.map(p => p.agentId).filter(Boolean) as string[];
       const newAgentIds = agentIds.filter((id: string) => !existingIds.includes(id));
 
       if (newAgentIds.length > 0) {
         await prisma.swarmChatSessionParticipant.createMany({
           data: newAgentIds.map((id: string) => ({
             sessionId,
-            participantId: id,
-            participantType: 'AGENT' as const,
-            role: 'MEMBER' as const,
+            agentId: id,
+            role: 'PARTICIPANT' as const,
           })),
         });
 
@@ -236,8 +233,7 @@ export async function PUT(req: NextRequest) {
       await prisma.swarmChatSessionParticipant.deleteMany({
         where: {
           sessionId,
-          participantId: { in: agentIds },
-          participantType: 'AGENT',
+          agentId: { in: agentIds },
         },
       });
 
@@ -258,10 +254,10 @@ export async function PUT(req: NextRequest) {
       });
     } else if (action === 'update') {
       // 更新群聊基本信息
-      const updateData: any = {};
+      const updateData: { title?: string; description?: string; status?: 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'ARCHIVED' } = {};
       if (title) updateData.title = title;
       if (description !== undefined) updateData.description = description;
-      if (status) updateData.status = status;
+      if (status) updateData.status = status as 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'ARCHIVED';
 
       const updatedSession = await prisma.swarmChatSession.update({
         where: { id: sessionId },

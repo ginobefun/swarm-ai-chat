@@ -2,7 +2,7 @@
  * Multi-Agent Orchestrator Tests
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import {
   createOrchestrator,
   createAgentConfig,

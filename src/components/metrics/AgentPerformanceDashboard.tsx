@@ -5,11 +5,6 @@ import { motion } from 'framer-motion'
 import {
   BarChart,
   Bar,
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -17,7 +12,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts'
-import { TrendingUp, TrendingDown, Minus, Activity, Clock, DollarSign, CheckCircle, XCircle } from 'lucide-react'
+import { Activity, Clock, DollarSign, CheckCircle } from 'lucide-react'
 import { AgentStats, AgentMetricsTracker } from '@/lib/metrics/agent-metrics'
 
 interface AgentPerformanceDashboardProps {
@@ -91,13 +86,13 @@ const AgentPerformanceDashboard: React.FC<AgentPerformanceDashboardProps> = ({
     return `$${cost.toFixed(4)}`
   }
 
-  // Get trend icon
-  const getTrendIcon = (current: number, previous: number) => {
-    const diff = current - previous
-    if (diff > 5) return <TrendingUp className="w-4 h-4 text-green-500" />
-    if (diff < -5) return <TrendingDown className="w-4 h-4 text-red-500" />
-    return <Minus className="w-4 h-4 text-gray-400" />
-  }
+  // Get trend icon (disabled for now)
+  // const getTrendIcon = (current: number, previous: number) => {
+  //   const diff = current - previous
+  //   if (diff > 5) return <TrendingUp className="w-4 h-4 text-green-500" />
+  //   if (diff < -5) return <TrendingDown className="w-4 h-4 text-red-500" />
+  //   return <Minus className="w-4 h-4 text-gray-400" />
+  // }
 
   if (loading && stats.length === 0) {
     return (

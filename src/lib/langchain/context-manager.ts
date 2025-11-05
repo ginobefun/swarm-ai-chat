@@ -8,7 +8,7 @@
  * - Key message identification
  */
 
-import { BaseMessage, HumanMessage, AIMessage, SystemMessage } from '@langchain/core/messages'
+import { BaseMessage, SystemMessage } from '@langchain/core/messages'
 import { Tiktoken, encodingForModel } from 'js-tiktoken'
 
 export interface MessageImportance {
@@ -375,13 +375,11 @@ export class ContextManager {
    */
   markAsImportant(message: BaseMessage): BaseMessage {
     // Add metadata to indicate importance
-    return {
-      ...message,
-      additional_kwargs: {
-        ...message.additional_kwargs,
-        important: true,
-      },
+    message.additional_kwargs = {
+      ...message.additional_kwargs,
+      important: true,
     }
+    return message
   }
 
   /**

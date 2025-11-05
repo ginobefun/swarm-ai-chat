@@ -412,44 +412,37 @@ const PREDEFINED_AGENTS = [
 
 /**
  * 预定义技能标签
+ * Category options: CORE, TOOL, DOMAIN (based on Prisma schema)
  */
 const PREDEFINED_SKILLS = [
-  // 产品类
-  { id: 'product-design', name: '产品设计', category: 'PRODUCT', color: '#3B82F6' },
-  { id: 'user-research', name: '用户研究', category: 'PRODUCT', color: '#8B5CF6' },
-  { id: 'requirement-analysis', name: '需求分析', category: 'PRODUCT', color: '#6366F1' },
-  { id: 'prd-writing', name: 'PRD撰写', category: 'PRODUCT', color: '#3B82F6' },
+  // Core skills - 核心技能
+  { id: 'product-design', name: '产品设计', category: 'CORE', color: '#3B82F6' },
+  { id: 'user-research', name: '用户研究', category: 'CORE', color: '#8B5CF6' },
+  { id: 'requirement-analysis', name: '需求分析', category: 'CORE', color: '#6366F1' },
+  { id: 'prd-writing', name: 'PRD撰写', category: 'CORE', color: '#3B82F6' },
+  { id: 'critical-thinking', name: '批判性思维', category: 'CORE', color: '#8B5CF6' },
+  { id: 'risk-assessment', name: '风险评估', category: 'CORE', color: '#A855F7' },
 
-  // 营销类
-  { id: 'marketing-strategy', name: '营销策略', category: 'MARKETING', color: '#EC4899' },
-  { id: 'content-marketing', name: '内容营销', category: 'MARKETING', color: '#F43F5E' },
-  { id: 'brand-building', name: '品牌建设', category: 'MARKETING', color: '#DB2777' },
-  { id: 'growth-hacking', name: '增长黑客', category: 'MARKETING', color: '#E11D48' },
+  // Domain skills - 领域技能
+  { id: 'marketing-strategy', name: '营销策略', category: 'DOMAIN', color: '#EC4899' },
+  { id: 'content-marketing', name: '内容营销', category: 'DOMAIN', color: '#F43F5E' },
+  { id: 'brand-building', name: '品牌建设', category: 'DOMAIN', color: '#DB2777' },
+  { id: 'growth-hacking', name: '增长黑客', category: 'DOMAIN', color: '#E11D48' },
+  { id: 'copywriting', name: '文案撰写', category: 'DOMAIN', color: '#F59E0B' },
+  { id: 'storytelling', name: '故事讲述', category: 'DOMAIN', color: '#F97316' },
+  { id: 'content-creation', name: '内容创作', category: 'DOMAIN', color: '#EF4444' },
+  { id: 'business-strategy', name: '商业战略', category: 'DOMAIN', color: '#6366F1' },
 
-  // 技术类
-  { id: 'system-architecture', name: '系统架构', category: 'TECHNICAL', color: '#10B981' },
-  { id: 'fullstack-dev', name: '全栈开发', category: 'TECHNICAL', color: '#059669' },
-  { id: 'data-analysis', name: '数据分析', category: 'TECHNICAL', color: '#14B8A6' },
-  { id: 'machine-learning', name: '机器学习', category: 'TECHNICAL', color: '#06B6D4' },
-
-  // 创意类
-  { id: 'copywriting', name: '文案撰写', category: 'CREATIVE', color: '#F59E0B' },
-  { id: 'storytelling', name: '故事讲述', category: 'CREATIVE', color: '#F97316' },
-  { id: 'content-creation', name: '内容创作', category: 'CREATIVE', color: '#EF4444' },
-
-  // 战略类
-  { id: 'business-strategy', name: '商业战略', category: 'STRATEGIC', color: '#6366F1' },
-  { id: 'critical-thinking', name: '批判性思维', category: 'STRATEGIC', color: '#8B5CF6' },
-  { id: 'risk-assessment', name: '风险评估', category: 'STRATEGIC', color: '#A855F7' },
-
-  // 设计类
-  { id: 'ux-design', name: 'UX设计', category: 'DESIGN', color: '#EC4899' },
-  { id: 'ui-design', name: 'UI设计', category: 'DESIGN', color: '#F43F5E' },
-  { id: 'interaction-design', name: '交互设计', category: 'DESIGN', color: '#DB2777' },
-
-  // 通用类
-  { id: 'communication', name: '沟通协作', category: 'SOFT_SKILL', color: '#64748B' },
-  { id: 'facilitation', name: '引导协调', category: 'SOFT_SKILL', color: '#475569' },
+  // Tool skills - 工具技能
+  { id: 'system-architecture', name: '系统架构', category: 'TOOL', color: '#10B981' },
+  { id: 'fullstack-dev', name: '全栈开发', category: 'TOOL', color: '#059669' },
+  { id: 'data-analysis', name: '数据分析', category: 'TOOL', color: '#14B8A6' },
+  { id: 'machine-learning', name: '机器学习', category: 'TOOL', color: '#06B6D4' },
+  { id: 'ux-design', name: 'UX设计', category: 'TOOL', color: '#EC4899' },
+  { id: 'ui-design', name: 'UI设计', category: 'TOOL', color: '#F43F5E' },
+  { id: 'interaction-design', name: '交互设计', category: 'TOOL', color: '#DB2777' },
+  { id: 'communication', name: '沟通协作', category: 'CORE', color: '#64748B' },
+  { id: 'facilitation', name: '引导协调', category: 'CORE', color: '#475569' },
 ];
 
 /**
@@ -546,8 +539,17 @@ async function seedAgents() {
     for (const skill of PREDEFINED_SKILLS) {
       await prisma.swarmSkillTag.upsert({
         where: { id: skill.id },
-        update: skill,
-        create: skill,
+        update: {
+          name: skill.name,
+          category: skill.category as 'CORE' | 'TOOL' | 'DOMAIN',
+          color: skill.color,
+        },
+        create: {
+          id: skill.id,
+          name: skill.name,
+          category: skill.category as 'CORE' | 'TOOL' | 'DOMAIN',
+          color: skill.color,
+        },
       });
     }
     console.log(`✅ 成功创建 ${PREDEFINED_SKILLS.length} 个技能标签\n`);

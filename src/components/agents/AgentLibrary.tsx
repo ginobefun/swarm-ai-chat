@@ -7,12 +7,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Search, Users, Sparkles, Filter } from 'lucide-react';
+import { Search, Users, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface Agent {
   id: string;
@@ -49,7 +48,6 @@ interface AgentLibraryProps {
 export function AgentLibrary({
   onSelectAgent,
   selectedAgentIds = [],
-  multiSelect = false,
 }: AgentLibraryProps) {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [filteredAgents, setFilteredAgents] = useState<Agent[]>([]);

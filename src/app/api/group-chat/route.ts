@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
 
     // Get participating agents
     const participatingAgents = session.participants
-      .filter(p => p.participantType === 'AGENT' && p.agent)
+      .filter(p => p.agentId && p.agent)
       .map(p => p.agent!);
 
     if (participatingAgents.length === 0) {
@@ -146,7 +146,7 @@ export async function POST(req: NextRequest) {
     orchestrator.loadHistory(optimizedContext.messages);
 
     // Save user message to database
-    const userMessageRecord = await prisma.swarmChatMessage.create({
+    await prisma.swarmChatMessage.create({
       data: {
         sessionId,
         senderId: userId,
@@ -275,7 +275,7 @@ export async function POST(req: NextRequest) {
                 data: {
                   messageId: savedMessage.id,
                   sessionId,
-                  type: artifact.type.toUpperCase() as any, // Convert to enum
+                  type: artifact.type.toUpperCase() as 'DOCUMENT' | 'CODE' | 'MARKDOWN' | 'HTML' | 'SVG' | 'CHART' | 'IMAGE' | 'MERMAID' | 'REACT', // Convert to enum
                   title: artifact.title,
                   content: artifact.content,
                   language: artifact.language,
@@ -390,13 +390,12 @@ export async function GET(req: NextRequest) {
             },
           },
         },
-        createdBy: {
-          select: {
-            id: true,
-            username: true,
-            email: true,
-          },
+      createdBy: {
+        select: {
+          id: true,
+          username: true,
         },
+      },
       },
     });
 
@@ -423,7 +422,7 @@ export async function GET(req: NextRequest) {
         },
         participants: session.participants.map(p => ({
           id: p.id,
-          type: p.participantType,
+          type: p.agentId ? 'AGENT' : 'USER',
           role: p.role,
           joinedAt: p.joinedAt,
           agent: p.agent,

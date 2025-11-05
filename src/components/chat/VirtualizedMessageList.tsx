@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useRef, useCallback, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { List, useDynamicRowHeight, useListRef } from 'react-window'
 import { Message, Artifact, TypingAgent } from '@/types'
 import { useTranslation } from '@/contexts/AppContext'
@@ -36,7 +36,6 @@ const VirtualizedMessageList: React.FC<VirtualizedMessageListProps> = ({
     messages,
     isTyping = false,
     typingUser = "AI 助手",
-    typingAvatar = "🤖",
     typingAgents = [],
     messageArtifacts = {},
     onViewArtifact,
@@ -130,7 +129,7 @@ const VirtualizedMessageList: React.FC<VirtualizedMessageListProps> = ({
                 const cleanup = rowHeight.observeRowElements([rowRef.current])
                 return cleanup
             }
-        }, [index, message, artifacts])
+        }, [index, message.id])
 
         return (
             <div ref={rowRef} style={style} {...ariaAttributes} className="px-4 py-2">
@@ -219,7 +218,7 @@ const VirtualizedMessageList: React.FC<VirtualizedMessageListProps> = ({
                 behavior: 'smooth'
             })
         }
-    }, [messages.length])
+    }, [listRef, messages.length])
 
     if (messages.length === 0 && !isTyping && typingAgents.length === 0) {
         return (

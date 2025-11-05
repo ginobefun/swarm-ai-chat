@@ -31,7 +31,7 @@ const SafeMarkdown: React.FC<SafeMarkdownProps> = React.memo(({ content, classNa
         rehypePlugins={[rehypeSanitize, rehypeHighlight]}
         components={{
         // Custom styling for code blocks
-        code: ({ node, className, children, ...props }) => {
+        code: ({ node: _node, className, children, ...props }) => {
           const match = /language-(\w+)/.exec(className || '')
           const isInline = !match
 
@@ -53,7 +53,7 @@ const SafeMarkdown: React.FC<SafeMarkdownProps> = React.memo(({ content, classNa
           )
         },
         // Custom styling for pre blocks
-        pre: ({ node, children, ...props }) => (
+        pre: ({ node: _node, children, ...props }) => (
           <pre
             className="bg-slate-900 dark:bg-slate-950 text-slate-100 p-4 rounded-xl overflow-x-auto text-sm font-mono my-3 border border-slate-700"
             {...props}
@@ -62,23 +62,23 @@ const SafeMarkdown: React.FC<SafeMarkdownProps> = React.memo(({ content, classNa
           </pre>
         ),
         // Custom styling for lists
-        ul: ({ node, children, ...props }) => (
+        ul: ({ node: _node, children, ...props }) => (
           <ul className="list-disc pl-4 space-y-1 my-2" {...props}>
             {children}
           </ul>
         ),
-        ol: ({ node, children, ...props }) => (
+        ol: ({ node: _node, children, ...props }) => (
           <ol className="list-decimal pl-4 space-y-1 my-2" {...props}>
             {children}
           </ol>
         ),
-        li: ({ node, children, ...props }) => (
+        li: ({ node: _node, children, ...props }) => (
           <li className="ml-4 mb-1" {...props}>
             {children}
           </li>
         ),
         // Custom styling for links
-        a: ({ node, children, ...props }) => (
+        a: ({ node: _node, children, ...props }) => (
           <a
             className="text-indigo-600 dark:text-indigo-400 hover:underline"
             target="_blank"
@@ -89,7 +89,7 @@ const SafeMarkdown: React.FC<SafeMarkdownProps> = React.memo(({ content, classNa
           </a>
         ),
         // Custom styling for blockquotes
-        blockquote: ({ node, children, ...props }) => (
+        blockquote: ({ node: _node, children, ...props }) => (
           <blockquote
             className="border-l-4 border-slate-300 dark:border-slate-600 pl-4 italic my-2"
             {...props}
@@ -98,7 +98,7 @@ const SafeMarkdown: React.FC<SafeMarkdownProps> = React.memo(({ content, classNa
           </blockquote>
         ),
         // Custom styling for tables
-        table: ({ node, children, ...props }) => (
+        table: ({ node: _node, children, ...props }) => (
           <div className="overflow-x-auto my-4">
             <table
               className="min-w-full divide-y divide-slate-200 dark:divide-slate-700"
@@ -108,7 +108,7 @@ const SafeMarkdown: React.FC<SafeMarkdownProps> = React.memo(({ content, classNa
             </table>
           </div>
         ),
-        th: ({ node, children, ...props }) => (
+        th: ({ node: _node, children, ...props }) => (
           <th
             className="px-4 py-2 bg-slate-100 dark:bg-slate-800 font-semibold text-left"
             {...props}
@@ -116,7 +116,7 @@ const SafeMarkdown: React.FC<SafeMarkdownProps> = React.memo(({ content, classNa
             {children}
           </th>
         ),
-        td: ({ node, children, ...props }) => (
+        td: ({ node: _node, children, ...props }) => (
           <td className="px-4 py-2 border-t border-slate-200 dark:border-slate-700" {...props}>
             {children}
           </td>

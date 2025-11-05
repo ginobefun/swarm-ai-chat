@@ -14,9 +14,7 @@
 import { ChatOpenAI } from "@langchain/openai";
 import { HumanMessage, AIMessage, BaseMessage, SystemMessage } from "@langchain/core/messages";
 import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts";
-import { RunnableSequence } from "@langchain/core/runnables";
 import { StringOutputParser } from "@langchain/core/output_parsers";
-import { z } from "zod";
 import { getArtifactInstructions } from "@/lib/artifact/parser";
 
 // ==================== Type Definitions ====================
@@ -497,7 +495,7 @@ export class MultiAgentOrchestrator {
    */
   async processMessage(
     userMessage: string,
-    userId: string = 'user',
+    _userId: string = 'user',
     streamCallback?: (agentId: string, agentName: string, chunk: string) => void
   ): Promise<AgentResponse[]> {
     // Add user message to state

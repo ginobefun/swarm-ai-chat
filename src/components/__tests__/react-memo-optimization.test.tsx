@@ -26,7 +26,7 @@ import AgentTypingIndicator from '../chat/AgentTypingIndicator'
 describe('React.memo Optimization Tests', () => {
   describe('SafeMarkdown Component', () => {
     it('should not re-render when parent re-renders with same props', () => {
-      let renderCount = 0
+      const _renderCount = 0
 
       const TestWrapper = ({ content }: { content: string }) => {
         return <SafeMarkdown content={content} />

@@ -4,7 +4,7 @@ import type {
     SwarmAIAgent,
     SwarmUser
 } from '@prisma/client'
-import type { Session as FrontendSession, SessionParticipant } from '@/types'
+import type { Session as FrontendSession, SessionParticipant, SessionConfiguration } from '@/types'
 
 // 定义数据库查询的扩展类型
 export type SessionWithIncludes = SwarmChatSession & {
@@ -72,7 +72,7 @@ export function convertPrismaSessionToSession(session: SessionWithIncludes): Fro
         status: session.status as 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'ARCHIVED', // 保持大写枚举
         createdById: session.createdById,
         primaryAgentId: session.primaryAgentId,
-        configuration: session.configuration,
+        configuration: session.configuration as SessionConfiguration | undefined,
         isPublic: session.isPublic,
         isTemplate: session.isTemplate,
         messageCount: session.messageCount,

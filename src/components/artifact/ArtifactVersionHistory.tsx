@@ -6,8 +6,6 @@ import { Clock, GitBranch, ChevronDown, ChevronRight, Eye, RotateCcw } from 'luc
 import { Artifact } from '@/types'
 import {
   ArtifactVersion,
-  ArtifactDiff,
-  generateDiff,
   groupVersionsByTime,
   formatVersionNumber,
   generateVersionSummary,

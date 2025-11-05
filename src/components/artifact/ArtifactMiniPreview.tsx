@@ -51,7 +51,7 @@ const ArtifactMiniPreview: React.FC<ArtifactMiniPreviewProps> = ({
     }
 
     // Get artifact color based on type
-    const getArtifactColor = (type: string) => {
+    const getArtifactColor = (_type: string) => {
         const colors: Record<string, string> = {
             CODE: 'from-blue-500 to-blue-600',
             DOCUMENT: 'from-slate-500 to-slate-600',

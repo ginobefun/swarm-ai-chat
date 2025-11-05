@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Artifact } from '@/types'
-import { api, APIError } from '@/lib/api-client'
+import { api } from '@/lib/api-client'
 
 interface UseArtifactsOptions {
   sessionId?: string

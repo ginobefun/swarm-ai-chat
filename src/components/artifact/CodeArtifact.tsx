@@ -1,7 +1,8 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Button } from '@/components/ui/button'
+// Button component disabled for now
+// import { Button } from '@/components/ui/button'
 
 interface CodeArtifactProps {
   title: string

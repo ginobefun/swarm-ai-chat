@@ -46,7 +46,7 @@ export default function Home() {
     const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false) // Workspace panel visibility
 
     // Artifacts management for current session
-    const { artifacts, isLoading: artifactsLoading, togglePin } = useArtifacts({
+    const { artifacts, togglePin } = useArtifacts({
         sessionId: currentSession?.id,
         enabled: !!currentSession?.id
     })

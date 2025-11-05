@@ -20,7 +20,7 @@ const MermaidArtifact: React.FC<MermaidArtifactProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const [error, setError] = useState<string | null>(null)
-  const [isRendered, setIsRendered] = useState(false)
+    const [_isRendered, setIsRendered] = useState(false)
 
   useEffect(() => {
     const renderDiagram = async () => {

@@ -49,7 +49,7 @@ interface GroupChatParticipantsProps {
 }
 
 export function GroupChatParticipants({
-  sessionId,
+  sessionId: _sessionId,
   participants,
   onInviteAgent,
   onRemoveAgent,

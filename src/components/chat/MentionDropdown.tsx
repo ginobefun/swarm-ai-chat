@@ -152,7 +152,9 @@ const MentionDropdown: React.FC<MentionDropdownProps> = React.memo(({
                         return (
                             <div
                                 key={item.id}
-                                ref={el => itemRefs.current[index] = el}
+                                ref={el => {
+                                    itemRefs.current[index] = el
+                                }}
                                 className={`
                                     flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-all duration-150 text-sm rounded-lg
                                     ${isSelected
@@ -264,8 +266,10 @@ const MentionDropdown: React.FC<MentionDropdownProps> = React.memo(({
     if (!itemsEqual) return false
 
     // Compare mentionedIds array
-    if (prevProps.mentionedIds.length !== nextProps.mentionedIds.length) return false
-    if (!prevProps.mentionedIds.every((id, index) => id === nextProps.mentionedIds[index])) return false
+    const prevIds = prevProps.mentionedIds || []
+    const nextIds = nextProps.mentionedIds || []
+    if (prevIds.length !== nextIds.length) return false
+    if (!prevIds.every((id, index) => id === nextIds[index])) return false
 
     return true // Props are equal, skip re-render
 })

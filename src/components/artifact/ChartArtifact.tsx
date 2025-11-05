@@ -25,7 +25,7 @@ import {
   ResponsiveContainer,
   Cell,
 } from 'recharts'
-import { ChartMetadata, isChartMetadata } from '@/types'
+import { ChartMetadata } from '@/types'
 
 interface ChartArtifactProps {
   title: string
@@ -62,7 +62,7 @@ interface ChartData {
 const ChartArtifact: React.FC<ChartArtifactProps> = ({
   title,
   content,
-  metadata,
+  metadata: _metadata,
 }) => {
   const [error, setError] = useState<string | null>(null)
 

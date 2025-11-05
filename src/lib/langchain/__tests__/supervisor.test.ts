@@ -3,8 +3,8 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { SupervisorAgent, OrchestrationDecision } from '../orchestrator'
-import { BaseMessage, HumanMessage } from '@langchain/core/messages'
+import { SupervisorAgent } from '../orchestrator'
+import { BaseMessage } from '@langchain/core/messages'
 
 // Test helper to create agent configs
 const createMockAgent = (id: string, role: string, name: string) => ({
