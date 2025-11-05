@@ -1,8 +1,9 @@
 'use client'
 
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useMemo } from 'react'
 import { MentionItem } from '@/types'
 import { useTranslation } from '@/contexts/AppContext'
+import MentionDropdown from './MentionDropdown'
 
 interface MessageInputProps {
     onSendMessage: (message: string) => void
@@ -21,8 +22,28 @@ const MessageInput: React.FC<MessageInputProps> = ({
     const [inputValue, setInputValue] = useState('')
     const [showMentionPopup, setShowMentionPopup] = useState(false)
     const [filteredMentions, setFilteredMentions] = useState<MentionItem[]>([])
+    const [mentionQuery, setMentionQuery] = useState('')
     const textareaRef = useRef<HTMLTextAreaElement>(null)
-    const mentionPopupRef = useRef<HTMLDivElement>(null)
+
+    /**
+     * 提取当前输入中已提及的agent IDs
+     * 例如: "@张三 @李四" -> ['zhang-san-id', 'li-si-id']
+     */
+    const mentionedIds = useMemo(() => {
+        const mentionRegex = /@(\S+)/g
+        const matches = inputValue.matchAll(mentionRegex)
+        const ids: string[] = []
+
+        for (const match of matches) {
+            const mentionName = match[1]
+            const found = mentionItems.find(item => item.name === mentionName)
+            if (found) {
+                ids.push(found.id)
+            }
+        }
+
+        return ids
+    }, [inputValue, mentionItems])
 
     // 自动调整 textarea 高度
     const adjustTextareaHeight = () => {
@@ -43,6 +64,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
             const query = value.substring(atIndex + 1)
             if (!query.includes(' ')) {
                 setShowMentionPopup(true)
+                setMentionQuery(query)
 
                 // 过滤提及项
                 const filtered = mentionItems.filter(item =>
@@ -51,9 +73,11 @@ const MessageInput: React.FC<MessageInputProps> = ({
                 setFilteredMentions(filtered)
             } else {
                 setShowMentionPopup(false)
+                setMentionQuery('')
             }
         } else {
             setShowMentionPopup(false)
+            setMentionQuery('')
         }
     }
 
@@ -70,8 +94,15 @@ const MessageInput: React.FC<MessageInputProps> = ({
     const handleMentionButtonClick = () => {
         setInputValue(prev => prev + '@')
         setShowMentionPopup(true)
+        setMentionQuery('')
         setFilteredMentions(mentionItems)
         textareaRef.current?.focus()
+    }
+
+    // 关闭提及下拉框
+    const handleCloseMentionDropdown = () => {
+        setShowMentionPopup(false)
+        setMentionQuery('')
     }
 
     // 发送消息
@@ -81,6 +112,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
             onSendMessage(trimmedMessage)
             setInputValue('')
             setShowMentionPopup(false)
+            setMentionQuery('')
             if (textareaRef.current) {
                 textareaRef.current.style.height = 'auto'
             }
@@ -89,22 +121,38 @@ const MessageInput: React.FC<MessageInputProps> = ({
 
     // 处理键盘事件
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        // 如果mention下拉框打开，让它处理导航键
+        if (showMentionPopup) {
+            // Escape键关闭下拉框
+            if (e.key === 'Escape') {
+                e.preventDefault()
+                handleCloseMentionDropdown()
+            }
+            // 其他导航键（↑↓ Enter）由MentionDropdown处理
+            return
+        }
+
+        // 下拉框关闭时，Enter发送消息
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault()
             handleSendMessage()
         }
     }
 
-    // 点击外部关闭提及弹窗
+    // 点击textarea外部时关闭提及下拉框
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (
-                mentionPopupRef.current &&
-                !mentionPopupRef.current.contains(event.target as Node) &&
                 textareaRef.current &&
-                !textareaRef.current.contains(event.target as Node)
+                !textareaRef.current.contains(event.target as Node) &&
+                showMentionPopup
             ) {
-                setShowMentionPopup(false)
+                // 检查是否点击在MentionDropdown内，如果是则不关闭
+                // MentionDropdown内部的点击会触发onSelect或由组件自己处理
+                const target = event.target as HTMLElement
+                if (!target.closest('[role="listbox"]')) {
+                    handleCloseMentionDropdown()
+                }
             }
         }
 
@@ -112,7 +160,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
         return () => {
             document.removeEventListener('mousedown', handleClickOutside)
         }
-    }, [])
+    }, [showMentionPopup])
 
     // 自动调整高度
     useEffect(() => {
@@ -181,49 +229,15 @@ const MessageInput: React.FC<MessageInputProps> = ({
                     </div>
                 </div>
 
-                {/* @提及弹窗 - Responsive */}
-                {showMentionPopup && (
-                    <div
-                        ref={mentionPopupRef}
-                        className="absolute bottom-full left-8 sm:left-12 mb-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl shadow-xl max-h-60 overflow-y-auto min-w-56 sm:min-w-64 z-50 backdrop-blur-sm"
-                        style={{
-                            animation: 'slideUpFade 0.2s ease-out forwards'
-                        }}
-                    >
-                        <div className="p-2">
-                            <div className="text-xs font-medium text-slate-500 dark:text-slate-400 px-3 py-2">
-                                {t('chat.selectMember')}
-                            </div>
-                            {filteredMentions.map((mention) => (
-                                <div
-                                    key={mention.id}
-                                    className="flex items-center gap-3 px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer transition-colors duration-150 text-sm rounded-lg"
-                                    onClick={() => handleMentionSelect(mention)}
-                                >
-                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-sm text-white shadow-sm">
-                                        {mention.avatar}
-                                    </div>
-                                    <div className="flex-1">
-                                        <div className="font-medium text-slate-900 dark:text-slate-100">
-                                            {mention.name}
-                                        </div>
-                                        <div className="text-xs text-slate-500 dark:text-slate-400">
-                                            {mention.type === 'agent' ? t('chat.aiAgent') : t('chat.user')}
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                            {filteredMentions.length === 0 && (
-                                <div className="flex items-center gap-3 px-3 py-4 text-slate-500 dark:text-slate-400 text-sm">
-                                    <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-600 flex items-center justify-center text-slate-400">
-                                        ?
-                                    </div>
-                                    <span>{t('messages.noMatches')}</span>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
+                {/* @提及下拉框 - 带键盘导航和高亮已提及 */}
+                <MentionDropdown
+                    isOpen={showMentionPopup}
+                    items={filteredMentions}
+                    mentionedIds={mentionedIds}
+                    query={mentionQuery}
+                    onSelect={handleMentionSelect}
+                    onClose={handleCloseMentionDropdown}
+                />
             </div>
         </div>
     )
