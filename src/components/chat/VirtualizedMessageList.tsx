@@ -1,12 +1,15 @@
 'use client'
 
-import React, { useEffect, useRef, useCallback } from 'react'
-import { VariableSizeList as List } from 'react-window'
+import React, { useEffect, useRef, useCallback, useState } from 'react'
+import { VariableSizeList } from 'react-window'
 import { Message, Artifact, TypingAgent } from '@/types'
 import { useTranslation } from '@/contexts/AppContext'
 import AgentTypingIndicator from './AgentTypingIndicator'
 import ArtifactMiniPreview from '../artifact/ArtifactMiniPreview'
 import SafeMarkdown from './SafeMarkdown'
+
+// Type alias for convenience
+type List = VariableSizeList
 
 interface VirtualizedMessageListProps {
     messages: Message[]
@@ -16,7 +19,7 @@ interface VirtualizedMessageListProps {
     typingAgents?: TypingAgent[]
     messageArtifacts?: Record<string, Artifact[]>
     onViewArtifact?: (artifactId: string) => void
-    height?: number
+    height?: number | 'auto' // Support auto height for flex layouts
 }
 
 /**
@@ -40,11 +43,26 @@ const VirtualizedMessageList: React.FC<VirtualizedMessageListProps> = ({
     typingAgents = [],
     messageArtifacts = {},
     onViewArtifact,
-    height = 600
+    height = 'auto'
 }) => {
     const { t } = useTranslation()
     const listRef = useRef<List>(null)
+    const containerRef = useRef<HTMLDivElement>(null)
     const rowHeights = useRef<{ [key: number]: number }>({})
+    const [containerHeight, setContainerHeight] = useState<number>(600)
+
+    // Measure container height for auto mode
+    useEffect(() => {
+        if (height === 'auto' && containerRef.current) {
+            const resizeObserver = new ResizeObserver((entries) => {
+                for (const entry of entries) {
+                    setContainerHeight(entry.contentRect.height)
+                }
+            })
+            resizeObserver.observe(containerRef.current)
+            return () => resizeObserver.disconnect()
+        }
+    }, [height])
 
     // Helper function to check if two dates are on the same day
     const isSameDay = (date1: Date, date2: Date) => {
@@ -223,11 +241,13 @@ const VirtualizedMessageList: React.FC<VirtualizedMessageListProps> = ({
         )
     }
 
+    const actualHeight = height === 'auto' ? containerHeight : height
+
     return (
-        <div className="h-full flex flex-col">
+        <div ref={containerRef} className="h-full flex flex-col">
             <List
                 ref={listRef}
-                height={height}
+                height={actualHeight}
                 itemCount={messages.length}
                 itemSize={getRowHeight}
                 width="100%"

@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { Session } from '@/types'
 import { useSession } from '@/components/providers/AuthProvider'
 import { convertPrismaSessionToSession } from '@/utils/transformers'
+import { api, APIError } from '@/lib/api-client'
 
 export interface UseSessionManagerReturn {
     sessions: Session[]
@@ -42,30 +43,26 @@ export function useSessionManager(): UseSessionManagerReturn {
 
                 console.log('Loading sessions for user:', user.id)
 
-                // Fetch user's sessions from API
-                const response = await fetch('/api/sessions', {
-                    credentials: 'include', // Include cookies for authentication
-                })
+                // Fetch user's sessions from API using API client
+                try {
+                    const data = await api.sessions.list()
 
-                if (!response.ok) {
-                    if (response.status === 401) {
+                    if (data.success) {
+                        // 转换所有会话数据为前端格式
+                        const convertedSessions = (data.data || []).map(convertPrismaSessionToSession)
+                        setSessions(convertedSessions)
+                        console.log('Loaded sessions:', convertedSessions.length)
+                    } else {
+                        throw new Error(data.error || 'Failed to load sessions')
+                    }
+                } catch (apiError) {
+                    if (apiError instanceof APIError && apiError.status === 401) {
                         // User not authenticated, clear sessions
                         setSessions([])
                         setCurrentSession(null)
                         return
                     }
-                    throw new Error(`Failed to fetch sessions: ${response.status}`)
-                }
-
-                const data = await response.json()
-
-                if (data.success) {
-                    // 转换所有会话数据为前端格式
-                    const convertedSessions = (data.data || []).map(convertPrismaSessionToSession)
-                    setSessions(convertedSessions)
-                    console.log('Loaded sessions:', convertedSessions.length)
-                } else {
-                    throw new Error(data.error || 'Failed to load sessions')
+                    throw apiError
                 }
 
             } catch (err) {
@@ -92,24 +89,7 @@ export function useSessionManager(): UseSessionManagerReturn {
 
             console.log('Creating session:', sessionData)
 
-            const response = await fetch('/api/sessions', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                credentials: 'include', // Include cookies for authentication
-                body: JSON.stringify(sessionData)
-            })
-
-            if (!response.ok) {
-                if (response.status === 401) {
-                    throw new Error('User not authenticated')
-                }
-                const errorData = await response.json()
-                throw new Error(errorData.error || 'Failed to create session')
-            }
-
-            const data = await response.json()
+            const data = await api.sessions.create(sessionData)
 
             if (data.success) {
                 // 转换 Prisma 会话数据为前端格式
@@ -123,6 +103,9 @@ export function useSessionManager(): UseSessionManagerReturn {
 
         } catch (err) {
             console.error('Error creating session:', err)
+            if (err instanceof APIError && err.status === 401) {
+                throw new Error('User not authenticated')
+            }
             throw err
         }
     }
@@ -143,24 +126,7 @@ export function useSessionManager(): UseSessionManagerReturn {
 
             console.log('Updating session:', sessionId, updates)
 
-            const response = await fetch('/api/sessions', {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                credentials: 'include', // Include cookies for authentication
-                body: JSON.stringify({ id: sessionId, ...updates })
-            })
-
-            if (!response.ok) {
-                if (response.status === 401) {
-                    throw new Error('User not authenticated')
-                }
-                const errorData = await response.json()
-                throw new Error(errorData.error || 'Failed to update session')
-            }
-
-            const data = await response.json()
+            const data = await api.sessions.update(sessionId, { id: sessionId, ...updates })
 
             if (data.success) {
                 const updatedSession = convertPrismaSessionToSession(data.data)
@@ -178,6 +144,9 @@ export function useSessionManager(): UseSessionManagerReturn {
 
         } catch (err) {
             console.error('Error updating session:', err)
+            if (err instanceof APIError && err.status === 401) {
+                throw new Error('User not authenticated')
+            }
             throw err
         }
     }
@@ -190,20 +159,7 @@ export function useSessionManager(): UseSessionManagerReturn {
 
             console.log('Deleting session:', sessionId)
 
-            const response = await fetch(`/api/sessions?id=${sessionId}`, {
-                method: 'DELETE',
-                credentials: 'include', // Include cookies for authentication
-            })
-
-            if (!response.ok) {
-                if (response.status === 401) {
-                    throw new Error('User not authenticated')
-                }
-                const errorData = await response.json()
-                throw new Error(errorData.error || 'Failed to delete session')
-            }
-
-            const data = await response.json()
+            const data = await api.sessions.delete(sessionId)
 
             if (data.success) {
             setSessions(prev => prev.filter(session => session.id !== sessionId))
@@ -218,6 +174,9 @@ export function useSessionManager(): UseSessionManagerReturn {
 
         } catch (err) {
             console.error('Error deleting session:', err)
+            if (err instanceof APIError && err.status === 401) {
+                throw new Error('User not authenticated')
+            }
             throw err
         }
     }

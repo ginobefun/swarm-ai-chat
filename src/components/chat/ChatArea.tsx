@@ -2,7 +2,7 @@
 
 import React, { useEffect, useCallback, useState } from 'react'
 import { motion } from 'framer-motion'
-import MessageList from './MessageList'
+import VirtualizedMessageList from './VirtualizedMessageList'
 import MessageInput from './MessageInput'
 import { Session, Message } from '@/types'
 import { useTranslation } from '@/contexts/AppContext'
@@ -11,6 +11,7 @@ import ChatSettingsDialog from './ChatSettingsDialog'
 import { useSession } from '@/components/providers/AuthProvider'
 import { Button } from '@/components/ui/button'
 import { useChat } from '@ai-sdk/react'
+import { apiClient } from '@/lib/api-client'
 import {
     Plus,
     Settings
@@ -121,28 +122,25 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             if (!session?.id) return
 
             try {
-                const response = await fetch(`/api/sessions/${session.id}/messages`)
-                if (response.ok) {
-                    const responseData = await response.json()
+                const responseData = await apiClient.get(`/sessions/${session.id}/messages`)
 
-                    // Handle both direct array response and wrapped response
-                    const sessionMessages = responseData.data || responseData
+                // Handle both direct array response and wrapped response
+                const sessionMessages = responseData.data || responseData
 
-                    // Convert SwarmChatMessage format to AI SDK format
-                    const formattedMessages = sessionMessages.map((msg: {
-                        id: string
-                        senderType: string
-                        content: string
-                        createdAt: string
-                    }) => ({
-                        id: msg.id,
-                        role: msg.senderType === 'user' ? 'user' : 'assistant',
-                        content: msg.content,
-                        createdAt: new Date(msg.createdAt)
-                    }))
+                // Convert SwarmChatMessage format to AI SDK format
+                const formattedMessages = sessionMessages.map((msg: {
+                    id: string
+                    senderType: string
+                    content: string
+                    createdAt: string
+                }) => ({
+                    id: msg.id,
+                    role: msg.senderType === 'user' ? 'user' : 'assistant',
+                    content: msg.content,
+                    createdAt: new Date(msg.createdAt)
+                }))
 
-                    setMessages(formattedMessages)
-                }
+                setMessages(formattedMessages)
             } catch (error) {
                 console.error('Error loading session messages:', error)
             }
@@ -275,13 +273,14 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
             {/* Messages Container - Scrollable content area */}
             <div className="flex-1 flex flex-col min-h-0">
-                {/* Message List - Flexible content with proper scrolling */}
+                {/* Message List - Flexible content with proper scrolling and virtualization */}
                 <div className="flex-1 overflow-hidden">
-                    <MessageList
+                    <VirtualizedMessageList
                         messages={displayMessages}
                         isTyping={isLoading}
                         typingUser={getAgentName(session?.primaryAgentId || 'gemini-flash')}
                         typingAvatar={getAgentAvatar(session?.primaryAgentId || 'gemini-flash')}
+                        height="auto"
                     />
                 </div>
 

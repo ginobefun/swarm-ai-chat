@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Artifact } from '@/types'
+import { api, APIError } from '@/lib/api-client'
 
 interface UseArtifactsOptions {
   sessionId?: string
@@ -31,13 +32,7 @@ export function useArtifacts({ sessionId, enabled = true }: UseArtifactsOptions)
     setError(null)
 
     try {
-      const response = await fetch(`/api/artifacts?sessionId=${sessionId}`)
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch artifacts: ${response.statusText}`)
-      }
-
-      const data = await response.json()
+      const data = await api.artifacts.list(sessionId)
       setArtifacts(data.artifacts || [])
     } catch (err) {
       console.error('Error fetching artifacts:', err)
@@ -52,20 +47,10 @@ export function useArtifacts({ sessionId, enabled = true }: UseArtifactsOptions)
       const artifact = artifacts.find(a => a.id === artifactId)
       if (!artifact) return
 
-      const response = await fetch('/api/artifacts', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          artifactId,
-          isPinned: !artifact.isPinned,
-        }),
+      const data = await api.artifacts.update(artifactId, {
+        artifactId,
+        isPinned: !artifact.isPinned,
       })
-
-      if (!response.ok) {
-        throw new Error('Failed to update artifact')
-      }
-
-      const data = await response.json()
 
       // Update local state
       setArtifacts(prev =>
