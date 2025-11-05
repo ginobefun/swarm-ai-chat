@@ -1,17 +1,18 @@
 /**
- * 群聊多智能体协作 API
+ * Group Chat Multi-Agent API - Redesigned with new orchestrator
  *
  * POST /api/group-chat
- * - 处理用户消息
- * - 智能编排多个 Agent 的回复
- * - 支持流式响应
+ * - Process user messages in a group chat
+ * - Orchestrate multiple AI agents
+ * - Support streaming responses
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createMultiAgentOrchestrator, AgentConfig } from '@/lib/langchain/multi-agent-orchestrator';
+import { createOrchestrator, createAgentConfig, OrchestrationMode } from '@/lib/langchain/orchestrator';
+import { HumanMessage, AIMessage, SystemMessage } from '@langchain/core/messages';
 import { prisma } from '@/lib/database/prisma';
 
-// 流式响应编码器
+// Stream encoder
 const encoder = new TextEncoder();
 
 export async function POST(req: NextRequest) {
@@ -20,28 +21,29 @@ export async function POST(req: NextRequest) {
     const {
       sessionId,
       userId,
-      userName,
+      userName = 'User',
       message,
-      agentIds = [], // 参与的 Agent ID 列表
+      mode = 'dynamic', // orchestration mode: sequential | parallel | dynamic
     } = body;
 
+    // Validate required parameters
     if (!sessionId || !userId || !message) {
       return NextResponse.json(
-        { error: '缺少必要参数' },
+        { error: 'Missing required parameters: sessionId, userId, message' },
         { status: 400 }
       );
     }
 
-    // 获取 API 密钥
+    // Get API key
     const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
-        { error: 'OpenRouter API Key 未配置' },
+        { error: 'OpenRouter API Key not configured' },
         { status: 500 }
       );
     }
 
-    // 获取群聊会话信息
+    // Get session with participants
     const session = await prisma.swarmChatSession.findUnique({
       where: { id: sessionId },
       include: {
@@ -55,54 +57,82 @@ export async function POST(req: NextRequest) {
 
     if (!session) {
       return NextResponse.json(
-        { error: '会话不存在' },
+        { error: 'Session not found' },
         { status: 404 }
       );
     }
 
-    // 创建编排器
-    const orchestrator = createMultiAgentOrchestrator(
-      apiKey,
-      process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1'
-    );
-
-    // 注册参与的 Agent
+    // Get participating agents
     const participatingAgents = session.participants
       .filter(p => p.participantType === 'AGENT' && p.agent)
       .map(p => p.agent!);
 
-    for (const agent of participatingAgents) {
-      const config: AgentConfig = {
-        id: agent.id,
-        name: agent.name,
-        role: agent.specialty || agent.description || '',
-        systemPrompt: agent.systemPrompt || `你是${agent.name},${agent.description}`,
-        modelPreference: agent.modelPreference || undefined,
-        temperature: 0.7,
-      };
-      orchestrator.registerAgent(config);
+    if (participatingAgents.length === 0) {
+      return NextResponse.json(
+        { error: 'No agents in this session' },
+        { status: 400 }
+      );
     }
 
-    // 加载历史消息
+    // Create orchestrator
+    const orchestrationMode = mode === 'sequential' ? OrchestrationMode.SEQUENTIAL
+      : mode === 'parallel' ? OrchestrationMode.PARALLEL
+      : OrchestrationMode.DYNAMIC;
+
+    const orchestrator = createOrchestrator(
+      apiKey,
+      process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1',
+      orchestrationMode
+    );
+
+    // Initialize session
+    orchestrator.initSession(sessionId, {
+      title: session.title,
+      type: session.type,
+    });
+
+    // Register all participating agents
+    for (const agent of participatingAgents) {
+      const agentConfig = createAgentConfig(
+        agent.id,
+        agent.name,
+        agent.specialty || agent.description || 'AI Assistant',
+        agent.systemPrompt || `You are ${agent.name}, ${agent.description}`,
+        {
+          description: agent.description || '',
+          modelPreference: agent.modelPreference || undefined,
+          temperature: 0.7,
+          maxTokens: 2000,
+          capabilities: agent.tags || [],
+        }
+      );
+      orchestrator.registerAgent(agentConfig);
+    }
+
+    // Load conversation history
     const historyMessages = await prisma.swarmChatMessage.findMany({
       where: { sessionId },
       orderBy: { createdAt: 'asc' },
-      take: 50,
+      take: 50, // Limit to last 50 messages
     });
 
-    for (const msg of historyMessages) {
-      orchestrator.addMessage({
-        id: msg.id,
-        senderId: msg.senderId,
-        senderType: msg.senderType as 'USER' | 'AGENT' | 'SYSTEM',
-        senderName: msg.senderType === 'USER' ? 'User' : msg.senderId, // TODO: 获取实际名称
-        content: msg.content,
-        timestamp: msg.createdAt,
-      });
-    }
+    // Convert to LangChain messages
+    const langchainMessages = historyMessages.map(msg => {
+      const content = `[${msg.senderType === 'USER' ? userName : msg.senderId}]: ${msg.content}`;
 
-    // 保存用户消息到数据库
-    const userMessage = await prisma.swarmChatMessage.create({
+      if (msg.senderType === 'USER') {
+        return new HumanMessage(content);
+      } else if (msg.senderType === 'AGENT') {
+        return new AIMessage(content);
+      } else {
+        return new SystemMessage(content);
+      }
+    });
+
+    orchestrator.loadHistory(langchainMessages);
+
+    // Save user message to database
+    const userMessageRecord = await prisma.swarmChatMessage.create({
       data: {
         sessionId,
         senderId: userId,
@@ -113,17 +143,42 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // 创建流式响应
+    // Create streaming response
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          // 处理用户消息并获取 Agent 回复
-          const responses = await orchestrator.processUserMessage(
-            userId,
-            userName,
+          // Track responses for database storage
+          const agentResponses: Array<{
+            agentId: string;
+            agentName: string;
+            content: string;
+          }> = [];
+
+          let currentAgentContent = '';
+          let currentAgentId = '';
+          let currentAgentName = '';
+
+          // Process message with orchestrator
+          const responses = await orchestrator.processMessage(
             message,
+            userId,
             (agentId, agentName, chunk) => {
-              // 流式发送 Agent 的回复片段
+              // If new agent, save previous agent's response
+              if (currentAgentId && currentAgentId !== agentId) {
+                agentResponses.push({
+                  agentId: currentAgentId,
+                  agentName: currentAgentName,
+                  content: currentAgentContent,
+                });
+                currentAgentContent = '';
+              }
+
+              // Update current agent
+              currentAgentId = agentId;
+              currentAgentName = agentName;
+              currentAgentContent += chunk;
+
+              // Stream chunk to client
               const data = {
                 type: 'chunk',
                 agentId,
@@ -134,50 +189,81 @@ export async function POST(req: NextRequest) {
             }
           );
 
-          // 保存 Agent 回复到数据库
-          for (const response of responses) {
-            const agent = participatingAgents.find(a => a.id === response.senderId);
+          // Save last agent's response
+          if (currentAgentId && currentAgentContent) {
+            agentResponses.push({
+              agentId: currentAgentId,
+              agentName: currentAgentName,
+              content: currentAgentContent,
+            });
+          }
 
-            await prisma.swarmChatMessage.create({
+          // If no streaming was used, use the responses directly
+          if (agentResponses.length === 0 && responses.length > 0) {
+            agentResponses.push(...responses.map(r => ({
+              agentId: r.agentId,
+              agentName: r.agentName,
+              content: r.content,
+            })));
+          }
+
+          // Save agent responses to database
+          const savedMessages = [];
+          for (const response of agentResponses) {
+            const savedMessage = await prisma.swarmChatMessage.create({
               data: {
                 sessionId,
-                senderId: response.senderId,
+                senderId: response.agentId,
                 senderType: 'AGENT',
                 content: response.content,
                 contentType: 'TEXT',
                 status: 'SENT',
-                // TODO: 计算 token 数量和成本
+                // TODO: Calculate token count and cost
+                tokenCount: 0,
+                cost: 0,
               },
             });
 
-            // 发送完成事件
+            savedMessages.push(savedMessage);
+
+            // Send completion event
             const completeData = {
               type: 'complete',
-              agentId: response.senderId,
-              agentName: agent?.name || response.senderId,
+              agentId: response.agentId,
+              agentName: response.agentName,
               content: response.content,
-              messageId: response.id,
+              messageId: savedMessage.id,
             };
             controller.enqueue(encoder.encode(`data: ${JSON.stringify(completeData)}\n\n`));
           }
 
-          // 更新会话统计
+          // Update session statistics
           await prisma.swarmChatSession.update({
             where: { id: sessionId },
             data: {
-              messageCount: { increment: 1 + responses.length },
+              messageCount: { increment: 1 + savedMessages.length },
               updatedAt: new Date(),
             },
           });
 
-          // 发送结束标记
+          // Send metadata
+          const metadataData = {
+            type: 'metadata',
+            orchestrationMode: mode,
+            agentsInvolved: agentResponses.length,
+            state: orchestrator.getState(),
+          };
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(metadataData)}\n\n`));
+
+          // Send done event
           controller.enqueue(encoder.encode('data: [DONE]\n\n'));
           controller.close();
         } catch (error) {
-          console.error('群聊处理错误:', error);
+          console.error('Group chat processing error:', error);
+
           const errorData = {
             type: 'error',
-            error: error instanceof Error ? error.message : '未知错误',
+            error: error instanceof Error ? error.message : 'Unknown error',
           };
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(errorData)}\n\n`));
           controller.close();
@@ -193,9 +279,11 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('群聊 API 错误:', error);
+    console.error('Group chat API error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : '服务器内部错误' },
+      {
+        error: error instanceof Error ? error.message : 'Internal server error',
+      },
       { status: 500 }
     );
   }
@@ -203,7 +291,7 @@ export async function POST(req: NextRequest) {
 
 /**
  * GET /api/group-chat?sessionId=xxx
- * 获取群聊的参与者和配置信息
+ * Get group chat session information
  */
 export async function GET(req: NextRequest) {
   try {
@@ -212,7 +300,7 @@ export async function GET(req: NextRequest) {
 
     if (!sessionId) {
       return NextResponse.json(
-        { error: '缺少 sessionId 参数' },
+        { error: 'Missing sessionId parameter' },
         { status: 400 }
       );
     }
@@ -229,6 +317,7 @@ export async function GET(req: NextRequest) {
                 description: true,
                 avatar: true,
                 specialty: true,
+                tags: true,
               },
             },
           },
@@ -245,31 +334,40 @@ export async function GET(req: NextRequest) {
 
     if (!session) {
       return NextResponse.json(
-        { error: '会话不存在' },
+        { error: 'Session not found' },
         { status: 404 }
       );
     }
 
     return NextResponse.json({
-      session: {
-        id: session.id,
-        title: session.title,
-        description: session.description,
-        type: session.type,
-        status: session.status,
-        createdBy: session.createdBy,
+      success: true,
+      data: {
+        session: {
+          id: session.id,
+          title: session.title,
+          description: session.description,
+          type: session.type,
+          status: session.status,
+          messageCount: session.messageCount,
+          createdAt: session.createdAt,
+          updatedAt: session.updatedAt,
+          createdBy: session.createdBy,
+        },
+        participants: session.participants.map(p => ({
+          id: p.id,
+          type: p.participantType,
+          role: p.role,
+          joinedAt: p.joinedAt,
+          agent: p.agent,
+        })),
       },
-      participants: session.participants.map(p => ({
-        id: p.id,
-        type: p.participantType,
-        joinedAt: p.joinedAt,
-        agent: p.agent,
-      })),
     });
   } catch (error) {
-    console.error('获取群聊信息错误:', error);
+    console.error('Get group chat error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : '服务器内部错误' },
+      {
+        error: error instanceof Error ? error.message : 'Internal server error',
+      },
       { status: 500 }
     );
   }
