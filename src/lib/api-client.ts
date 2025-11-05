@@ -7,6 +7,7 @@
  * - Unified error handling
  * - Type-safe request/response
  * - Request interceptors
+ * - Rate limiting and concurrency control
  */
 
 export class APIError extends Error {
@@ -24,13 +25,32 @@ export interface RequestConfig extends RequestInit {
   retry?: number
   retryDelay?: number
   timeout?: number
+  skipQueue?: boolean  // Skip rate limiting for urgent requests
+}
+
+interface QueuedRequest<T> {
+  execute: () => Promise<T>
+  resolve: (value: T) => void
+  reject: (error: any) => void
 }
 
 export class APIClient {
   private baseURL: string
   private defaultConfig: RequestConfig
 
-  constructor(baseURL: string = '/api', config: RequestConfig = {}) {
+  // Rate limiting
+  private requestQueue: QueuedRequest<any>[] = []
+  private activeRequests: number = 0
+  private maxConcurrent: number = 5  // Max concurrent requests
+  private requestsPerSecond: number = 10  // Rate limit
+  private requestTimestamps: number[] = []  // Track request times for rate limiting
+  private processing: boolean = false
+
+  constructor(
+    baseURL: string = '/api',
+    config: RequestConfig = {},
+    options: { maxConcurrent?: number; requestsPerSecond?: number } = {}
+  ) {
     this.baseURL = baseURL
     this.defaultConfig = {
       retry: 3,
@@ -38,6 +58,8 @@ export class APIClient {
       timeout: 30000,
       ...config,
     }
+    this.maxConcurrent = options.maxConcurrent ?? 5
+    this.requestsPerSecond = options.requestsPerSecond ?? 10
   }
 
   /**
@@ -135,15 +157,129 @@ export class APIClient {
   }
 
   /**
+   * Check if we can make a request now based on rate limits
+   */
+  private canMakeRequest(): boolean {
+    // Check concurrent limit
+    if (this.activeRequests >= this.maxConcurrent) {
+      return false
+    }
+
+    // Check rate limit (requests per second)
+    const now = Date.now()
+    const oneSecondAgo = now - 1000
+
+    // Remove timestamps older than 1 second
+    this.requestTimestamps = this.requestTimestamps.filter(ts => ts > oneSecondAgo)
+
+    // Check if we've exceeded the rate limit
+    return this.requestTimestamps.length < this.requestsPerSecond
+  }
+
+  /**
+   * Record a request timestamp
+   */
+  private recordRequest(): void {
+    this.requestTimestamps.push(Date.now())
+    this.activeRequests++
+  }
+
+  /**
+   * Mark a request as complete
+   */
+  private completeRequest(): void {
+    this.activeRequests--
+    this.processQueue()
+  }
+
+  /**
+   * Process queued requests
+   */
+  private async processQueue(): Promise<void> {
+    if (this.processing || this.requestQueue.length === 0) {
+      return
+    }
+
+    this.processing = true
+
+    while (this.requestQueue.length > 0 && this.canMakeRequest()) {
+      const request = this.requestQueue.shift()
+      if (!request) break
+
+      this.recordRequest()
+
+      // Execute request asynchronously
+      request.execute()
+        .then(result => {
+          request.resolve(result)
+          this.completeRequest()
+        })
+        .catch(error => {
+          request.reject(error)
+          this.completeRequest()
+        })
+
+      // Small delay to prevent busy loop
+      await this.sleep(10)
+    }
+
+    this.processing = false
+
+    // Check if there are more requests to process
+    if (this.requestQueue.length > 0) {
+      // Schedule next processing cycle
+      setTimeout(() => this.processQueue(), 100)
+    }
+  }
+
+  /**
+   * Queue a request or execute immediately if rate limit allows
+   */
+  private async queueRequest<T>(execute: () => Promise<T>, skipQueue: boolean = false): Promise<T> {
+    // Skip queue for urgent requests
+    if (skipQueue) {
+      return execute()
+    }
+
+    // If we can make the request immediately, do so
+    if (this.canMakeRequest()) {
+      this.recordRequest()
+      try {
+        const result = await execute()
+        this.completeRequest()
+        return result
+      } catch (error) {
+        this.completeRequest()
+        throw error
+      }
+    }
+
+    // Otherwise, queue the request
+    return new Promise<T>((resolve, reject) => {
+      this.requestQueue.push({
+        execute,
+        resolve,
+        reject,
+      })
+
+      // Start processing if not already processing
+      this.processQueue()
+    })
+  }
+
+  /**
    * GET request
    */
   async get<T = any>(endpoint: string, config: RequestConfig = {}): Promise<T> {
     const url = `${this.baseURL}${endpoint}`
-    return this.requestWithRetry<T>(url, {
-      ...this.defaultConfig,
-      ...config,
-      method: 'GET',
-    })
+    return this.queueRequest(
+      () => this.requestWithRetry<T>(url, {
+        ...this.defaultConfig,
+        ...config,
+        method: 'GET',
+      }),
+      config.skipQueue
+    )
   }
 
   /**
@@ -155,16 +291,19 @@ export class APIClient {
     config: RequestConfig = {}
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`
-    return this.requestWithRetry<T>(url, {
-      ...this.defaultConfig,
-      ...config,
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...config.headers,
-      },
-      body: data ? JSON.stringify(data) : undefined,
-    })
+    return this.queueRequest(
+      () => this.requestWithRetry<T>(url, {
+        ...this.defaultConfig,
+        ...config,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...config.headers,
+        },
+        body: data ? JSON.stringify(data) : undefined,
+      }),
+      config.skipQueue
+    )
   }
 
   /**
@@ -176,16 +315,19 @@ export class APIClient {
     config: RequestConfig = {}
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`
-    return this.requestWithRetry<T>(url, {
-      ...this.defaultConfig,
-      ...config,
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        ...config.headers,
-      },
-      body: data ? JSON.stringify(data) : undefined,
-    })
+    return this.queueRequest(
+      () => this.requestWithRetry<T>(url, {
+        ...this.defaultConfig,
+        ...config,
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...config.headers,
+        },
+        body: data ? JSON.stringify(data) : undefined,
+      }),
+      config.skipQueue
+    )
   }
 
   /**
@@ -197,16 +339,19 @@ export class APIClient {
     config: RequestConfig = {}
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`
-    return this.requestWithRetry<T>(url, {
-      ...this.defaultConfig,
-      ...config,
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        ...config.headers,
-      },
-      body: data ? JSON.stringify(data) : undefined,
-    })
+    return this.queueRequest(
+      () => this.requestWithRetry<T>(url, {
+        ...this.defaultConfig,
+        ...config,
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...config.headers,
+        },
+        body: data ? JSON.stringify(data) : undefined,
+      }),
+      config.skipQueue
+    )
   }
 
   /**
@@ -214,11 +359,35 @@ export class APIClient {
    */
   async delete<T = any>(endpoint: string, config: RequestConfig = {}): Promise<T> {
     const url = `${this.baseURL}${endpoint}`
-    return this.requestWithRetry<T>(url, {
-      ...this.defaultConfig,
-      ...config,
-      method: 'DELETE',
-    })
+    return this.queueRequest(
+      () => this.requestWithRetry<T>(url, {
+        ...this.defaultConfig,
+        ...config,
+        method: 'DELETE',
+      }),
+      config.skipQueue
+    )
+  }
+
+  /**
+   * Get current queue statistics
+   */
+  getQueueStats() {
+    return {
+      queueLength: this.requestQueue.length,
+      activeRequests: this.activeRequests,
+      maxConcurrent: this.maxConcurrent,
+      requestsPerSecond: this.requestsPerSecond,
+      recentRequestCount: this.requestTimestamps.length,
+    }
+  }
+
+  /**
+   * Clear the request queue
+   * Useful for cleanup or when changing contexts
+   */
+  clearQueue() {
+    this.requestQueue = []
   }
 }
 
