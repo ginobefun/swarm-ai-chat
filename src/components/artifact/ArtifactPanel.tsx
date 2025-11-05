@@ -51,7 +51,7 @@ const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
 
     switch (artifact.type.toLowerCase()) {
       case 'code':
-        return <CodeArtifact {...commonProps} language={artifact.language} />
+        return <CodeArtifact {...commonProps} language={artifact.language ?? undefined} />
 
       case 'document':
       case 'markdown':
