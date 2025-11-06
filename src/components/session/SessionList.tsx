@@ -492,7 +492,7 @@ const SessionList: React.FC<SessionListProps> = (props) => {
                     Long search bar with icon-only create button
                     Height: Mobile 60px (py-3 + h-9 = 12px + 36px + 12px), Desktop 64px (py-3 + h-10 = 12px + 40px + 12px) - matches ChatArea header
                 */}
-                <div className="px-4 sm:px-6 py-3 border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+                <div className="px-4 sm:px-6 py-3 border-b border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
                     <div className="flex gap-2 items-center">
                         <div className="relative flex-1">
                             <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none">
@@ -505,7 +505,7 @@ const SessionList: React.FC<SessionListProps> = (props) => {
                                 placeholder={t('session.searchSessions')}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-9 sm:pl-11 h-9 sm:h-10 bg-slate-100 dark:bg-slate-800 border-transparent hover:bg-slate-200 dark:hover:bg-slate-700 focus:bg-white dark:focus:bg-slate-900 focus:border-slate-300 dark:focus:border-slate-600 transition-all duration-200"
+                                className="pl-9 sm:pl-11 h-9 sm:h-10 bg-slate-100 dark:bg-slate-800 border-transparent hover:bg-slate-200 dark:hover:bg-slate-700 focus:bg-white dark:focus:bg-slate-900 focus-visible:border-indigo-500 dark:focus-visible:border-indigo-400 focus-visible:ring-2 focus-visible:ring-indigo-500/30 dark:focus-visible:ring-indigo-400/30 transition-all duration-200"
                                 aria-label="Search sessions by title or content"
                                 autoComplete="off"
                                 spellCheck="false"
@@ -514,7 +514,7 @@ const SessionList: React.FC<SessionListProps> = (props) => {
 
                         <Button
                             size="icon"
-                            className="h-9 w-9 sm:h-10 sm:w-10 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm hover:shadow-md transition-all duration-200"
+                            className="h-9 w-9 sm:h-10 sm:w-10 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm hover:shadow-md transition-all duration-200 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-indigo-400 dark:focus-visible:ring-offset-slate-900"
                             onClick={() => setCreateDialog(prev => ({ ...prev, isOpen: true }))}
                             aria-label="Create a new session"
                         >

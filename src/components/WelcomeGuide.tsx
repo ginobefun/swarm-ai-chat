@@ -278,7 +278,7 @@ const WelcomeGuide: React.FC<WelcomeGuideProps> = ({
                             transition={{ delay: 0.9 + index * 0.1, duration: 0.5 }}
                             whileHover={{ y: -4 }}
                         >
-                            <Card className="h-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border-gray-200/60 dark:border-gray-700/60 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 group shadow-lg dark:shadow-gray-900/20">
+                            <Card className="h-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border-gray-200/60 dark:border-gray-700/60 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 group shadow-lg dark:shadow-slate-950/40">
                                 <CardContent className="p-6">
                                     <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-200 shadow-md dark:shadow-lg`}>
                                         <feature.icon className="w-6 h-6 text-white" />

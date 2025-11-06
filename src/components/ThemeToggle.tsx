@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useTheme } from 'next-themes'
 import { useTranslation } from '../contexts/AppContext'
 
@@ -13,16 +13,74 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({ className = '' }) => {
     const { theme, setTheme } = useTheme()
     const [isOpen, setIsOpen] = useState(false)
     const [mounted, setMounted] = useState(false)
+    const [focusedIndex, setFocusedIndex] = useState(0)
+    const buttonRef = useRef<HTMLButtonElement>(null)
+
+    // Theme options for keyboard navigation
+    const themeOptions = ['light', 'dark', 'system'] as const
 
     // Only render after hydration to prevent mismatch
     useEffect(() => {
         setMounted(true)
     }, [])
 
+    // Set focused index based on current theme when menu opens
+    useEffect(() => {
+        if (isOpen && theme) {
+            const index = themeOptions.indexOf(theme as typeof themeOptions[number])
+            setFocusedIndex(index >= 0 ? index : 0)
+        }
+    }, [isOpen, theme])
+
     // 切换主题
     const handleThemeChange = (newTheme: string) => {
         setTheme(newTheme)
         setIsOpen(false)
+        // Return focus to trigger button
+        buttonRef.current?.focus()
+    }
+
+    // 键盘导航处理
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (!isOpen) {
+            // Open menu with ArrowDown or ArrowUp
+            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                e.preventDefault()
+                setIsOpen(true)
+            }
+            return
+        }
+
+        switch (e.key) {
+            case 'Escape':
+                e.preventDefault()
+                setIsOpen(false)
+                buttonRef.current?.focus()
+                break
+            case 'ArrowDown':
+                e.preventDefault()
+                setFocusedIndex((prev) => (prev + 1) % themeOptions.length)
+                break
+            case 'ArrowUp':
+                e.preventDefault()
+                setFocusedIndex((prev) => (prev - 1 + themeOptions.length) % themeOptions.length)
+                break
+            case 'Enter':
+            case ' ':
+                e.preventDefault()
+                handleThemeChange(themeOptions[focusedIndex])
+                break
+            case 'Home':
+                e.preventDefault()
+                setFocusedIndex(0)
+                break
+            case 'End':
+                e.preventDefault()
+                setFocusedIndex(themeOptions.length - 1)
+                break
+            default:
+                break
+        }
     }
 
     // 获取当前主题图标
@@ -53,6 +111,13 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({ className = '' }) => {
         }
     }
 
+    // Get theme data
+    const themeData = [
+        { value: 'light', icon: '☀️', label: t('navbar.lightMode') },
+        { value: 'dark', icon: '🌙', label: t('navbar.darkMode') },
+        { value: 'system', icon: '💻', label: t('navbar.systemMode') },
+    ]
+
     // Prevent hydration mismatch by not rendering until mounted
     if (!mounted) {
         return (
@@ -71,12 +136,15 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({ className = '' }) => {
     }
 
     return (
-        <div className="relative inline-block">
+        <div className="relative inline-block" onKeyDown={handleKeyDown}>
             <button
+                ref={buttonRef}
                 onClick={() => setIsOpen(!isOpen)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-slate-700 dark:text-slate-200 cursor-pointer text-sm font-medium transition-all duration-200 hover:bg-slate-100 dark:hover:bg-slate-700 active:scale-95 ${className}`}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-slate-700 dark:text-slate-200 cursor-pointer text-sm font-medium transition-all duration-200 hover:bg-slate-100 dark:hover:bg-slate-700 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-indigo-400 dark:focus-visible:ring-offset-slate-900 ${className}`}
                 title={t('navbar.theme')}
                 aria-label={t('navbar.theme')}
+                aria-expanded={isOpen}
+                aria-haspopup="menu"
             >
                 <span className="text-lg">{getThemeIcon()}</span>
                 <span className="font-medium hidden md:inline">{getThemeLabel()}</span>
@@ -84,37 +152,35 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({ className = '' }) => {
             </button>
 
             {isOpen && (
-                <div className="absolute top-full right-0 mt-2 min-w-44 bg-white border border-slate-200 dark:border-slate-600 rounded-lg shadow-lg z-[1000] overflow-hidden dark:bg-slate-800">
-                    <button
-                        onClick={() => handleThemeChange('light')}
-                        className={`flex items-center gap-3 w-full px-4 py-3 text-sm text-left transition-colors duration-200 ${theme === 'light'
-                            ? 'bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-700'
-                            : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
+                <div
+                    className="absolute top-full right-0 mt-2 min-w-48 bg-white border border-slate-200 dark:border-slate-600 rounded-lg shadow-lg dark:shadow-slate-950/40 z-[1000] overflow-hidden dark:bg-slate-800"
+                    role="menu"
+                    aria-orientation="vertical"
+                >
+                    {themeData.map((item, index) => (
+                        <button
+                            key={item.value}
+                            onClick={() => handleThemeChange(item.value)}
+                            className={`flex items-center gap-3 w-full px-4 py-3 text-sm text-left transition-colors duration-200 ${
+                                theme === item.value
+                                    ? 'bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-700'
+                                    : focusedIndex === index
+                                    ? 'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100'
+                                    : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
                             }`}
-                    >
-                        <span className="text-lg">☀️</span>
-                        <span className="font-medium">{t('navbar.lightMode')}</span>
-                    </button>
-                    <button
-                        onClick={() => handleThemeChange('dark')}
-                        className={`flex items-center gap-3 w-full px-4 py-3 text-sm text-left transition-colors duration-200 ${theme === 'dark'
-                            ? 'bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-700'
-                            : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
-                            }`}
-                    >
-                        <span className="text-lg">🌙</span>
-                        <span className="font-medium">{t('navbar.darkMode')}</span>
-                    </button>
-                    <button
-                        onClick={() => handleThemeChange('system')}
-                        className={`flex items-center gap-3 w-full px-4 py-3 text-sm text-left transition-colors duration-200 ${theme === 'system'
-                            ? 'bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-700'
-                            : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
-                            }`}
-                    >
-                        <span className="text-lg">💻</span>
-                        <span className="font-medium">{t('navbar.systemMode')}</span>
-                    </button>
+                            role="menuitem"
+                            tabIndex={-1}
+                            aria-current={theme === item.value ? 'true' : undefined}
+                        >
+                            <span className="text-lg">{item.icon}</span>
+                            <span className="font-medium">{item.label}</span>
+                            {focusedIndex === index && (
+                                <span className="ml-auto text-xs opacity-70">
+                                    {theme === item.value ? '✓' : '→'}
+                                </span>
+                            )}
+                        </button>
+                    ))}
                 </div>
             )}
 
@@ -123,8 +189,9 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({ className = '' }) => {
                 <div
                     className="fixed inset-0 z-[999]"
                     onClick={() => setIsOpen(false)}
+                    aria-hidden="true"
                 />
             )}
         </div>
     )
-} 
+}

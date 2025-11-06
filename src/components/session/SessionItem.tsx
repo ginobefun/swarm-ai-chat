@@ -113,7 +113,7 @@ const SessionItem: React.FC<SessionItemProps> = React.memo(({
     const renderLastMessage = () => {
         if (!session.lastMessage) {
             return (
-                <span className="text-slate-400 dark:text-slate-500 italic text-sm">
+                <span className="text-slate-500 dark:text-slate-400 italic text-sm">
                     {t('session.noMessages') || 'No messages yet'}
                 </span>
             )
@@ -129,7 +129,7 @@ const SessionItem: React.FC<SessionItemProps> = React.memo(({
                         {session.lastMessage.sender}:
                     </span>
                 )}
-                <span className="text-slate-500 dark:text-slate-400 text-sm truncate">
+                <span className="text-slate-600 dark:text-slate-300 text-sm truncate">
                     {session.lastMessage.content}
                 </span>
             </div>
@@ -226,7 +226,7 @@ const SessionItem: React.FC<SessionItemProps> = React.memo(({
                     className={`
                         group relative flex items-center px-3 sm:px-4 py-3 cursor-pointer 
                         transition-all duration-200 ease-in-out
-                        border-b border-slate-100 dark:border-slate-800
+                        border-b border-slate-100 dark:border-slate-700/50
                         hover:bg-slate-50 dark:hover:bg-slate-900/60
                         focus-within:bg-slate-100 dark:focus-within:bg-slate-800
                         ${isActive
@@ -292,7 +292,7 @@ const SessionItem: React.FC<SessionItemProps> = React.memo(({
                                     </span>
                                 )}
                                 <time
-                                    className="text-xs text-slate-400 dark:text-slate-500 whitespace-nowrap font-medium"
+                                    className="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap font-medium"
                                     dateTime={new Date(session.updatedAt).toISOString()}
                                     title={new Date(session.updatedAt).toLocaleString()}
                                 >
