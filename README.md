@@ -11,7 +11,7 @@
 [![Prisma](https://img.shields.io/badge/Prisma-6.10.1-2D3748)](https://www.prisma.io/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-[在线演示](https://swarm-ai-chat.vercel.app) | [产品文档](documents/prd.md) | [任务清单](documents/tasks.md) | [技术栈](documents/tech-stack.md)
+[在线演示](https://swarm-ai-chat.vercel.app) | [快速开始](#-快速开始) | [产品文档](docs/product/prd.md) | [技术文档](docs/technical/tech-stack.md)
 
 </div>
 
@@ -93,14 +93,48 @@ SwarmAI.chat 是一个创新的 **多智能体 AI 协作平台**，将先进的�
 
 ---
 
+## 📚 文档导航
+
+本项目文档按类别组织，便于查找和维护：
+
+### 📋 产品文档
+- **[产品需求文档 (PRD)](docs/product/prd.md)** - 完整的产品需求和规划
+- **[多智能体群聊功能](docs/product/multi-agent-group-chat.md)** - 群聊协作功能设计
+
+### 💻 技术文档
+- **[技术栈说明](docs/technical/tech-stack.md)** - 技术选型和架构说明
+- **[架构 v2.0](docs/technical/architecture-v2.md)** - LangChain 多智能体编排架构
+- **[Artifact 系统设计](docs/technical/artifact-system-design.md)** - Artifact 功能技术设计
+- **[架构重新设计](docs/technical/swarm-architecture-redesign.md)** - Better Auth 集成架构
+- **[类型管理指南](docs/technical/type-management-guidelines.md)** - TypeScript 类型规范
+- **[模型更新指南](docs/technical/model-update-guide.md)** - AI 模型配置和更新
+
+### 🎨 设计规范
+- **[设计指南](docs/design/design-guidelines.md)** - UI/UX 设计基本原则
+- **[设计标记系统](docs/design/design-tokens.md)** - 设计系统变量和标准
+- **[图标使用指南](docs/design/icon-usage-guide.md)** - 图标系统规范
+- **[排版系统](docs/design/typography-system.md)** - 字体排版规范
+
+### 🔧 开发文档
+- **[测试指南](docs/development/TESTING_GUIDE.md)** - 完整的测试计划和方法
+- **[项目状态](docs/development/PROJECT_STATUS.md)** - 当前项目完成度和状态
+- **[任务清单](docs/development/tasks.md)** - 开发任务和进度跟踪
+
+### 📦 历史文档归档
+项目开发过程中的阶段性总结和历史记录保存在 [docs/archive/](docs/archive/) 目录中，包括各个阶段的完成总结、实施报告和代码审查记录。
+
+---
+
 ## 📁 项目结构
 
 ```
 swarm-ai-chat/
-├── documents/                  # 项目文档
-│   ├── prd.md                 # 产品需求文档
-│   ├── tasks.md               # 开发任务清单
-│   └── tech-stack.md          # 技术栈说明
+├── docs/                       # 📚 项目文档
+│   ├── product/               # 产品设计文档
+│   ├── technical/             # 技术文档
+│   ├── design/                # 设计规范文档
+│   ├── development/           # 开发文档
+│   └── archive/               # 历史文档归档
 ├── prisma/                    # 数据库相关
 │   ├── schema.prisma          # 数据库模式
 │   └── seed.ts                # 种子数据
@@ -412,9 +446,5 @@ pnpm dev
 - **💾 消息持久化** - 所有对话自动保存
 - **🎨 精美界面** - 响应式设计，支持暗黑模式
 - **📝 Markdown 支持** - AI 回复支持格式化文本
-
-### 📋 详细文档
-
-完整的实现说明和故障排除指南请查看：[聊天功能实现文档](./CHAT_IMPLEMENTATION.md)
 
 ---
