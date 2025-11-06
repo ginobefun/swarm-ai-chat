@@ -133,12 +133,12 @@ const WelcomeGuide: React.FC<WelcomeGuideProps> = ({
                             <span className="text-3xl" aria-hidden="true">🤖</span>
                         </motion.div>
 
-                        {/* 围绕的 AI 智能体 - 使用 Grid 布局 */}
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 max-w-2xl">
+                        {/* 围绕的 AI 智能体 - 响应式布局，移动端显示3个，桌面端显示全部 */}
+                        <div className="grid grid-cols-3 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 max-w-2xl">
                             {aiAgents.map((agent, index) => (
                                 <motion.div
                                     key={agent.id}
-                                    className="flex flex-col items-center"
+                                    className={`flex flex-col items-center ${index >= 3 ? 'hidden lg:flex' : ''}`}
                                     initial={{ opacity: 0, scale: 0, y: 20 }}
                                     animate={{ opacity: 1, scale: 1, y: 0 }}
                                     transition={{
@@ -199,9 +199,9 @@ const WelcomeGuide: React.FC<WelcomeGuideProps> = ({
                     </p>
                 </motion.div>
 
-                {/* 操作按钮区域 */}
+                {/* 操作按钮区域 - 移动端垂直布局 */}
                 <motion.div
-                    className="flex flex-col sm:flex-row gap-4 mb-16"
+                    className="flex flex-col gap-3 sm:flex-row sm:gap-4 mb-12 sm:mb-16 px-4 sm:px-0"
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.6, duration: 0.8 }}
@@ -244,9 +244,9 @@ const WelcomeGuide: React.FC<WelcomeGuideProps> = ({
                     </motion.div>
                 </motion.div>
 
-                {/* 核心功能展示 */}
+                {/* 核心功能展示 - 移动端更紧凑 */}
                 <motion.div
-                    className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl w-full"
+                    className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 max-w-4xl w-full px-4 sm:px-0"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.9, duration: 0.8 }}

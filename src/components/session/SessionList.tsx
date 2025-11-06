@@ -7,6 +7,7 @@ import { useSession } from '@/components/providers/AuthProvider'
 import { LoginDialog } from '@/components/auth/LoginDialog'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { Spinner } from '@/components/ui/spinner'
 import SessionItem from './SessionItem'
 
 import CreateSessionDialog from './CreateSessionDialog'
@@ -413,15 +414,8 @@ const SessionList: React.FC<SessionListProps> = (props) => {
     if (authPending) {
         return (
             <div className="flex flex-col h-full bg-white dark:bg-slate-900">
-                <div
-                    className="flex flex-col items-center justify-center p-10 text-center text-slate-600 dark:text-slate-400"
-                    role="status"
-                    aria-live="polite"
-                >
-                    <div
-                        className="w-8 h-8 border-3 border-slate-300 border-t-indigo-600 rounded-full animate-spin mb-3 dark:border-slate-600 dark:border-t-indigo-400"
-                        aria-hidden="true"
-                    ></div>
+                <div className="flex flex-col items-center justify-center p-10 text-center text-slate-600 dark:text-slate-400">
+                    <Spinner size="lg" variant="primary" label={t('common.loading')} className="mb-3" />
                     <p>{t('common.loading')}</p>
                 </div>
             </div>
@@ -446,15 +440,8 @@ const SessionList: React.FC<SessionListProps> = (props) => {
     if (isLoading) {
         return (
             <div className="flex flex-col h-full bg-white dark:bg-slate-900">
-                <div
-                    className="flex flex-col items-center justify-center p-10 text-center text-slate-600 dark:text-slate-400"
-                    role="status"
-                    aria-live="polite"
-                >
-                    <div
-                        className="w-8 h-8 border-3 border-slate-300 border-t-indigo-600 rounded-full animate-spin mb-3 dark:border-slate-600 dark:border-t-indigo-400"
-                        aria-hidden="true"
-                    ></div>
+                <div className="flex flex-col items-center justify-center p-10 text-center text-slate-600 dark:text-slate-400">
+                    <Spinner size="lg" variant="primary" label={t('session.loadingSessions')} className="mb-3" />
                     <p>{t('session.loadingSessions')}</p>
                 </div>
             </div>
@@ -505,7 +492,7 @@ const SessionList: React.FC<SessionListProps> = (props) => {
                                 placeholder={t('session.searchSessions')}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-9 sm:pl-11 h-9 sm:h-10 bg-slate-100 dark:bg-slate-800 border-transparent hover:bg-slate-200 dark:hover:bg-slate-700 focus:bg-white dark:focus:bg-slate-900 focus-visible:border-indigo-500 dark:focus-visible:border-indigo-400 focus-visible:ring-2 focus-visible:ring-indigo-500/30 dark:focus-visible:ring-indigo-400/30 transition-all duration-200"
+                                className="pl-9 sm:pl-11 h-11 sm:h-10 bg-slate-100 dark:bg-slate-800 border-transparent hover:bg-slate-200 dark:hover:bg-slate-700 focus:bg-white dark:focus:bg-slate-900 focus-visible:border-indigo-500 dark:focus-visible:border-indigo-400 focus-visible:ring-2 focus-visible:ring-indigo-500/30 dark:focus-visible:ring-indigo-400/30 transition-all duration-200"
                                 aria-label="Search sessions by title or content"
                                 autoComplete="off"
                                 spellCheck="false"
@@ -514,7 +501,7 @@ const SessionList: React.FC<SessionListProps> = (props) => {
 
                         <Button
                             size="icon"
-                            className="h-9 w-9 sm:h-10 sm:w-10 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm hover:shadow-md transition-all duration-200 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-indigo-400 dark:focus-visible:ring-offset-slate-900"
+                            className="h-11 w-11 sm:h-10 sm:w-10 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm hover:shadow-md transition-all duration-200 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-indigo-400 dark:focus-visible:ring-offset-slate-900"
                             onClick={() => setCreateDialog(prev => ({ ...prev, isOpen: true }))}
                             aria-label="Create a new session"
                         >
