@@ -92,13 +92,6 @@
     background-color: rgb(99 102 241 / 0.3);
 }
 
-/* Enhanced accessibility and theme support */
-@media (prefers-color-scheme: dark) {
-    html {
-        color-scheme: dark;
-    }
-}
-
 /* High contrast mode support */
 @media (prefers-contrast: high) {
     .chat-scrollbar::-webkit-scrollbar-thumb {
