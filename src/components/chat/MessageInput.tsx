@@ -172,10 +172,10 @@ const MessageInput: React.FC<MessageInputProps> = ({
             <div className="relative">
                 {/* Input Container - Responsive */}
                 <div className="flex items-end gap-2 sm:gap-3">
-                    {/* Toolbar buttons - Responsive */}
+                    {/* Toolbar buttons - Responsive with proper touch targets */}
                     <div className="flex items-center gap-1 pb-2">
                         <button
-                            className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-all duration-150 text-sm font-medium"
+                            className="w-11 h-11 sm:w-9 sm:h-9 flex items-center justify-center text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-all duration-150 text-sm font-medium"
                             onClick={handleMentionButtonClick}
                             title={t('chat.mention')}
                             disabled={disabled}
@@ -183,14 +183,14 @@ const MessageInput: React.FC<MessageInputProps> = ({
                             @
                         </button>
                         <button
-                            className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-all duration-150 hidden sm:flex"
+                            className="w-11 h-11 sm:w-9 sm:h-9 flex items-center justify-center text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-all duration-150 hidden sm:flex"
                             title={t('chat.attachment')}
                             disabled={disabled}
                         >
                             📎
                         </button>
                         <button
-                            className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-all duration-150 hidden sm:flex"
+                            className="w-11 h-11 sm:w-9 sm:h-9 flex items-center justify-center text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-all duration-150 hidden sm:flex"
                             title={t('chat.commands')}
                             disabled={disabled}
                         >

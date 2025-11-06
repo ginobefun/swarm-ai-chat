@@ -4,6 +4,7 @@ import "./globals.css"
 import { LanguageProvider } from '../contexts/AppContext'
 import { ThemeProvider } from '../components/ThemeProvider'
 import { AuthProvider } from '../components/providers/AuthProvider'
+import { Toaster } from '../components/ui/sonner'
 
 // Configure Google Fonts with CSS variables for optimal performance
 // Geist Sans is used for body text and UI elements
@@ -152,6 +153,8 @@ export default function RootLayout({
                             {children}
                         </AuthProvider>
                     </LanguageProvider>
+                    {/* Toast notification system */}
+                    <Toaster />
                 </ThemeProvider>
             </body>
         </html>

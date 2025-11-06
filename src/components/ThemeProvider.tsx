@@ -13,6 +13,8 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
             attribute="class"
             defaultTheme="system"
             enableSystem={true}
+            enableColorScheme={true}
+            disableTransitionOnChange={false}
             storageKey="swarm-theme"
         >
             {children}

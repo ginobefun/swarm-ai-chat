@@ -58,7 +58,7 @@ const Navbar: React.FC = () => {
             initial={{ y: -10, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.3, ease: "easeOut" }}
-            className="fixed top-0 left-0 right-0 h-14 sm:h-16 bg-white/95 backdrop-blur-xl border-b border-gray-200/80 z-[1000] flex items-center justify-between px-4 sm:px-6 lg:px-8 shadow-sm dark:bg-slate-900/95 dark:border-slate-700/50 dark:shadow-slate-900/20"
+            className="fixed top-0 left-0 right-0 h-14 sm:h-16 bg-white/95 backdrop-blur-xl border-b border-gray-200/80 z-[1000] flex items-center justify-between px-4 sm:px-6 lg:px-8 shadow-sm dark:bg-slate-900/95 dark:border-slate-700/50 dark:shadow-slate-950/40"
             role="navigation"
             aria-label={t('navbar.mainNavigation')}
         >
